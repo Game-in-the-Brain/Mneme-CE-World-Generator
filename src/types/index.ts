@@ -1,0 +1,161 @@
+// =====================
+// Enums
+// =====================
+
+export type StellarClass = 'O' | 'B' | 'A' | 'F' | 'G' | 'K' | 'M';
+export type StellarGrade = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+export type Zone = 'Infernal' | 'Hot' | 'Conservative' | 'Cold' | 'Outer';
+
+export type WorldType = 'Habitat' | 'Dwarf' | 'Terrestrial';
+export type LesserEarthType = 'Carbonaceous' | 'Silicaceous' | 'Metallic' | 'Other';
+
+export type AtmosphereType = 'Average' | 'Thin' | 'Trace' | 'Dense' | 'Crushing';
+export type TemperatureType = 'Average' | 'Cold' | 'Freezing' | 'Hot' | 'Inferno';
+export type HazardType = 'None' | 'Polluted' | 'Corrosive' | 'Biohazard' | 'Toxic' | 'Radioactive';
+export type HazardIntensityType = 'Very Mild' | 'Mild' | 'Serious' | 'High' | 'Intense';
+export type ResourceLevel = 'Scarce' | 'Rare' | 'Uncommon' | 'Abundant' | 'Inexhaustible';
+
+export type WealthLevel = 'Average' | 'Better-off' | 'Prosperous' | 'Affluent';
+export type PowerStructure = 'Anarchy' | 'Confederation' | 'Federation' | 'Unitary State';
+export type DevelopmentLevel = 'UnderDeveloped' | 'Developing' | 'Mature' | 'Developed' | 'Well Developed' | 'Very Developed';
+export type PowerSource = 'Aristocracy' | 'Ideocracy' | 'Kratocracy' | 'Democracy' | 'Meritocracy';
+export type StarportClass = 'X' | 'E' | 'D' | 'C' | 'B' | 'A';
+export type TravelZone = 'Green' | 'Amber' | 'Red';
+
+export type GasWorldClass = 'I' | 'II' | 'III' | 'IV' | 'V';
+export type BodyType = 'disk' | 'dwarf' | 'terrestrial' | 'ice' | 'gas';
+
+// =====================
+// Core Interfaces
+// =====================
+
+export interface Star {
+  id: string;
+  class: StellarClass;
+  grade: StellarGrade;
+  mass: number;
+  luminosity: number;
+  color: string;
+  isPrimary: boolean;
+  orbitDistance?: number;
+  orbits?: 'primary' | 'companion';
+}
+
+export interface ZoneBoundaries {
+  infernal: { min: number; max: number };
+  hot: { min: number; max: number };
+  conservative: { min: number; max: number };
+  cold: { min: number; max: number };
+  outer: { min: number; max: null };
+}
+
+export interface MainWorld {
+  type: WorldType;
+  size: number;
+  lesserEarthType?: LesserEarthType;
+  
+  gravity: number;
+  radius: number;
+  escapeVelocity: number;
+  
+  atmosphere: AtmosphereType;
+  atmosphereTL: number;
+  
+  temperature: TemperatureType;
+  temperatureTL: number;
+  
+  hazard: HazardType;
+  hazardIntensity: HazardIntensityType;
+  hazardIntensityTL: number;
+  
+  biochemicalResources: ResourceLevel;
+  
+  habitability: number;
+  
+  zone: Zone;
+  distanceAU: number;
+}
+
+export interface Starport {
+  class: StarportClass;
+  output: number;
+  hasNavalBase: boolean;
+  hasScoutBase: boolean;
+  hasPirateBase: boolean;
+}
+
+export interface Inhabitants {
+  techLevel: number;
+  population: number;
+  wealth: WealthLevel;
+  powerStructure: PowerStructure;
+  development: DevelopmentLevel;
+  sourceOfPower: PowerSource;
+  governance: number;
+  starport: Starport;
+  travelZone: TravelZone;
+  travelZoneReason?: string;
+  cultureTraits: string[];
+}
+
+export interface PlanetaryBody {
+  id: string;
+  type: BodyType;
+  mass: number;
+  zone: Zone;
+  distanceAU: number;
+  gasClass?: GasWorldClass;
+  lesserEarthType?: LesserEarthType;
+  gravity?: number;
+  atmosphere?: string;
+  density?: number;
+}
+
+export interface StarSystem {
+  id: string;
+  createdAt: number;
+  name?: string;
+  
+  primaryStar: Star;
+  companionStars: Star[];
+  zones: ZoneBoundaries;
+  
+  mainWorld: MainWorld;
+  inhabitants: Inhabitants;
+  
+  circumstellarDisks: PlanetaryBody[];
+  dwarfPlanets: PlanetaryBody[];
+  terrestrialWorlds: PlanetaryBody[];
+  iceWorlds: PlanetaryBody[];
+  gasWorlds: PlanetaryBody[];
+}
+
+// =====================
+// Dice Roll Types
+// =====================
+
+export interface DiceRoll {
+  notation: string;
+  dice: number[];
+  modifier: number;
+  total: number;
+}
+
+export interface RollResult {
+  value: number;
+  rolls: DiceRoll[];
+}
+
+// =====================
+// UI Types
+// =====================
+
+export type ViewMode = 'dashboard' | 'system' | 'log' | 'settings';
+
+export interface GeneratorState {
+  currentSystem: StarSystem | null;
+  savedSystems: StarSystem[];
+  view: ViewMode;
+  isGenerating: boolean;
+}

@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-card: #141419;
+  --accent-red: #e53935;
+  --text-primary: #e0e0e0;
+  --text-secondary: #9e9e9e;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --danger: #f44336;
+  
+  /* Star colors */
+  --star-o: #a8d8ff;
+  --star-b: #6bb6ff;
+  --star-a: #ffffff;
+  --star-f: #fff8e1;
+  --star-g: #ffecb3;
+  --star-k: #ffcc80;
+  --star-m: #ff8a65;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary {
+  background-color: var(--accent-red);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.star-O { color: var(--star-o); }
+.star-B { color: var(--star-b); }
+.star-A { color: var(--star-a); }
+.star-F { color: var(--star-f); }
+.star-G { color: var(--star-g); }
+.star-K { color: var(--star-k); }
+.star-M { color: var(--star-m); }
+
+.zone-infernal { color: #ff5722; }
+.zone-hot { color: #ff9800; }
+.zone-conservative { color: #4caf50; }
+.zone-cold { color: #2196f3; }
+.zone-outer { color: #9e9e9e; }
+
+.habitability-excellent { color: #4caf50; }
+.habitability-good { color: #8bc34a; }
+.habitability-marginal { color: #ffc107; }
+.habitability-poor { color: #ff9800; }
+.habitability-hostile { color: #f44336; }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.data-table th {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+input, select {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-red);
+}

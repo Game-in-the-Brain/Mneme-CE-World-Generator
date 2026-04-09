@@ -1,0 +1,140 @@
+/* App-specific styles */
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #141419;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(229, 57, 53, 0.3);
+  color: white;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid #e53935;
+  outline-offset: 2px;
+}
+
+/* Button transitions */
+button {
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Card hover effect */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Table row hover */
+.data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+/* Input focus states */
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.3);
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* PWA install prompt (hidden by default, shown via JS) */
+.pwa-install-prompt {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #141419;
+  border: 1px solid rgba(229, 57, 53, 0.5);
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Zone colors for planetary bodies */
+.zone-infernal { color: #ff5722; }
+.zone-hot { color: #ff9800; }
+.zone-conservative { color: #4caf50; }
+.zone-cold { color: #2196f3; }
+.zone-outer { color: #9e9e9e; }
+
+/* Habitability colors */
+.habitability-excellent { color: #4caf50; }
+.habitability-good { color: #8bc34a; }
+.habitability-marginal { color: #ffc107; }
+.habitability-poor { color: #ff9800; }
+.habitability-hostile { color: #f44336; }
+
+/* Star spectral class colors */
+.star-O { color: #a8d8ff; }
+.star-B { color: #6bb6ff; }
+.star-A { color: #ffffff; }
+.star-F { color: #fff8e1; }
+.star-G { color: #ffecb3; }
+.star-K { color: #ffcc80; }
+.star-M { color: #ff8a65; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  .card {
+    padding: 16px;
+  }
+}
