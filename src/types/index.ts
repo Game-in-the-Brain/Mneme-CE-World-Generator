@@ -157,7 +157,7 @@ export interface RollResult {
 // UI Types
 // =====================
 
-export type ViewMode = 'dashboard' | 'system' | 'log' | 'settings';
+export type ViewMode = 'dashboard' | 'system' | 'log' | 'settings' | 'glossary';
 
 export interface GeneratorState {
   currentSystem: StarSystem | null;

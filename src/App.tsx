@@ -9,6 +9,7 @@ import { GeneratorDashboard } from './components/GeneratorDashboard';
 import { SystemViewer } from './components/SystemViewer';
 import { DataLog } from './components/DataLog';
 import { Settings } from './components/Settings';
+import { Glossary } from './components/Glossary';
 import { Navigation, type Theme } from './components/Navigation';
 import './App.css';
 
@@ -154,8 +155,11 @@ function App() {
             system={currentSystem}
             onExportJSON={handleExportJSON}
             onExportCSV={handleExportCSV}
+            onGlossary={() => setView('glossary')}
           />
         )}
+
+        {view === 'glossary' && <Glossary />}
 
         {view === 'log' && (
           <DataLog 

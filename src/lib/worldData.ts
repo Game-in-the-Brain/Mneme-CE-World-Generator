@@ -377,6 +377,45 @@ export function generateCultureTraits(count: number = 1): string[] {
   return traits;
 }
 
+export const CULTURE_TRAIT_DESCRIPTIONS: Record<string, string> = {
+  'Anarchist':    'Society operates without centralised authority. Power is distributed among local communities or strong individuals. Disputes are settled by consensus, reputation, or force — formal government is absent or minimal.',
+  'Bureaucratic': 'Governed by elaborate formal procedures and hierarchies of officials. Progress is slow and paper-heavy. Outsiders find the system impenetrable without local contacts or expert knowledge.',
+  'Caste system': 'Social class is fixed at birth and rarely changes. Occupation, marriage, and rights are tied to caste membership. Intermingling between castes is discouraged or forbidden.',
+  'Collectivist': 'The group takes precedence over the individual. Resources and achievements are shared communally. Individual ambition is viewed with suspicion; loyalty to the collective is the highest virtue.',
+  'Competitive':  'Driven by rivalry — economic, political, or social. Factions constantly vie for status and resources. Innovation is high but cooperation is low; betrayal is common in business and politics.',
+  'Cosmopolitan': 'Open, diverse, and outward-looking. Outsiders are welcomed; multiple languages and customs coexist. Trade and cultural exchange are celebrated; insularity is considered backward.',
+  'Deceptive':    'Dissembling is culturally accepted or even admired. Contracts are honoured only when convenient. Visitors should assume they are being misled; direct dealing is considered naïve.',
+  'Degenerate':   'Social structures are in visible decay. Corruption, excess, and breakdown of shared norms are widespread. The ruling class indulges itself while the population suffers.',
+  'Devoted':      'Organised around a powerful faith, ideology, or cause. Members sacrifice personal interests readily. Outsiders who do not share the devotion may be viewed as threats or potential converts.',
+  'Egalitarian':  'Social equality is a core value. Titles, inherited wealth, and privilege are viewed with suspicion. Everyone is expected to contribute and receive fair reward.',
+  'Elitist':      'Stratified by talent, birth, or achievement — and those at the top are unapologetic about it. Access to power is tightly controlled by a privileged few.',
+  'Fatalistic':   'Outcomes are believed to be predetermined — by fate, the stars, or divine will. There is little sense of personal agency. Tragedy is accepted with resignation; risk is taken boldly.',
+  'Fearful':      'Chronic fear shapes daily life — of authority, outsiders, or each other. Informants are common. Public behaviour is guarded. Creativity and dissent are suppressed by the constant threat of consequences.',
+  'Generous':     'Hospitality and giving are core values. Wealth is measured by how much is given away. Visitors can expect food, shelter, and help; refusing a gift is a serious insult.',
+  'Gregarious':   'Outgoing and social. Business is conducted over meals and celebrations. Silence and reserve are read as hostility. Networking is essential to getting anything done.',
+  'Heroic':       'Celebrates bold action, personal courage, and decisive leadership. Self-sacrifice for a worthy cause is the highest honour. Caution and compromise are viewed as cowardice.',
+  'Honest':       'Directness and truthfulness are paramount virtues. Lying — even polite social lies — is deeply shameful. Negotiations are blunt; what you see is what you get.',
+  'Honorable':    'A strict code of personal conduct governs all interactions. Promises made are kept regardless of cost. Insults demand satisfaction. Reputation is everything.',
+  'Hospitable':   'Welcoming strangers is a near-sacred duty. Travellers receive food, shelter, and protection as guests. In return, guests must behave with respect; violating hospitality is unforgivable.',
+  'Hostile':      'Outsiders are viewed with deep suspicion or open aggression. Trade and diplomacy are grudging. Violence is a common first response to perceived threats.',
+  'Idealistic':   'Driven by a vision of a better future — political, spiritual, or philosophical. Pragmatism is subordinated to principle. Grand projects are launched with enthusiasm; results rarely match the vision.',
+  'Indifferent':  'Largely apathetic to politics, religion, and outside events. People focus on day-to-day comfort. The society is stable but difficult to mobilise for collective action, good or ill.',
+  'Individualist':'Personal freedom and self-determination are paramount. Community obligations are minimal; everyone makes their own way. Privacy is jealously guarded; mutual aid is transactional.',
+  'Intolerant':   'Conformity is enforced in belief, appearance, or behaviour. Minorities or those who deviate from norms face discrimination. The dominant group defines what is acceptable.',
+  'Isolationist': 'Prefers minimal contact with outsiders. Off-world trade and immigration are restricted. Self-sufficiency is a point of pride. Outsiders are rarely made welcome.',
+  'Legalistic':   'Governed by an intricate body of law applied rigorously. Contracts are everything. Legal disputes are common and consume years. An advocate is essential for any significant dealings.',
+  'Libertarian':  'Personal freedom is the supreme value. Government is minimal by design; taxation and regulation are resisted. The individual is sovereign. The resulting society is dynamic, unequal, and occasionally chaotic.',
+  'Militarist':   'Military virtues — discipline, strength, sacrifice — dominate culture. A significant fraction of the population serves or has served. Foreign policy is assertive; war is always a near possibility.',
+  'Pacifist':     'Violence is culturally abhorrent. Conflict is resolved through mediation or passive resistance. Military forces are minimal. The society may be vulnerable but its internal cohesion is usually high.',
+  'Paranoid':     'Lives in fear of hidden enemies — foreign agents, conspirators, or unseen forces. Surveillance is normalised. Strangers are automatically suspect. Accusations of betrayal are common and dangerous.',
+  'Piety':        'Religious observance permeates every aspect of daily life. Festivals, prayers, and ritual duties structure the calendar. Offending religious sensibilities — even unknowingly — has serious consequences.',
+  'Progressive':  'Embraces change, experimentation, and modernisation. Traditional structures are questioned or dismantled. Innovation is celebrated; rapid social change creates opportunity and instability in equal measure.',
+  'Proud':        'Has a strong sense of its own greatness — historical, cultural, or racial. Perceived slights against national honour are taken very seriously. Admitting weakness is almost impossible.',
+  'Rustic':       'Values simplicity, self-reliance, and closeness to the land. Urban sophistication is viewed with suspicion. Hard work, practical skills, and community ties are the true measures of a person.',
+  'Ruthless':     'Winning is everything. Compassion and sentiment are luxuries. Competitors are destroyed, not merely defeated. Visitors are advised not to show weakness.',
+  'Scheming':     'Political and social life is a labyrinth of alliances, betrayals, and counter-moves. Everyone has an agenda; nothing is said directly. Information is currency. Naïveté is fatal.',
+};
+
 // =====================
 // Planetary System
 // =====================

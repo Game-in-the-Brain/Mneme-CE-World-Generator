@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react';
-import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody } from '../types';
+import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass } from '../types';
 import { FileJson, FileSpreadsheet, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 // @ts-ignore - lucide-react types
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatPopulation } from '../lib/format';
+import { CULTURE_TRAIT_DESCRIPTIONS } from '../lib/worldData';
 
 interface SystemViewerProps {
   system: StarSystem;
   onExportJSON: () => void;
   onExportCSV: () => void;
+  onGlossary?: () => void;
 }
 
 type TabId = 'overview' | 'star' | 'world' | 'inhabitants' | 'system';
@@ -22,7 +24,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 // QA-010: Single-page anchor tabs — each section is always rendered;
 // tab buttons scroll to the corresponding section.
-export function SystemViewer({ system, onExportJSON, onExportCSV }: SystemViewerProps) {
+export function SystemViewer({ system, onExportJSON, onExportCSV, onGlossary }: SystemViewerProps) {
   const sectionRefs: Record<TabId, React.RefObject<HTMLDivElement | null>> = {
     overview:    useRef<HTMLDivElement | null>(null),
     star:        useRef<HTMLDivElement | null>(null),
@@ -119,6 +121,21 @@ export function SystemViewer({ system, onExportJSON, onExportCSV }: SystemViewer
         </h2>
         <PlanetarySystemTab system={system} />
       </section>
+
+      {onGlossary && (
+        <div className="mt-8 pt-4 border-t text-center text-xs"
+             style={{ borderColor: 'var(--border-color)',
+                      color: 'var(--text-secondary)' }}>
+          † All abbreviations and units explained in the{' '}
+          <button
+            onClick={onGlossary}
+            className="underline hover:opacity-80 transition-opacity"
+            style={{ color: 'var(--accent-red)' }}
+          >
+            Definitions &amp; Units Glossary
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -246,8 +263,8 @@ function StarTab({ system }: { system: StarSystem }) {
         </div>
       )}
 
-      {/* Stellar classification visual cue (QA-003) */}
-      <StellarClassReference starClass={system.primaryStar.class} />
+      {/* Stellar spectrum strip (QA-003 upgraded) */}
+      <StellarSpectrum starClass={system.primaryStar.class} />
     </div>
   );
 }
@@ -274,38 +291,58 @@ function StarDetails({ star }: { star: Star; isPrimary?: boolean }) {
   );
 }
 
-// QA-003: Collapsible stellar classification reference image
-function StellarClassReference({ starClass }: { starClass: string }) {
-  const [open, setOpen] = useState(false);
+// Stellar spectrum strip — all 7 classes with primary highlighted (QA-003 upgraded)
+const STAR_DESCRIPTIONS: Record<string, string> = {
+  O: 'Rare blue-white supergiant — disks only, intense UV, no stable habitable zone',
+  B: 'Hot blue giant — disks only, short stellar lifetime',
+  A: 'White main sequence — disks only, borderline habitable',
+  F: 'Yellow-white — habitable zone possible (Adv+2 planet count)',
+  G: 'Sun-like yellow — optimal for life (Adv+1 planet count)',
+  K: 'Orange dwarf — stable habitable zone, no modifier',
+  M: 'Red dwarf — narrow habitable zone, very common (Dis+1 planet count)',
+};
+
+const SPECTRAL_CLASSES: StellarClass[] = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
+
+function StellarSpectrum({ starClass }: { starClass: StellarClass }) {
   const base = import.meta.env.BASE_URL;
-  const imgSrc = `${base}references/Class-${starClass}-star.png`;
+  const description = STAR_DESCRIPTIONS[starClass];
 
   return (
     <div className="card">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center justify-between w-full text-left"
-      >
-        <span className="font-semibold text-sm">
-          Stellar Classification Reference — Class {starClass}
-        </span>
-        {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-      </button>
-      {open && (
-        <div className="mt-4">
-          <img
-            src={imgSrc}
-            alt={`Class ${starClass} star classification chart`}
-            className="max-w-full rounded"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-          <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
-            Class {starClass} stellar classification — colour and temperature characteristics.
-          </p>
-        </div>
-      )}
+      {/* Heading */}
+      <div className="mb-4">
+        <h3 className="font-semibold text-sm">Stellar Classification Spectrum</h3>
+        <p className={`text-sm mt-1 star-${starClass}`}>{description}</p>
+      </div>
+
+      {/* Horizontal strip */}
+      <div className="flex overflow-x-auto gap-2 pb-2">
+        {SPECTRAL_CLASSES.map((cls) => {
+          const isActive = cls === starClass;
+          const imgSrc = `${base}references/Class-${cls}-star.png`;
+          return (
+            <div
+              key={cls}
+              className="flex flex-col items-center justify-center p-2 min-w-[64px]"
+              style={isActive
+                ? { opacity: 1, transform: 'scale(1.15)', outline: '2px solid currentColor', borderRadius: '6px' }
+                : { opacity: 0.35 }
+              }
+            >
+              <img
+                src={imgSrc}
+                alt={`Class ${cls}`}
+                className="w-12 h-12 object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              <span className={`star-${cls} font-bold text-sm mt-1`}>{cls}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -360,6 +397,30 @@ function WorldTab({ world }: { world: MainWorld }) {
 // Inhabitants Tab
 // ============================================================
 
+function CultureTraitList({ traits }: { traits: string[] }) {
+  if (traits.length === 0) return <span style={{ color: 'var(--text-secondary)' }}>None</span>;
+  return (
+    <div className="space-y-3 mt-1">
+      {traits.map(trait => (
+        <CultureTraitCard key={trait} trait={trait} />
+      ))}
+    </div>
+  );
+}
+
+function CultureTraitCard({ trait }: { trait: string }) {
+  const description = CULTURE_TRAIT_DESCRIPTIONS[trait] ?? 'No description available.';
+  return (
+    <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)',
+         borderLeft: '3px solid var(--accent-red)' }}>
+      <div className="font-semibold text-sm mb-1">{trait}</div>
+      <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+        {description}
+      </div>
+    </div>
+  );
+}
+
 function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -399,16 +460,18 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
       </div>
 
       <div className="card space-y-4">
-        <h3 className="text-lg font-semibold">Travel & Culture</h3>
+        <h3 className="text-lg font-semibold">Travel &amp; Culture</h3>
         <div className="space-y-2">
           <DataRow
             label="Travel Zone"
             value={inhabitants.travelZone + (inhabitants.travelZoneReason ? ` (${inhabitants.travelZoneReason})` : '')}
           />
-          <DataRow
-            label="Culture Traits"
-            value={inhabitants.cultureTraits.join(', ') || 'None'}
-          />
+          <div className="pt-1">
+            <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
+              Culture Traits
+            </div>
+            <CultureTraitList traits={inhabitants.cultureTraits} />
+          </div>
         </div>
       </div>
     </div>
