@@ -201,12 +201,34 @@ function buildInhabitants(s: StarSystem): Paragraph[] {
 }
 
 function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Paragraph | Table)[] {
+  const mw = s.mainWorld;
+  const mainWorldEntry = {
+    id:          `${s.id}-mainworld`,
+    type:        mw.type as string,
+    typeLabel:   `${mw.type} (Main World)`,
+    mass:        mw.size,
+    zone:        mw.zone,
+    distanceAU:  mw.distanceAU,
+    radiusKm:    mw.radius,
+    diameterKm:  mw.radius * 2,
+    surfaceGravityG: mw.gravity,
+    escapeVelocityMs: mw.escapeVelocity * 1000,
+    densityGcm3: undefined as number | undefined,
+    gasClass:    undefined as string | undefined,
+    lesserEarthType: mw.lesserEarthType,
+    atmosphere:  mw.atmosphere,
+    temperature: mw.temperature,
+    habitability: mw.habitability,
+    isMainWorld: true,
+  };
+
   const allBodies = [
-    ...s.circumstellarDisks.map(b   => ({ ...b, typeLabel: 'Disk' })),
-    ...s.dwarfPlanets.map(b         => ({ ...b, typeLabel: 'Dwarf' })),
-    ...s.terrestrialWorlds.map(b    => ({ ...b, typeLabel: 'Terrestrial' })),
-    ...s.iceWorlds.map(b            => ({ ...b, typeLabel: 'Ice World' })),
-    ...s.gasWorlds.map(b            => ({ ...b, typeLabel: `Gas ${b.gasClass}` })),
+    ...s.circumstellarDisks.map(b   => ({ ...b, typeLabel: 'Disk',        isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
+    ...s.dwarfPlanets.map(b         => ({ ...b, typeLabel: 'Dwarf',       isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
+    ...s.terrestrialWorlds.map(b    => ({ ...b, typeLabel: 'Terrestrial', isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
+    ...s.iceWorlds.map(b            => ({ ...b, typeLabel: 'Ice World',   isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
+    ...s.gasWorlds.map(b            => ({ ...b, typeLabel: `Gas ${b.gasClass}`, isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
+    mainWorldEntry,
   ].sort((a, b) => a.distanceAU - b.distanceAU);
 
   // Column widths (must sum to 100)
@@ -248,6 +270,35 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
       spacing: { before: 40, after: 40 },
     });
 
+  // Physical properties detail section — one entry per body that has physics data
+  const physSections: Paragraph[] = [];
+  allBodies.forEach((body, idx) => {
+    if (body.radiusKm == null) return;
+    const ann = annotations[body.id];
+    const displayName = ann?.name ? `${ann.name} (${body.typeLabel})` : body.typeLabel;
+    physSections.push(
+      new Paragraph({
+        children: [
+          run(`${idx + 1}. `, { bold: true, color: GREY, size: 18 }),
+          run(displayName, { bold: true, size: 18 }),
+          run(`  —  ${body.zone}  ·  ${body.distanceAU} AU`, { color: GREY, size: 18 }),
+        ],
+        spacing: { before: 120, after: 40 },
+      }),
+    );
+    if (body.densityGcm3 != null) physSections.push(line('Density', `${body.densityGcm3} g/cm³`));
+    physSections.push(line('Radius',          `${formatNumber(body.radiusKm)} km`));
+    physSections.push(line('Diameter',        `${formatNumber(body.diameterKm!)} km`));
+    physSections.push(line('Surface Gravity', `${body.surfaceGravityG} G`));
+    physSections.push(line('Escape Velocity', `${formatNumber(body.escapeVelocityMs!)} m/s`));
+    if (body.isMainWorld) {
+      physSections.push(line('Atmosphere',   (body as any).atmosphere ?? '—'));
+      physSections.push(line('Temperature',  (body as any).temperature ?? '—'));
+      physSections.push(line('Habitability', (body as any).habitability !== undefined ? `${(body as any).habitability}` : '—'));
+    }
+    if (ann?.notes) physSections.push(line('Notes', ann.notes));
+  });
+
   return [
     h1('Planetary System'),
     countPara('Circumstellar Disks', s.circumstellarDisks.length),
@@ -258,6 +309,7 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
     blank(),
     table,
     blank(),
+    ...(physSections.length > 0 ? [h2('Physical Properties Detail'), ...physSections, blank()] : []),
   ];
 }
 

@@ -109,10 +109,6 @@
   min-height: unset;
 }
 
-/* Collapse nav text labels in phone mode to save header space */
-[data-theme="phone"] nav button span {
-  display: none !important;
-}
 
 [data-theme="phone"] .grid-cols-5 {
   grid-template-columns: repeat(2, 1fr) !important;

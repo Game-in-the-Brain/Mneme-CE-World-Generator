@@ -730,12 +730,43 @@ function PlanetarySystemTab({
     system.gasWorlds.length;
 
   // QA-008: Ice Worlds label (typeLabel uses "Ice Worlds" not "Ice")
-  const allBodies = [
-    ...system.circumstellarDisks.map(b => ({ ...b, typeLabel: 'Disk' })),
-    ...system.dwarfPlanets.map(b => ({ ...b, typeLabel: 'Dwarf' })),
-    ...system.terrestrialWorlds.map(b => ({ ...b, typeLabel: 'Terrestrial' })),
-    ...system.iceWorlds.map(b => ({ ...b, typeLabel: 'Ice Worlds' })),
-    ...system.gasWorlds.map(b => ({ ...b, typeLabel: `Gas ${b.gasClass}` })),
+  type BodyWithExtras = PlanetaryBody & { 
+    typeLabel: string; 
+    isMainWorld: boolean;
+    atmosphere?: string; 
+    temperature?: string; 
+    habitability?: number;
+  };
+
+  const mainWorldBody: BodyWithExtras = {
+    id:          `${system.id}-mainworld`,
+    type:        'terrestrial' as const,  // Main world is always terrestrial type for body purposes
+    typeLabel:   system.mainWorld.type,
+    isMainWorld: true,
+    mass:        system.mainWorld.size,   // size (km) used as stand-in — shown separately
+    zone:        system.mainWorld.zone,
+    distanceAU:  system.mainWorld.distanceAU,
+    // physics from main world
+    radiusKm:    system.mainWorld.radius,
+    diameterKm:  system.mainWorld.radius * 2,
+    surfaceGravityG: system.mainWorld.gravity,
+    escapeVelocityMs: system.mainWorld.escapeVelocity * 1000, // km/s → m/s
+    densityGcm3: undefined,
+    gasClass:    undefined,
+    lesserEarthType: system.mainWorld.lesserEarthType,
+    // extras
+    atmosphere:  system.mainWorld.atmosphere,
+    temperature: system.mainWorld.temperature,
+    habitability: system.mainWorld.habitability,
+  };
+
+  const allBodies: BodyWithExtras[] = [
+    ...system.circumstellarDisks.map(b => ({ ...b, typeLabel: 'Disk',        isMainWorld: false as const })),
+    ...system.dwarfPlanets.map(b =>       ({ ...b, typeLabel: 'Dwarf',       isMainWorld: false as const })),
+    ...system.terrestrialWorlds.map(b =>  ({ ...b, typeLabel: 'Terrestrial', isMainWorld: false as const })),
+    ...system.iceWorlds.map(b =>          ({ ...b, typeLabel: 'Ice Worlds',  isMainWorld: false as const })),
+    ...system.gasWorlds.map(b =>          ({ ...b, typeLabel: `Gas ${b.gasClass}`, isMainWorld: false as const })),
+    mainWorldBody,
   ].sort((a, b) => a.distanceAU - b.distanceAU);
 
   return (
@@ -756,7 +787,7 @@ function PlanetarySystemTab({
         <h3 className="text-lg font-semibold mb-4">All Bodies by Distance</h3>
         <div className="space-y-2 max-h-[600px] overflow-y-auto">
           {allBodies.map((body, index) => (
-            <BodyRow key={body.id} body={body} index={index} annotations={annotations} onAnnotation={onAnnotation} />
+            <BodyRow key={body.id} body={body} index={index} annotations={annotations} onAnnotation={onAnnotation} isMainWorld={body.isMainWorld} />
           ))}
         </div>
       </div>
@@ -764,14 +795,15 @@ function PlanetarySystemTab({
   );
 }
 
-// Individual body row — always expandable; Name/Notes annotation fields + physical properties (QA-009)
+// Individual body row — always expandable; inline Name + Notes annotation fields + physical properties (QA-009)
 function BodyRow({
-  body, index, annotations, onAnnotation,
+  body, index, annotations, onAnnotation, isMainWorld,
 }: {
-  body: PlanetaryBody & { typeLabel: string };
+  body: PlanetaryBody & { typeLabel: string; atmosphere?: string; temperature?: string; habitability?: number };
   index: number;
   annotations: BodyAnnotations;
   onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
+  isMainWorld?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasPhysics = body.radiusKm != null;
@@ -783,91 +815,93 @@ function BodyRow({
         className="flex items-center justify-between p-2 cursor-pointer"
         onClick={() => setExpanded(e => !e)}
       >
-        <div className="flex items-center gap-3">
-          <span className="w-6" style={{ color: 'var(--text-secondary)' }}>{index + 1}</span>
-          <span className="font-medium">{ann.name || body.typeLabel}</span>
-          {ann.name && (
-            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{body.typeLabel}</span>
-          )}
+        <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
+          <span className="w-5 shrink-0 text-xs" style={{ color: 'var(--text-secondary)' }}>{index + 1}</span>
+          <span className="font-medium shrink-0 text-xs">{body.typeLabel}</span>
           {body.gasClass && (
-            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--border-color)' }}>
-              Class {body.gasClass}
+            <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: 'var(--border-color)' }}>
+              {body.gasClass}
             </span>
           )}
           {body.lesserEarthType && (
-            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--border-color)' }}>
+            <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: 'var(--border-color)' }}>
               {body.lesserEarthType}
             </span>
           )}
+          {/* Inline name input — always visible, auto-saved */}
+          <input
+            type="text"
+            value={ann.name}
+            onChange={e => onAnnotation(body.id, 'name', e.target.value)}
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => e.stopPropagation()}
+            placeholder="Name…"
+            className="text-xs flex-1 min-w-0"
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderBottom: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              padding: '0.1rem 0.2rem',
+              outline: 'none',
+              maxWidth: '11rem',
+            }}
+          />
         </div>
-        <div className="flex items-center gap-4" style={{ color: 'var(--text-secondary)' }}>
-          <span className={`zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
-          <span>{body.distanceAU} AU</span>
-          <span>{formatValue(body.mass, 'M⊕')}</span>
+        <div className="flex items-center gap-3 shrink-0" style={{ color: 'var(--text-secondary)' }}>
+          {isMainWorld && (
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent-red)', color: 'white' }}>
+              MAIN WORLD
+            </span>
+          )}
+          <span className={`text-xs zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
+          <span className="text-xs">{body.distanceAU} AU</span>
+          {!isMainWorld && <span className="text-xs">{formatValue(body.mass, 'M⊕')}</span>}
+          {isMainWorld && body.habitability !== undefined && (
+            <span className="text-xs">Hab {body.habitability >= 0 ? '+' : ''}{body.habitability}</span>
+          )}
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
       </div>
 
       {expanded && (
         <div className="px-4 pb-3 border-t space-y-3 pt-3" style={{ borderColor: 'var(--border-color)' }}>
-          {/* Name / Notes annotation fields */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label
-                className="text-xs block mb-1"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Custom Name
-              </label>
-              <input
-                type="text"
-                value={ann.name}
-                onChange={e => onAnnotation(body.id, 'name', e.target.value)}
-                onClick={e => e.stopPropagation()}
-                placeholder="e.g. Kepler Prime"
-                className="w-full text-xs"
-                style={{
-                  backgroundColor: 'var(--input-bg)',
-                  border: '1px solid var(--input-border)',
-                  color: 'var(--text-primary)',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '4px',
-                }}
-              />
-            </div>
-            <div>
-              <label
-                className="text-xs block mb-1"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Notes
-              </label>
-              <input
-                type="text"
-                value={ann.notes}
-                onChange={e => onAnnotation(body.id, 'notes', e.target.value)}
-                onClick={e => e.stopPropagation()}
-                placeholder="e.g. Mining colony, rich in iron"
-                className="w-full text-xs"
-                style={{
-                  backgroundColor: 'var(--input-bg)',
-                  border: '1px solid var(--input-border)',
-                  color: 'var(--text-primary)',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: '4px',
-                }}
-              />
-            </div>
+          {/* Notes annotation field */}
+          <div>
+            <label className="text-xs block mb-1" style={{ color: 'var(--text-secondary)' }}>Notes</label>
+            <input
+              type="text"
+              value={ann.notes}
+              onChange={e => onAnnotation(body.id, 'notes', e.target.value)}
+              onClick={e => e.stopPropagation()}
+              placeholder="e.g. Mining colony, rich in iron"
+              className="w-full text-xs"
+              style={{
+                backgroundColor: 'var(--input-bg)',
+                border: '1px solid var(--input-border)',
+                color: 'var(--text-primary)',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+              }}
+            />
           </div>
 
           {/* Physical properties (QA-009) */}
           {hasPhysics && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-              <PhysProp label="Density"         value={`${body.densityGcm3} g/cm³`} />
+              {body.densityGcm3 != null && <PhysProp label="Density" value={`${body.densityGcm3} g/cm³`} />}
               <PhysProp label="Radius"          value={`${formatNumber(body.radiusKm!)} km`} />
               <PhysProp label="Diameter"        value={`${formatNumber(body.diameterKm!)} km`} />
               <PhysProp label="Surface Gravity" value={`${body.surfaceGravityG} G`} />
               <PhysProp label="Escape Velocity" value={`${formatNumber(body.escapeVelocityMs!)} m/s`} />
+            </div>
+          )}
+          {/* Main World — environment details */}
+          {isMainWorld && body.atmosphere && (
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <PhysProp label="Atmosphere"   value={body.atmosphere} />
+              <PhysProp label="Temperature"  value={body.temperature ?? '—'} />
+              <PhysProp label="Habitability" value={body.habitability !== undefined ? `${body.habitability >= 0 ? '+' : ''}${body.habitability}` : '—'} />
             </div>
           )}
         </div>

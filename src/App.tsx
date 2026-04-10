@@ -7,7 +7,7 @@ import {
 } from './lib/db';
 import { GeneratorDashboard } from './components/GeneratorDashboard';
 import { SystemViewer } from './components/SystemViewer';
-import { DataLog } from './components/DataLog';
+
 import { Settings } from './components/Settings';
 import { Glossary } from './components/Glossary';
 import { Navigation, type Theme } from './components/Navigation';
@@ -161,17 +161,11 @@ function App() {
 
         {view === 'glossary' && <Glossary />}
 
-        {view === 'log' && (
-          <DataLog 
+        {view === 'settings' && (
+          <Settings 
             systems={savedSystems}
             onViewSystem={handleViewSystem}
             onDeleteSystem={handleDeleteSystem}
-            onExportAll={handleExportAll}
-          />
-        )}
-
-        {view === 'settings' && (
-          <Settings 
             onImport={handleImport}
             onExportAll={handleExportAll}
             onClearAll={handleClearAll}
