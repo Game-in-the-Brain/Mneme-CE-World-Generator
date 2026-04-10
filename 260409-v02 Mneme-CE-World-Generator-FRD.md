@@ -2,7 +2,7 @@
 
 # Mneme CE World Generator — Function Requirements Document (FRD)
 
-**Version 1.3** | **Date:** 2026-04-09  
+**Version 1.4** | **Date:** 2026-04-10  
 **Project:** Mneme CE World Generator PWA (Cepheus Engine variant)  
 **GitHub Repository:** [github.com/Game-in-the-Brain/Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator)  
 **Book Series:** [DriveThruRPG — Game in the Brain](https://www.drivethrurpg.com/en/publisher/17858/game-in-the-brain)

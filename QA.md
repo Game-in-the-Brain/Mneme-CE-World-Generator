@@ -29,6 +29,7 @@
 | [QA-011](#qa-011) | Engine | Hot Jupiter migration rule not implemented — inner zone clearing | 🔴 High | ✅ Fixed |
 | [QA-012](#qa-012) | Dev Tool | Debug Batch Export button for statistical analysis | 🟡 Low | ✅ Fixed |
 | [QA-013](#qa-013) | UI | Theme toggle buttons — Dark/Day should share space to save header width | 🟡 Low | ✅ Fixed |
+| [QA-014](#qa-014) | Settings | Debug mode toggle — user-configurable, default ON | 🟡 Low | ✅ Fixed |
 
 ---
 
@@ -293,6 +294,28 @@ Three theme buttons (Dark, Day, Phone) consumed significant header width. On sma
 
 ---
 
+### QA-014
+
+**Title:** Debug Mode Toggle — Batch Export visibility control in Settings  
+**Area:** UI — Settings  
+**Priority:** 🟢 Low  
+**Status:** ✅ Fixed  
+**File(s):** `src/components/Settings.tsx`, `src/components/GeneratorDashboard.tsx`
+
+**Description:**  
+The Batch Export feature (QA-012) was only visible in development builds (`import.meta.env.DEV`). On GitHub Pages production builds, the debug panel was hidden, making QA testing of batch exports impossible.
+
+**Fix Applied:**  
+- Added **Debug Mode** toggle in Settings (Data Management section)
+- Toggle stored in `localStorage` with key `mneme_debug_mode`
+- Default: **ON** (enabled) — Batch Export visible by default
+- When OFF: Batch Export panel is hidden
+- When ON: Batch Export panel is displayed
+- Works in both development and production builds
+- Allows QA testing on GitHub Pages deployment
+
+---
+
 ## Additional Feature Issues
 
 ---
@@ -338,3 +361,5 @@ CSV export format needed a formal specification.
 | 1.0 | 2026-04-09 | Initial QA document — 11 bugs + 2 additional feature issues |
 | 1.1 | 2026-04-10 | All 11 bugs marked fixed; QA-ADD-001 fixed; QA-ADD-002 spec created |
 | 1.2 | 2026-04-10 | Added QA-012 (Debug Batch Export), QA-013 (compact theme toggle); Hill Sphere and Habitability fixes |
+| 1.3 | 2026-04-10 | Fixed radius/escape velocity calculations; added Terraforming Worms; glossary updates |
+| 1.4 | 2026-04-10 | QA-014: Debug mode toggle in Settings (default ON, user-configurable) |

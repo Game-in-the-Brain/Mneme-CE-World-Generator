@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import type { StarSystem } from '../types';
-import { Upload, Download, Trash2, FileJson, Info, Search, Eye, ChevronLeft, ChevronRight, Database } from 'lucide-react';
+import { Upload, Download, Trash2, FileJson, Info, Search, Eye, ChevronLeft, ChevronRight, Database, Bug } from 'lucide-react';
 // @ts-ignore - lucide-react types
 
 interface SettingsProps {
@@ -21,6 +21,16 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Debug mode toggle (QA-014)
+  const [debugMode, setDebugMode] = useState(() => {
+    const stored = localStorage.getItem('mneme_debug_mode');
+    return stored !== null ? stored === 'true' : true; // Default ON
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mneme_debug_mode', debugMode.toString());
+  }, [debugMode]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -275,6 +285,37 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
         </div>
       </div>
 
+      {/* Debug Mode Toggle (QA-014) */}
+      <div className="card space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Bug className="text-[#e53935]" size={20} />
+          Debug Mode
+        </h3>
+        <div className="p-4 bg-white/5 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium">Debug Batch Export</h4>
+              <p className="text-sm text-[#9e9e9e]">
+                Show statistical analysis tools on the Generator page
+              </p>
+              <p className="text-xs text-[#9e9e9e] mt-1">
+                Note: Switch off to hide debug tools in production
+              </p>
+            </div>
+            <button
+              onClick={() => setDebugMode(!debugMode)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                debugMode
+                  ? 'bg-[#e53935] text-white'
+                  : 'bg-white/10 text-[#9e9e9e] hover:bg-white/20'
+              }`}
+            >
+              {debugMode ? 'ON' : 'OFF'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* About */}
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -291,7 +332,7 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
             star systems with procedural generation using dice-based mechanics.
           </p>
           <div className="pt-2 border-t border-white/10">
-            <p>Version: 1.2.0</p>
+            <p>Version: 1.3.0 (2026-04-10)</p>
             <p>Data stored locally in your browser</p>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType } from '../types';
 import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 // @ts-ignore - lucide-react types
@@ -201,8 +201,8 @@ export function GeneratorDashboard({
           )}
         </button>
 
-        {/* Debug Batch Export — DEV ONLY (QA-012) */}
-        {import.meta.env.DEV && <DebugBatchExport />}
+        {/* Debug Batch Export — toggleable in Settings (QA-012, QA-014) */}
+        <DebugBatchExportWrapper />
       </div>
 
       {/* Quick Stats */}
@@ -295,8 +295,36 @@ function FeatureCard({ title, description }: { title: string; description: strin
 }
 
 // =====================
-// Debug Batch Export Component (QA-012)
+// Debug Batch Export Component (QA-012, QA-014)
 // =====================
+
+function DebugBatchExportWrapper() {
+  const [debugMode, setDebugMode] = useState(() => {
+    const stored = localStorage.getItem('mneme_debug_mode');
+    return stored !== null ? stored === 'true' : true; // Default ON
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem('mneme_debug_mode');
+      setDebugMode(stored !== null ? stored === 'true' : true);
+    };
+
+    // Listen for storage changes (when Settings toggles the value)
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically since storage events don't fire in same tab
+    const interval = setInterval(handleStorageChange, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  if (!debugMode) return null;
+  return <DebugBatchExport />;
+}
 
 function DebugBatchExport() {
   const [batchSize, setBatchSize] = useState(40);
