@@ -203,7 +203,7 @@ Produces antimatter to power jump gates." />
           <GlossaryEntry term="Divergent Humans" unit="MTL 14 first contact"
             def="Humans from outside Sol who used Xeno-Surrogacy technology (early FTL) to colonise other stars independently. 200+ years of accelerated growth and freedom allowed populations to reach tens of millions to billions. First contact with Sol at MTL 14, followed by convergent technology exchange. Distinct from Variant Humans (Sol gene-gineered)." />
           <GlossaryEntry term="Great Trees"   unit="Space elevator megastructure"
-            def="Fixed space elevator megastructures (MTL 13) that grow to enormous scale. Cultural term varies — Great Trees is one of many names used across human cultures. Become self-directed by MTL 16, capable of jumping between star systems." />
+            def="Fixed space elevator megastructures (MTL 13) that grow to enormous scale. Based on Bradley C. Edwards' designs — only viable for >1G world escape by 24th century. Cultural term varies — Great Trees is one of many names used across human cultures. Become self-directed by MTL 16, capable of jumping between star systems." />
           <GlossaryEntry term="Jovian Hammers" unit="MTL 12 industry"
             def="Industrial spacecraft skimming Jupiter's atmosphere to harvest materials
 only producible under gas-giant conditions." />
@@ -212,14 +212,15 @@ only producible under gas-giant conditions." />
           <GlossaryEntry term="Variant Humans" unit="MTL 9–10 Sol gene-engineered"
             def="Human populations gene-gineered in the Sol system for specific environments — high gravity, void adaptation, extreme temperatures. Begins with Xeno-Surrogacy at MTL 9; branches into specialised forms (Jovian, Voidborn, etc.) by MTL 11. Distinct from Divergent Humans (outside Sol)." />
           <GlossaryEntry term="Spiral Ships"  unit="MTL 15–16 colony vessels"
-            def="Self-directed CNT colony vessels that jump to new stars and spawn further
-ships. Generated primarily by the Jovian economy." />
+            def="CNT space elevators twisted into a spiral O'Neill cylinder configuration to fit Jump Gates or to Jump themselves. Self-directed colony vessels that travel to new stars and spawn further ships. Generated primarily by the Jovian economy." />
           <GlossaryEntry term="Voidborn"      unit="MTL 10 social class"
             def="Humans born and raised entirely in space with no planetary origin. The first
 generation for whom Earth is an abstraction. Emerges as a distinct population at MTL 10." 
 />
           <GlossaryEntry term="World Serpents" unit="Particle accelerator megastructure"
             def="Particle accelerators placed on the jet streams of solar winds (radiation belts) of high-gravity objects — Jupiter has the largest due to its massive magnetosphere, Earth has one due to its strong magnetic field. Named after great serpents from mythology (Bakunawa, Antaboga, Jörmungandr, etc.). Create antimatter to power jump gates. Mobile, self-extending variants unfold between star systems at MTL 13; become autonomous at MTL 16." />
+          <GlossaryEntry term="Terraforming Worms" unit="MTL 9–13 biological engineering"
+            def="Gene-gineered organisms (beasts great and small) that process seeded microbiomes and minerals to terraform worlds. Slow down as they grow larger. Used primarily on low-G worlds, dwarf worlds, and ice worlds where biological alteration is preferred over mechanical terraforming. Not all colonies preserve native biomes." />
         </GlossarySection>
 
       <GlossarySection title="Dice Notation">

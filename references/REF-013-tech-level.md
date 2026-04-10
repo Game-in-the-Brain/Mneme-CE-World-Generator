@@ -86,7 +86,7 @@ These entries predate the TL system but provide civilisational context.
 
 **Divergent Humans** — Humans from outside Sol who used Xeno-Surrogacy technology (early FTL, 23rd century) to colonise other stars independently. 200+ years of accelerated growth allowed populations to reach tens of millions to billions. First contact with Sol at TL 14, followed by convergent technology exchange. Distinct from Variant Humans (Sol gene-gineered).
 
-**Great Trees** — Fixed space elevator megastructures (TL 13) that grow to enormous scale. One of many cultural names for such structures. Become self-directed by TL 16, capable of jumping between star systems.
+**Great Trees** — Fixed space elevator megastructures (TL 13) based on Bradley C. Edwards' designs. Only viable method to escape >1G worlds by 24th century. One of many cultural names for such structures. Become self-directed by TL 16, capable of jumping between star systems.
 
 **Göbekli Tepe** — A real archaeological site in present-day Turkey (~9600 BCE), demonstrating that organised large-scale construction existed thousands of years before agriculture — challenging conventional models of civilisational development.
 
@@ -98,6 +98,8 @@ These entries predate the TL system but provide civilisational context.
 
 **Variant Humans** — Human populations gene-gineered in the Sol system for specific environments — high gravity, void adaptation, extreme temperatures. Begins with Xeno-Surrogacy at TL 9; branches into specialised forms (Jovian, Voidborn, etc.) by TL 11. Distinct from Divergent Humans (outside Sol).
 
+**Terraforming Worms** — Gene-gineered organisms (beasts great and small) that process seeded microbiomes and minerals to terraform worlds (TL 9–13). Slow down as they grow larger. Used primarily on low-G worlds, dwarf worlds, and ice worlds where biological alteration is preferred over mechanical terraforming. Not all colonies preserve native biomes.
+
 **Jump Gate / World Serpent** — Instantaneous travel infrastructure. Jump gates are fixed installations at major Lagrange points. World Serpents are particle accelerators placed on radiation belts (jet streams of solar winds) of high-gravity objects — Jupiter has the largest, Earth has one due to strong magnetic field. Named after great serpents from mythology. Create antimatter to power jump gates. Mobile variants unfold between star systems at TL 13; become autonomous by TL 16.
 
 **Lagrange Points** — Five gravitationally stable positions in a two-body system (e.g. Earth-Moon, Jupiter-Sun). Key sites for space stations, manufacturing, and jump gate construction.
@@ -106,7 +108,7 @@ These entries predate the TL system but provide civilisational context.
 
 **Skyhook** — A tether-based space launch system anchored in orbit, enabling cheap mass transit to space without a conventional rocket. Proliferates at TL 10.
 
-**Spiral Ships** — Self-directed CNT colony vessels that jump to new stars and spawn further ships. Generated primarily by the Jovian economy at TL 15–16.
+**Spiral Ships** — CNT space elevators twisted into a spiral O'Neill cylinder configuration to fit Jump Gates or to Jump themselves. Self-directed colony vessels that travel to new stars and spawn further ships. Generated primarily by the Jovian economy at TL 15–16.
 
 **Voidborn** — Humans born and raised in space with no planetary origin. A distinct social and biological population emerging at TL 10.
 
