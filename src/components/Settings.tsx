@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import type { StarSystem } from '../types';
 import { Upload, Download, Trash2, FileJson, Info, Search, Eye, ChevronLeft, ChevronRight, Database, Bug } from 'lucide-react';
+import { APP_VERSION } from '../lib/version';
 // @ts-ignore - lucide-react types
 
 interface SettingsProps {
@@ -332,7 +333,7 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
             star systems with procedural generation using dice-based mechanics.
           </p>
           <div className="pt-2 border-t border-white/10">
-            <p>Version: 1.3.0 (2026-04-10)</p>
+            <p>Version: {APP_VERSION} (2026-04-10)</p>
             <p>Data stored locally in your browser</p>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import type { ViewMode } from '../types';
 import { Home, Settings, Sun, Moon, Smartphone, BookOpen } from 'lucide-react';
+import { APP_VERSION } from '../lib/version';
 // @ts-ignore - lucide-react types
 
 export type Theme = 'dark' | 'day' | 'phone';
@@ -39,6 +40,7 @@ export function Navigation({ currentView, onViewChange, theme, onThemeChange }: 
             <span className="font-bold text-lg tracking-wider">
               MNEME <span className="text-[#e53935]">CE</span>
             </span>
+            <span className="text-[10px] text-[#9e9e9e] ml-1 opacity-60">v{APP_VERSION}</span>
           </div>
 
           {/* Nav items */}
