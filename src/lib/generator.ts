@@ -262,8 +262,8 @@ function generateMainWorld(
     size,
     lesserEarthType,
     gravity,
-    radius: Math.round(size * 0.8 * 100) / 100,
-    escapeVelocity: Math.round(Math.sqrt(2 * gravity * size * 0.1) * 100) / 100,
+    radius: Math.round(size * 0.5 * 100) / 100,  // radius = diameter / 2
+    escapeVelocity: Math.round(Math.sqrt(2 * gravity * 9.81 * (size * 500)) / 1000 * 100) / 100,  // v = sqrt(2 * g_m_s2 * r_m) in km/s
     atmosphere: atmoResult.type,
     atmosphereTL: atmoResult.tl,
     temperature: tempResult.type,
