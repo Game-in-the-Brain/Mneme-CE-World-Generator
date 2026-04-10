@@ -15,7 +15,7 @@ import {
   getLesserEarthType, getDwarfGravity, getTerrestrialGravity,
   getAtmosphere, getTemperatureModifier, getTemperature,
   getHazard, getHazardIntensity, getBiochemicalResources,
-  getTechLevel, calculatePopulation,
+  getTechLevel, calculatePopulation, calculateTotalHabitability,
   getWealth, getPowerStructure, getDevelopment, getSourceOfPower,
   getGovernanceDM, calculateStarport, rollForBase, determineTravelZone,
   generateCultureTraits, getBodyCount, getGasWorldClass, calculateWorldPosition,
@@ -228,12 +228,20 @@ function generateMainWorld(
   const bioRoll = roll2D6().value;
   const bioResult = getBiochemicalResources(bioRoll);
 
-  const totalHabitability = gravityHabitability +
-    atmoResult.habitability +
-    tempResult.habitability +
-    hazardResult.habitability +
-    intensityResult.habitability +
-    bioResult.habitability;
+  // Generate Tech Level early so it can affect habitability (QA-009 fix)
+  const tlRoll = roll2D6().value;
+  const techLevel = getTechLevel(tlRoll);
+
+  // Calculate habitability WITH Tech Level modifier (QA-009 fix)
+  const totalHabitability = calculateTotalHabitability(
+    gravityHabitability,
+    atmoResult.habitability,
+    tempResult.habitability,
+    hazardResult.habitability,
+    intensityResult.habitability,
+    bioResult.habitability,
+    techLevel  // Now includes TL modifier
+  );
 
   const position = calculateWorldPosition(atmoResult.type, tempResult.type, primaryStar.luminosity);
 
@@ -252,7 +260,8 @@ function generateMainWorld(
     hazardIntensity: intensityResult.intensity,
     hazardIntensityTL: intensityResult.tl,
     biochemicalResources: bioResult.level,
-    habitability: Math.round(totalHabitability * 10) / 10,
+    techLevel,  // Store TL in mainWorld for use by inhabitants
+    habitability: totalHabitability,
     zone: position.zone,
     distanceAU: position.distanceAU,
   };
@@ -279,8 +288,8 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
     };
   }
 
-  const tlRoll = roll2D6().value;
-  const techLevel = getTechLevel(tlRoll);
+  // Use Tech Level from MainWorld (QA-009 fix) — TL affects habitability
+  const techLevel = mainWorld.techLevel;
 
   // Population fork: natural surface population vs artificial habitat (QA — Hab ≤ 0)
   let population: number;
@@ -345,14 +354,184 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
 // Planetary System Generation
 // =====================
 
+// Hill sphere factor — bodies must be separated by at least this multiple of Hill radius
+const HILL_FACTOR = 1.5;
+
+// Minimum floor separation regardless of Hill sphere (QA-006)
+const MIN_FLOOR_AU_INNER = 0.05;  // Infernal, Hot, Conservative, Cold zones
+const MIN_FLOOR_AU_OUTER = 0.15;  // Outer zone
+
+/**
+ * Calculate Hill sphere radius in AU for a body.
+ * @param a — semi-major axis (AU)
+ * @param m — body mass (Earth masses)
+ * @param M — star mass (Solar masses)
+ */
+function hillSphereAU(a: number, m: number, M: number): number {
+  // Hill sphere ≈ a * (m / 3M)^(1/3)
+  // m is in Earth masses, M is in Solar masses
+  // 1 Solar mass = 332,946 Earth masses
+  const mSolar = m / 332946; // Convert Earth masses to Solar masses
+  const ratio = mSolar / (3 * M);
+  if (ratio <= 0) return 0;
+  return a * Math.cbrt(ratio);
+}
+
+/**
+ * Calculate minimum required separation between two bodies.
+ */
+function minSeparationAU(a1: number, m1: number, a2: number, m2: number, M: number): number {
+  const h1 = hillSphereAU(a1, m1, M);
+  const h2 = hillSphereAU(a2, m2, M);
+  return Math.max(h1, h2) * HILL_FACTOR;
+}
+
+/**
+ * Apply Hot Jupiter migration: Class III in Infernal, or Class IV/V in Hot,
+ * clears that zone of all other non-disk bodies (QA-011).
+ */
+function applyHotJupiterMigration(
+  bodies: PlanetaryBody[]
+): { bodies: PlanetaryBody[]; clearedZones: Zone[] } {
+  const clearedZones: Zone[] = [];
+
+  // Find hot jupiters: Gas III in Infernal, Gas IV/V in Hot
+  const hotJupiters = bodies.filter(b => {
+    if (b.type !== 'gas') return false;
+    if (b.zone === 'Infernal' && b.gasClass === 'III') return true;
+    if (b.zone === 'Hot' && (b.gasClass === 'IV' || b.gasClass === 'V')) return true;
+    return false;
+  });
+
+  if (hotJupiters.length === 0) return { bodies, clearedZones };
+
+  // Collect zones to clear
+  hotJupiters.forEach(hj => {
+    if (!clearedZones.includes(hj.zone)) clearedZones.push(hj.zone);
+  });
+
+  // Remove all non-disk, non-hot-jupiter bodies from cleared zones
+  const filtered = bodies.filter(b => {
+    if (b.type === 'disk') return true;
+    if (hotJupiters.some(hj => hj.id === b.id)) return true;
+    return !clearedZones.includes(b.zone);
+  });
+
+  // Roll for one captured rogue per cleared zone (2D6 >= 11)
+  for (const zone of clearedZones) {
+    const captureRoll = roll2D6().value;
+    if (captureRoll >= 11) {
+      // Add one small rogue world (0.1-0.5 EM)
+      const rogue: PlanetaryBody = {
+        id: uuidv4(),
+        type: 'dwarf',
+        mass: Math.round((0.1 + Math.random() * 0.4) * 10000) / 10000,
+        zone,
+        distanceAU: 0, // Will be placed by placement algorithm
+        lesserEarthType: 'Carbonaceous',
+      };
+      filtered.push(rogue);
+    }
+  }
+
+  return { bodies: filtered, clearedZones };
+}
+
+/**
+ * Resolve spacing conflicts using Hill sphere calculations with minimum floor (QA-006).
+ */
+function resolveConflicts(
+  bodies: PlanetaryBody[],
+  starMass: number
+): PlanetaryBody[] {
+  if (bodies.length === 0) return bodies;
+  
+  const sorted = [...bodies].sort((a, b) => a.distanceAU - b.distanceAU);
+  const resolved: PlanetaryBody[] = [];
+
+  for (const body of sorted) {
+    if (resolved.length === 0) {
+      resolved.push(body);
+      continue;
+    }
+
+    // Find the previous body that would create a conflict
+    const prev = resolved[resolved.length - 1];
+    
+    // Calculate minimum required separation
+    const isOuter = body.zone === 'Outer' || prev.zone === 'Outer';
+    const minFloor = isOuter ? MIN_FLOOR_AU_OUTER : MIN_FLOOR_AU_INNER;
+    
+    // Hill sphere based separation
+    const hillSep = minSeparationAU(
+      prev.distanceAU, prev.mass,
+      body.distanceAU, body.mass,
+      starMass
+    );
+    
+    // Use the larger of Hill separation or floor
+    const requiredSep = Math.max(hillSep, minFloor);
+    
+    const actualSep = body.distanceAU - prev.distanceAU;
+    
+    if (actualSep < requiredSep) {
+      // Push this body outward to meet the separation requirement
+      const newAU = Math.round((prev.distanceAU + requiredSep) * 100) / 100;
+      resolved.push({ ...body, distanceAU: newAU });
+    } else {
+      resolved.push(body);
+    }
+  }
+
+  return resolved;
+}
+
+/**
+ * Verify spacing and log any violations for debugging.
+ */
+function verifySpacing(
+  bodies: PlanetaryBody[],
+  starMass: number
+): { violations: number; log: string[] } {
+  const sorted = [...bodies].sort((a, b) => a.distanceAU - b.distanceAU);
+  const violations: string[] = [];
+  let violationCount = 0;
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const a = sorted[i];
+    const b = sorted[i + 1];
+    const sep = Math.abs(b.distanceAU - a.distanceAU);
+    const isOuter = a.zone === 'Outer' || b.zone === 'Outer';
+    const minFloor = isOuter ? MIN_FLOOR_AU_OUTER : MIN_FLOOR_AU_INNER;
+    const hillSep = minSeparationAU(a.distanceAU, a.mass, b.distanceAU, b.mass, starMass);
+    const minSep = Math.max(hillSep, minFloor);
+    
+    if (sep < minSep - 0.001) { // Small epsilon for floating point
+      violationCount++;
+      violations.push(
+        `HILL VIOLATION: ${a.type} @ ${a.distanceAU.toFixed(2)} AU and ${b.type} @ ${b.distanceAU.toFixed(2)} AU — sep=${sep.toFixed(4)}, min=${minSep.toFixed(4)} (Hill=${hillSep.toFixed(4)}, floor=${minFloor})`
+      );
+    }
+  }
+
+  // Log violations in dev mode
+  if (import.meta.env.DEV && violations.length > 0) {
+    console.warn(`[QA-006] ${violationCount} Hill sphere spacing violations:`);
+    violations.forEach(v => console.warn('  ' + v));
+  }
+
+  return { violations: violationCount, log: violations };
+}
+
 function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
   const stellarClass = primaryStar.class;
+  const starMass = primaryStar.mass;
 
-  const disks: PlanetaryBody[] = [];
+  let disks: PlanetaryBody[] = [];
   let dwarfs: PlanetaryBody[] = [];
   let terrestrials: PlanetaryBody[] = [];
   let ices: PlanetaryBody[] = [];
-  const gases: PlanetaryBody[] = [];
+  let gases: PlanetaryBody[] = [];
 
   // Generate bodies, passing stellarClass for Adv/Dis modifiers (QA-007)
   const diskCount = getBodyCount('disk', stellarClass);
@@ -380,31 +559,34 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
     gases.push(generateBody('gas', primaryStar, zones));
   }
 
-  // Hot Jupiter migration sweep (QA-011):
-  // Class III gas in Infernal zone, or Class IV/V gas in Hot zone,
-  // clears that zone of all other non-disk bodies.
-  const hotJupiterZones = new Set<Zone>();
-  for (const gas of gases) {
-    if (gas.gasClass === 'III' && gas.zone === 'Infernal') hotJupiterZones.add('Infernal');
-    if ((gas.gasClass === 'IV' || gas.gasClass === 'V') && gas.zone === 'Hot') hotJupiterZones.add('Hot');
-  }
-  if (hotJupiterZones.size > 0) {
-    dwarfs = dwarfs.filter(b => !hotJupiterZones.has(b.zone));
-    terrestrials = terrestrials.filter(b => !hotJupiterZones.has(b.zone));
-    ices = ices.filter(b => !hotJupiterZones.has(b.zone));
-    // Optional: roll for one captured rogue per cleared zone (2D6 >= 11)
-    for (const zone of hotJupiterZones) {
-      if (roll2D6().value >= 11) {
-        const rogue = generateBody('dwarf', primaryStar, zones);
-        dwarfs.push({ ...rogue, zone });
-      }
-    }
-  }
-
-  // Enforce minimum orbital separation across all bodies (QA-006)
-  const allBodies = enforceMinimumSeparation([
+  // Combine all bodies for Hot Jupiter processing
+  let allBodies: PlanetaryBody[] = [
     ...disks, ...dwarfs, ...terrestrials, ...ices, ...gases,
-  ]);
+  ];
+
+  // Apply Hot Jupiter migration sweep BEFORE spacing enforcement (QA-011)
+  const hjResult = applyHotJupiterMigration(allBodies);
+  allBodies = hjResult.bodies;
+
+  // Enforce Hill sphere spacing with minimum floor (QA-006)
+  allBodies = resolveConflicts(allBodies, starMass);
+
+  // Verify spacing and log violations
+  const spacingCheck = verifySpacing(allBodies, starMass);
+
+  // Log summary in dev mode
+  if (import.meta.env.DEV) {
+    console.log('[Planetary System] Generated:', {
+      total: allBodies.length,
+      disks: allBodies.filter(b => b.type === 'disk').length,
+      dwarfs: allBodies.filter(b => b.type === 'dwarf').length,
+      terrestrials: allBodies.filter(b => b.type === 'terrestrial').length,
+      ices: allBodies.filter(b => b.type === 'ice').length,
+      gases: allBodies.filter(b => b.type === 'gas').length,
+      hotJupiterCleared: hjResult.clearedZones,
+      hillViolations: spacingCheck.violations,
+    });
+  }
 
   return {
     disks:        allBodies.filter(b => b.type === 'disk'),
@@ -413,31 +595,6 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
     ices:         allBodies.filter(b => b.type === 'ice'),
     gases:        allBodies.filter(b => b.type === 'gas'),
   };
-}
-
-/**
- * After generation, sort all bodies by AU and push any that are too close
- * outward by the minimum separation floor (QA-006).
- * Minimum separations:
- *   - Inner zones (Infernal/Hot/Conservative/Cold): 0.05 AU
- *   - Outer zone: 0.2 AU
- */
-function enforceMinimumSeparation(bodies: PlanetaryBody[]): PlanetaryBody[] {
-  if (bodies.length === 0) return bodies;
-  const sorted = [...bodies].sort((a, b) => a.distanceAU - b.distanceAU);
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = sorted[i - 1];
-    const curr = sorted[i];
-    const isOuter = curr.zone === 'Outer' || prev.zone === 'Outer';
-    const minSep = isOuter ? 0.2 : 0.05;
-    if (curr.distanceAU - prev.distanceAU < minSep) {
-      sorted[i] = {
-        ...sorted[i],
-        distanceAU: Math.round((prev.distanceAU + minSep) * 100) / 100,
-      };
-    }
-  }
-  return sorted;
 }
 
 function generateBody(type: BodyType, primaryStar: Star, _zones: ZoneBoundaries): PlanetaryBody {

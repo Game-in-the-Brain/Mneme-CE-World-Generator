@@ -71,6 +71,9 @@ export interface MainWorld {
   
   biochemicalResources: ResourceLevel;
   
+  // QA-009: Tech Level affects habitability, so it's stored in MainWorld
+  techLevel: number;
+  
   habitability: number;
   
   zone: Zone;
