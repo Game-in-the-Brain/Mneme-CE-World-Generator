@@ -245,6 +245,18 @@ function generateMainWorld(
 
   const position = calculateWorldPosition(atmoResult.type, tempResult.type, primaryStar.luminosity);
 
+  // Component breakdown for debugging/analysis
+  const tlModifier = Math.max(0, Math.min(9, techLevel - 7));
+  const habitabilityComponents = {
+    gravity: gravityHabitability,
+    atmosphere: atmoResult.habitability,
+    temperature: tempResult.habitability,
+    hazard: hazardResult.habitability,
+    hazardIntensity: intensityResult.habitability,
+    biochem: bioResult.habitability,
+    techLevel: tlModifier,
+  };
+
   return {
     type: worldType,
     size,
@@ -262,6 +274,7 @@ function generateMainWorld(
     biochemicalResources: bioResult.level,
     techLevel,  // Store TL in mainWorld for use by inhabitants
     habitability: totalHabitability,
+    habitabilityComponents,
     zone: position.zone,
     distanceAU: position.distanceAU,
   };

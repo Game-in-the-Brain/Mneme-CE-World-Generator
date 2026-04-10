@@ -76,6 +76,17 @@ export interface MainWorld {
   
   habitability: number;
   
+  // Component breakdown for debugging/analysis
+  habitabilityComponents?: {
+    gravity: number;
+    atmosphere: number;
+    temperature: number;
+    hazard: number;
+    hazardIntensity: number;
+    biochem: number;
+    techLevel: number;
+  };
+  
   zone: Zone;
   distanceAU: number;
 }

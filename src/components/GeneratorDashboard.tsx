@@ -350,6 +350,8 @@ function DebugBatchExport() {
           biochemResources: system.mainWorld.biochemicalResources,
           techLevel: system.mainWorld.techLevel,
           habitability: system.mainWorld.habitability,
+          // Component breakdown for analysis
+          habitabilityComponents: system.mainWorld.habitabilityComponents,
           population: system.inhabitants.population,
           zone: system.mainWorld.zone,
           au: system.mainWorld.distanceAU,

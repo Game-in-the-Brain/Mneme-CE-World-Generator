@@ -573,13 +573,34 @@ export function getBodyCount(
       );
     }
     case 'ice': {
-      // 2D3 - 2 — no class modifier
+      // 2D3 - 2 with Adv/Dis (ice worlds use D3 not D6)
+      // For 2D3-2: Adv = MORE bodies (keep highest), Dis = FEWER bodies (keep lowest)
+      if (advExtra > 0) {
+        const rolls = Array.from({ length: 2 + advExtra }, () => Math.floor(Math.random() * 3) + 1);
+        rolls.sort((a, b) => b - a); // Sort descending
+        return Math.max(0, rolls[0] + rolls[1] - 2); // Keep highest 2
+      }
+      if (disExtra > 0) {
+        const rolls = Array.from({ length: 2 + disExtra }, () => Math.floor(Math.random() * 3) + 1);
+        rolls.sort((a, b) => a - b); // Sort ascending
+        return Math.max(0, rolls[0] + rolls[1] - 2); // Keep lowest 2
+      }
       const r1 = Math.floor(Math.random() * 3) + 1;
       const r2 = Math.floor(Math.random() * 3) + 1;
       return Math.max(0, r1 + r2 - 2);
     }
     case 'gas': {
-      // 2D3 - 2 — no class modifier
+      // 2D3 - 2 with Adv/Dis (gas worlds use D3 not D6)
+      if (advExtra > 0) {
+        const rolls = Array.from({ length: 2 + advExtra }, () => Math.floor(Math.random() * 3) + 1);
+        rolls.sort((a, b) => b - a);
+        return Math.max(0, rolls[0] + rolls[1] - 2);
+      }
+      if (disExtra > 0) {
+        const rolls = Array.from({ length: 2 + disExtra }, () => Math.floor(Math.random() * 3) + 1);
+        rolls.sort((a, b) => a - b);
+        return Math.max(0, rolls[0] + rolls[1] - 2);
+      }
       const r1 = Math.floor(Math.random() * 3) + 1;
       const r2 = Math.floor(Math.random() * 3) + 1;
       return Math.max(0, r1 + r2 - 2);
