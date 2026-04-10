@@ -165,7 +165,7 @@ class TestEscapeVelocityCorrectness(unittest.TestCase):
             ("Mars", 0.107, 3.93, 5.03, 0.3),
             ("Earth", 1.0, 5.51, 11.2, 0.5),
             ("Venus", 0.815, 5.24, 10.4, 0.5),
-            ("Jupiter core (10 EM)", 10, 5.0, 35.0, 5.0),
+            ("10 EM rocky world", 10, 5.0, 23.7, 2.0),  # ~2.15x Earth radius → ~2.15x velocity
         ]
         
         print(f"\n✓ Solar System bodies comparison:")
