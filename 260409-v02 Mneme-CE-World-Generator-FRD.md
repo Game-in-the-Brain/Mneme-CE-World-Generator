@@ -153,9 +153,23 @@ All rolls must be clearly displayed in the UI:
 |----------|-------|--------|-------|
 | `generatePrimaryStar()` | None | `{ class, grade, mass, luminosity }` | [REF-001: Stellar Tables](./references/REF-001-stellar-tables.md) |
 
-> 📷 **Visual Reference:** A stellar classification chart showing the colour spectrum of each class (O through M) is available in `references/Class-[X]-star.png`. This is displayed as a collapsible reference panel in the UI for users who have not memorised the class colours.
+#### Stellar Classification Visual Reference
+
+The seven stellar classes span from rare, extremely hot blue-white giants down to the ubiquitous cool red dwarfs. The icon for each class is shown below — colour and shape encode the spectral class at a glance.
+
+| Class | Icon | Colour | Temp (K) | Typical Luminosity | Habitability Notes |
+|-------|------|--------|----------|--------------------|--------------------|
+| O | ![O](./references/Class-O-star.png) | Pale violet / blue-white | > 30,000 | 10⁵ – 10⁶ L☉ | Intense UV — disks only; no stable habitable zone |
+| B | ![B](./references/Class-B-star.png) | Light blue | 10,000 – 30,000 | 10² – 10⁵ L☉ | Very short-lived; disks only |
+| A | ![A](./references/Class-A-star.png) | Blue-white / white | 7,500 – 10,000 | 5 – 100 L☉ | Disks only; short stellar lifetime |
+| F | ![F](./references/Class-F-star.png) | Yellow-white | 6,000 – 7,500 | 1.5 – 5 L☉ | Habitable zone possible; Adv+2 on planet count |
+| G | ![G](./references/Class-G-star.png) | Yellow (Sun-like) | 5,200 – 6,000 | 0.6 – 1.5 L☉ | Optimal for life; baseline (no modifier) |
+| K | ![K](./references/Class-K-star.png) | Yellow-orange | 3,700 – 5,200 | 0.1 – 0.6 L☉ | Tidally locked worlds possible; Dis+2 on planet count |
+| M | ![M](./references/Class-M-star.png) | Orange-red | < 3,700 | < 0.1 L☉ | Common; narrow habitable zone; Dis+4 on planet count |
+
+> **UI:** The full spectrum strip (all 7 classes left-to-right, O → M) is displayed as a persistent reference row on the Star section. The primary star's class is highlighted. Individual class images are at `public/references/Class-[X]-star.png`.
 >
-> ✅ **QA-003:** Star classification PNG now surfaced in UI as collapsible panel on the Star section. [See QA-003](./QA.md#qa-003)
+> ✅ **QA-003:** Star classification images surfaced in UI. [See QA-003](./QA.md#qa-003)
 
 ### 5.2 Zone Calculation
 
@@ -676,12 +690,13 @@ See [REF-007: Planetary Systems Table](./references/REF-007-planetary-systems-ta
 | Class | Modifier |
 |-------|----------|
 | F | Adv+2 |
-| G | Adv+1 |
-| K | None |
-| M | Dis+1 |
+| G | Baseline (no modifier) |
+| K | Dis+2 |
+| M | Dis+4 |
 | O, B, A | Disks only |
 
-> ✅ **QA-007:** Advantage/Disadvantage modifiers are now applied to body count rolls. O/B/A stars generate disks only. [See QA-007](./QA.md#qa-007)
+> ✅ **QA-007:** Advantage/Disadvantage modifiers applied to body count rolls. O/B/A stars generate disks only. [See QA-007](./QA.md#qa-007)
+> 🏠 **REF-007 v1.1 (House Rule):** G=Baseline, K=Dis+2, M=Dis+4. Effective 2026-04-10.
 
 ### 8.3 Gas World Classification
 

@@ -104,6 +104,16 @@
   min-height: 44px;
 }
 
+/* Nav bar buttons must NOT inherit the 44px touch target — they live in a fixed-height h-16 row */
+[data-theme="phone"] nav button {
+  min-height: unset;
+}
+
+/* Collapse nav text labels in phone mode to save header space */
+[data-theme="phone"] nav button span {
+  display: none !important;
+}
+
 [data-theme="phone"] .grid-cols-5 {
   grid-template-columns: repeat(2, 1fr) !important;
 }

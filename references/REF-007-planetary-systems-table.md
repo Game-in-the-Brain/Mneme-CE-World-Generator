@@ -2,7 +2,7 @@
 
 **Reference Document for:** [260409-v02 Mneme-CE-World-Generator-FRD.md](../260409-v02%20Mneme-CE-World-Generator-FRD.md)  
 **Section:** 8.2 Body Mass Generation  
-**Last Updated:** 2026-04-09
+**Last Updated:** 2026-04-10
 
 ---
 
@@ -17,10 +17,12 @@ Determines the mass of planetary bodies (disks, dwarf planets, terrestrial world
 | Stellar Class | Modifier |
 |---------------|----------|
 | F | Adv+2 |
-| G | Adv+1 |
-| K | None |
-| M | Dis+1 |
+| G | Baseline (no modifier) |
+| K | Dis+2 |
+| M | Dis+4 |
 | O, B, A | Disks only |
+
+> **House Rule REF-007 v1.1:** G-class is redefined as the baseline — no modifier. K escalated to Dis+2 (was None). M escalated to Dis+4 (was Dis+1 per book). F and O/B/A unchanged.
 
 ---
 
@@ -68,7 +70,7 @@ Determines the mass of planetary bodies (disks, dwarf planets, terrestrial world
 ## Examples
 
 ### Example 1: G-Class Star, Dwarf Planet Mass
-1. Modifier: Adv+1 → roll 3D6 keep 2
+1. Modifier: Baseline → roll 3D6 keep 2 (no advantage or disadvantage)
 2. Roll: [3, 5, 2] → keep 5, 3 = **8**
 3. Result: **1.5 LM** (Lunar Masses)
 

@@ -174,3 +174,5 @@ export interface GeneratorOptions {
   mainWorldType: WorldType | 'random';
   populated: boolean;
 }
+
+export type BodyAnnotations = Record<string, { name: string; notes: string }>;

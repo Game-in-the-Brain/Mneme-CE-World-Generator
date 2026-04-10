@@ -461,10 +461,13 @@ export const SOURCE_OF_POWER_DESCRIPTIONS: Record<PowerSource, { description: st
  * | Class | Modifier       |
  * |-------|---------------|
  * | F     | Adv+2          |
- * | G     | Adv+1          |
- * | K     | None           |
- * | M     | Dis+1          |
+ * | G     | Baseline       |
+ * | K     | Dis+2          |
+ * | M     | Dis+4          |
  * | O,B,A | Disks only     |
+ *
+ * House Rule REF-007 v1.1 — G is the new baseline (was Adv+1 per book).
+ * K escalated to Dis+2 (was None). M escalated to Dis+4 (was Dis+1).
  */
 export function getBodyCount(
   type: 'disk' | 'dwarf' | 'terrestrial' | 'ice' | 'gas',
@@ -482,8 +485,8 @@ export function getBodyCount(
     return rolls.slice(0, keep).reduce((s, r) => s + r, 0);
   }
 
-  const advExtra = stellarClass === 'F' ? 2 : stellarClass === 'G' ? 1 : 0;
-  const disExtra = stellarClass === 'M' ? 1 : 0;
+  const advExtra = stellarClass === 'F' ? 2 : 0;
+  const disExtra = stellarClass === 'M' ? 4 : stellarClass === 'K' ? 2 : 0;
 
   switch (type) {
     case 'disk': {

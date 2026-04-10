@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
-import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass } from '../types';
-import { FileJson, FileSpreadsheet, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations } from '../types';
+import { exportToDocx } from '../lib/exportDocx';
+import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 // @ts-ignore - lucide-react types
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatPopulation } from '../lib/format';
 import {
@@ -43,6 +44,36 @@ export function SystemViewer({ system, onExportJSON, onExportCSV, onGlossary }: 
     sectionRefs[id].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // Body annotations — persisted per system (localStorage)
+  const [annotations, setAnnotations] = useState<BodyAnnotations>({});
+
+  useEffect(() => {
+    const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
+    if (stored) {
+      try { setAnnotations(JSON.parse(stored) as BodyAnnotations); } catch { setAnnotations({}); }
+    } else {
+      setAnnotations({});
+    }
+  }, [system.id]);
+
+  const handleAnnotation = useCallback(
+    (id: string, field: 'name' | 'notes', value: string) => {
+      setAnnotations(prev => {
+        const next = {
+          ...prev,
+          [id]: { ...(prev[id] ?? { name: '', notes: '' }), [field]: value },
+        };
+        localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(next));
+        return next;
+      });
+    },
+    [system.id],
+  );
+
+  const handleExportDocx = useCallback(async () => {
+    await exportToDocx(system, annotations);
+  }, [system, annotations]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -67,6 +98,10 @@ export function SystemViewer({ system, onExportJSON, onExportCSV, onGlossary }: 
           <button onClick={onExportCSV} className="btn-secondary flex items-center gap-2">
             <FileSpreadsheet size={16} />
             CSV
+          </button>
+          <button onClick={handleExportDocx} className="btn-secondary flex items-center gap-2">
+            <FileText size={16} />
+            DOCX
           </button>
         </div>
       </div>
@@ -125,7 +160,7 @@ export function SystemViewer({ system, onExportJSON, onExportCSV, onGlossary }: 
           <Building style={{ color: 'var(--accent-red)' }} size={20} />
           Planetary System
         </h2>
-        <PlanetarySystemTab system={system} />
+        <PlanetarySystemTab system={system} annotations={annotations} onAnnotation={handleAnnotation} />
       </section>
 
       {onGlossary && (
@@ -303,9 +338,9 @@ const STAR_DESCRIPTIONS: Record<string, string> = {
   B: 'Hot blue giant — disks only, short stellar lifetime',
   A: 'White main sequence — disks only, borderline habitable',
   F: 'Yellow-white — habitable zone possible (Adv+2 planet count)',
-  G: 'Sun-like yellow — optimal for life (Adv+1 planet count)',
-  K: 'Orange dwarf — stable habitable zone, no modifier',
-  M: 'Red dwarf — narrow habitable zone, very common (Dis+1 planet count)',
+  G: 'Sun-like yellow — baseline star for planet count (no modifier)',
+  K: 'Orange dwarf — tidally locked worlds possible (Dis+2 planet count)',
+  M: 'Red dwarf — narrow habitable zone, sparse system (Dis+4 planet count)',
 };
 
 const SPECTRAL_CLASSES: StellarClass[] = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
@@ -628,7 +663,13 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
 // Planetary System Tab — with physical properties (QA-009)
 // ============================================================
 
-function PlanetarySystemTab({ system }: { system: StarSystem }) {
+function PlanetarySystemTab({
+  system, annotations, onAnnotation,
+}: {
+  system: StarSystem;
+  annotations: BodyAnnotations;
+  onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
+}) {
   const totalBodies =
     system.circumstellarDisks.length +
     system.dwarfPlanets.length +
@@ -663,7 +704,7 @@ function PlanetarySystemTab({ system }: { system: StarSystem }) {
         <h3 className="text-lg font-semibold mb-4">All Bodies by Distance</h3>
         <div className="space-y-2 max-h-[600px] overflow-y-auto">
           {allBodies.map((body, index) => (
-            <BodyRow key={body.id} body={body} index={index} />
+            <BodyRow key={body.id} body={body} index={index} annotations={annotations} onAnnotation={onAnnotation} />
           ))}
         </div>
       </div>
@@ -671,20 +712,31 @@ function PlanetarySystemTab({ system }: { system: StarSystem }) {
   );
 }
 
-// Individual body row with physical properties (QA-009) and formatted numbers (QA-004)
-function BodyRow({ body, index }: { body: PlanetaryBody & { typeLabel: string }; index: number }) {
+// Individual body row — always expandable; Name/Notes annotation fields + physical properties (QA-009)
+function BodyRow({
+  body, index, annotations, onAnnotation,
+}: {
+  body: PlanetaryBody & { typeLabel: string };
+  index: number;
+  annotations: BodyAnnotations;
+  onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const hasPhysics = body.radiusKm != null;
+  const ann = annotations[body.id] ?? { name: '', notes: '' };
 
   return (
     <div className="rounded text-sm" style={{ backgroundColor: 'var(--row-hover)' }}>
       <div
         className="flex items-center justify-between p-2 cursor-pointer"
-        onClick={() => hasPhysics && setExpanded(e => !e)}
+        onClick={() => setExpanded(e => !e)}
       >
         <div className="flex items-center gap-3">
           <span className="w-6" style={{ color: 'var(--text-secondary)' }}>{index + 1}</span>
-          <span className="font-medium">{body.typeLabel}</span>
+          <span className="font-medium">{ann.name || body.typeLabel}</span>
+          {ann.name && (
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{body.typeLabel}</span>
+          )}
           {body.gasClass && (
             <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--border-color)' }}>
               Class {body.gasClass}
@@ -700,18 +752,72 @@ function BodyRow({ body, index }: { body: PlanetaryBody & { typeLabel: string };
           <span className={`zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
           <span>{body.distanceAU} AU</span>
           <span>{formatValue(body.mass, 'M⊕')}</span>
-          {hasPhysics && (expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
+          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
       </div>
 
-      {/* Expanded physical properties (QA-009) */}
-      {expanded && hasPhysics && (
-        <div className="px-4 pb-3 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs border-t" style={{ borderColor: 'var(--border-color)' }}>
-          <PhysProp label="Density"         value={`${body.densityGcm3} g/cm³`} />
-          <PhysProp label="Radius"          value={`${formatNumber(body.radiusKm!)} km`} />
-          <PhysProp label="Diameter"        value={`${formatNumber(body.diameterKm!)} km`} />
-          <PhysProp label="Surface Gravity" value={`${body.surfaceGravityG} G`} />
-          <PhysProp label="Escape Velocity" value={`${formatNumber(body.escapeVelocityMs!)} m/s`} />
+      {expanded && (
+        <div className="px-4 pb-3 border-t space-y-3 pt-3" style={{ borderColor: 'var(--border-color)' }}>
+          {/* Name / Notes annotation fields */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label
+                className="text-xs block mb-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Custom Name
+              </label>
+              <input
+                type="text"
+                value={ann.name}
+                onChange={e => onAnnotation(body.id, 'name', e.target.value)}
+                onClick={e => e.stopPropagation()}
+                placeholder="e.g. Kepler Prime"
+                className="w-full text-xs"
+                style={{
+                  backgroundColor: 'var(--input-bg)',
+                  border: '1px solid var(--input-border)',
+                  color: 'var(--text-primary)',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                }}
+              />
+            </div>
+            <div>
+              <label
+                className="text-xs block mb-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Notes
+              </label>
+              <input
+                type="text"
+                value={ann.notes}
+                onChange={e => onAnnotation(body.id, 'notes', e.target.value)}
+                onClick={e => e.stopPropagation()}
+                placeholder="e.g. Mining colony, rich in iron"
+                className="w-full text-xs"
+                style={{
+                  backgroundColor: 'var(--input-bg)',
+                  border: '1px solid var(--input-border)',
+                  color: 'var(--text-primary)',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '4px',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Physical properties (QA-009) */}
+          {hasPhysics && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+              <PhysProp label="Density"         value={`${body.densityGcm3} g/cm³`} />
+              <PhysProp label="Radius"          value={`${formatNumber(body.radiusKm!)} km`} />
+              <PhysProp label="Diameter"        value={`${formatNumber(body.diameterKm!)} km`} />
+              <PhysProp label="Surface Gravity" value={`${body.surfaceGravityG} G`} />
+              <PhysProp label="Escape Velocity" value={`${formatNumber(body.escapeVelocityMs!)} m/s`} />
+            </div>
+          )}
         </div>
       )}
     </div>

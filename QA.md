@@ -159,9 +159,9 @@ All body count rolls used unmodified dice regardless of the primary star's class
 - `getBodyCount(type, stellarClass?)` updated with full Adv/Dis logic:
   - O/B/A: non-disk counts return 0 (disks only)
   - F: Adv+2 on dwarf and terrestrial counts
-  - G: Adv+1 on dwarf and terrestrial counts
-  - M: Dis+1 on dwarf and terrestrial counts
-  - K: no modifier
+  - G: Adv+1 on dwarf and terrestrial counts (REF-007 v1.1: updated to Baseline)
+  - M: Dis+4 on dwarf and terrestrial counts (REF-007 v1.1, escalated from Dis+1)
+  - K: Dis+2 on dwarf and terrestrial counts (REF-007 v1.1, escalated from None)
 - `generatePlanetarySystem()` now passes `primaryStar.class` to `getBodyCount()`
 
 ---
