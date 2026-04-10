@@ -76,7 +76,16 @@ export function Navigation({ currentView, onViewChange, theme, onThemeChange }: 
             <button
               onClick={cycleTheme}
               title={`Theme: ${THEME_LABEL[theme]} — click to cycle`}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[#9e9e9e] hover:text-white hover:bg-white/5 transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all"
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.backgroundColor = 'var(--row-hover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-secondary)';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               {THEME_ICON[theme]}
               <span className="hidden sm:inline text-sm">{THEME_LABEL[theme]}</span>
