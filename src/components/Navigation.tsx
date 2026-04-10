@@ -58,31 +58,26 @@ export function Navigation({ currentView, onViewChange, theme, onThemeChange }: 
               </button>
             ))}
 
-            {/* Theme selector — Dark/Day buttons + Phone toggle (QA-005) */}
+            {/* Theme selector — Dark/Day share space + Phone toggle (QA-005, QA-013) */}
             <div className="flex items-center gap-0.5">
-              {/* Desktop themes: Dark & Day */}
-              <button
-                onClick={() => onThemeChange('dark')}
-                title="Dark theme"
-                className={`p-2 rounded-lg transition-all ${
-                  theme === 'dark'
-                    ? 'bg-[#e53935] text-white'
-                    : 'text-[#9e9e9e] hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {THEME_ICON['dark']}
-              </button>
-              <button
-                onClick={() => onThemeChange('day')}
-                title="Day theme"
-                className={`p-2 rounded-lg transition-all ${
-                  theme === 'day'
-                    ? 'bg-[#e53935] text-white'
-                    : 'text-[#9e9e9e] hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {THEME_ICON['day']}
-              </button>
+              {/* Dark/Day toggle — occupy same space, switch icon based on current theme */}
+              {theme === 'day' ? (
+                <button
+                  onClick={() => onThemeChange('dark')}
+                  title="Switch to Dark theme"
+                  className="p-2 rounded-lg transition-all text-[#9e9e9e] hover:text-white hover:bg-white/5"
+                >
+                  {THEME_ICON['dark']}
+                </button>
+              ) : (
+                <button
+                  onClick={() => onThemeChange('day')}
+                  title="Switch to Day theme"
+                  className="p-2 rounded-lg transition-all text-[#9e9e9e] hover:text-white hover:bg-white/5"
+                >
+                  {THEME_ICON['day']}
+                </button>
+              )}
               {/* Phone layout toggle — click again to return to desktop */}
               <button
                 onClick={() => onThemeChange('phone')}

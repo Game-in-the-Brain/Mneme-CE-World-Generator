@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType } from '../types';
-import { Sparkles, ChevronRight, Clock } from 'lucide-react';
+import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 // @ts-ignore - lucide-react types
+
+// Import generator for batch export
+import { generateStarSystem } from '../lib/generator';
 
 interface GeneratorDashboardProps {
   onGenerate: (options: GeneratorOptions) => void;
@@ -197,6 +200,9 @@ export function GeneratorDashboard({
             </>
           )}
         </button>
+
+        {/* Debug Batch Export — DEV ONLY (QA-012) */}
+        {import.meta.env.DEV && <DebugBatchExport />}
       </div>
 
       {/* Quick Stats */}
@@ -284,6 +290,192 @@ function FeatureCard({ title, description }: { title: string; description: strin
     <div className="card">
       <h3 className="font-semibold mb-2">{title}</h3>
       <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{description}</p>
+    </div>
+  );
+}
+
+// =====================
+// Debug Batch Export Component (QA-012)
+// =====================
+
+function DebugBatchExport() {
+  const [batchSize, setBatchSize] = useState(40);
+  const [isExporting, setIsExporting] = useState(false);
+  const [lastStats, setLastStats] = useState<string | null>(null);
+
+  async function handleBatchExport() {
+    setIsExporting(true);
+    setLastStats(null);
+
+    const systems = [];
+    let totalHabitability = 0;
+    let hotJupiterCount = 0;
+
+    for (let i = 0; i < batchSize; i++) {
+      const system = generateStarSystem();
+      
+      // Accumulate statistics
+      totalHabitability += system.mainWorld.habitability;
+      
+      // Check for hot jupiter migration (look for cleared zones indicator in logs)
+      const hasHotJupiter = system.gasWorlds.some(g => 
+        (g.gasClass === 'III' && g.zone === 'Infernal') ||
+        ((g.gasClass === 'IV' || g.gasClass === 'V') && g.zone === 'Hot')
+      );
+      if (hasHotJupiter) hotJupiterCount++;
+
+      // Create simplified system record for batch export
+      const record = {
+        id: system.id,
+        generatedAt: new Date(system.createdAt).toISOString(),
+        
+        star: {
+          class: system.primaryStar.class,
+          grade: system.primaryStar.grade,
+          massSOL: system.primaryStar.mass,
+          luminosity: system.primaryStar.luminosity,
+          companionCount: system.companionStars.length,
+        },
+        
+        mainWorld: {
+          type: system.mainWorld.type,
+          sizeKM: system.mainWorld.size,
+          atmosphere: system.mainWorld.atmosphere,
+          atmosphereTL: system.mainWorld.atmosphereTL,
+          temperature: system.mainWorld.temperature,
+          temperatureTL: system.mainWorld.temperatureTL,
+          gravityG: system.mainWorld.gravity,
+          hazard: system.mainWorld.hazard,
+          hazardIntensity: system.mainWorld.hazardIntensity,
+          biochemResources: system.mainWorld.biochemicalResources,
+          techLevel: system.mainWorld.techLevel,
+          habitability: system.mainWorld.habitability,
+          population: system.inhabitants.population,
+          zone: system.mainWorld.zone,
+          au: system.mainWorld.distanceAU,
+        },
+        
+        inhabitants: {
+          populated: system.inhabitants.populated,
+          wealth: system.inhabitants.wealth,
+          powerStructure: system.inhabitants.powerStructure,
+          development: system.inhabitants.development,
+          sourceOfPower: system.inhabitants.sourceOfPower,
+          governanceDM: system.inhabitants.governance,
+          starportClass: system.inhabitants.starport.class,
+          travelZone: system.inhabitants.travelZone,
+        },
+        
+        planetarySystem: {
+          totalBodies: 
+            system.circumstellarDisks.length +
+            system.dwarfPlanets.length +
+            system.terrestrialWorlds.length +
+            system.iceWorlds.length +
+            system.gasWorlds.length,
+          disks: system.circumstellarDisks.length,
+          dwarfs: system.dwarfPlanets.length,
+          terrestrials: system.terrestrialWorlds.length,
+          ices: system.iceWorlds.length,
+          gases: system.gasWorlds.length,
+          hotJupiterPresent: hasHotJupiter,
+          bodies: [
+            ...system.circumstellarDisks.map(b => ({ type: 'disk', zone: b.zone, au: b.distanceAU, massEM: b.mass })),
+            ...system.dwarfPlanets.map(b => ({ type: 'dwarf', zone: b.zone, au: b.distanceAU, massEM: b.mass })),
+            ...system.terrestrialWorlds.map(b => ({ type: 'terrestrial', zone: b.zone, au: b.distanceAU, massEM: b.mass })),
+            ...system.iceWorlds.map(b => ({ type: 'ice', zone: b.zone, au: b.distanceAU, massEM: b.mass })),
+            ...system.gasWorlds.map(b => ({ type: 'gas', zone: b.zone, au: b.distanceAU, massEM: b.mass, gasClass: b.gasClass })),
+          ].sort((a, b) => a.au - b.au),
+        },
+      };
+      
+      systems.push(record);
+    }
+
+    const exportData = {
+      meta: {
+        generatedAt: new Date().toISOString(),
+        count: batchSize,
+        version: '1.2.0',
+        description: 'Mneme CE World Generator — batch statistical export (QA-012)',
+        statistics: {
+          meanHabitability: Math.round((totalHabitability / batchSize) * 100) / 100,
+          hotJupiterSystems: hotJupiterCount,
+          hotJupiterPercent: Math.round((hotJupiterCount / batchSize) * 100),
+        },
+      },
+      systems,
+    };
+
+    // Trigger download
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mneme-batch-${batchSize}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    setLastStats(`Mean Hab: ${(totalHabitability / batchSize).toFixed(2)} | Hot Jupiters: ${hotJupiterCount} (${Math.round((hotJupiterCount / batchSize) * 100)}%)`);
+    setIsExporting(false);
+  }
+
+  return (
+    <div 
+      className="mt-6 p-4 rounded-lg border border-dashed max-w-2xl mx-auto"
+      style={{ borderColor: 'var(--warning, #ff9800)', backgroundColor: 'rgba(255, 152, 0, 0.05)' }}
+    >
+      <p className="text-xs mb-3 font-medium" style={{ color: 'var(--warning, #ff9800)' }}>
+        DEV ONLY — Batch Statistical Export (QA-012)
+      </p>
+      <div className="flex gap-3 items-center flex-wrap">
+        <label className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+          Batch size:
+        </label>
+        <input
+          type="number"
+          min={1}
+          max={500}
+          value={batchSize}
+          onChange={(e) => setBatchSize(Math.max(1, Math.min(500, Number(e.target.value))))}
+          className="w-20 text-center text-sm rounded px-2 py-1"
+          style={{
+            backgroundColor: 'var(--bg-primary)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-primary)',
+          }}
+          disabled={isExporting}
+        />
+        <button
+          onClick={handleBatchExport}
+          disabled={isExporting}
+          className="text-sm px-4 py-2 rounded flex items-center gap-2 transition-opacity"
+          style={{
+            backgroundColor: 'var(--warning, #ff9800)',
+            color: '#000',
+            opacity: isExporting ? 0.5 : 1,
+          }}
+        >
+          {isExporting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download size={16} />
+              Export Batch JSON
+            </>
+          )}
+        </button>
+        {lastStats && (
+          <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            {lastStats}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

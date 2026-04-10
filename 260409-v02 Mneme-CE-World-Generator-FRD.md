@@ -93,6 +93,25 @@ A third theme optimised for narrow portrait screens.
 
 ---
 
+### 3.4 Theme Toggle UI
+
+To conserve header space, the Dark/Day theme buttons occupy the same position (toggle), with Phone as a separate button.
+
+| State | Icon | Click Action |
+|-------|------|--------------|
+| Dark mode | ☾ Moon | Switch to Day |
+| Day mode | ☀ Sun | Switch to Dark |
+| Phone mode | ▢ Smartphone | Return to previous desktop theme |
+
+**Behaviour:**
+- Only two buttons visible at any time (Day/Dark toggle + Phone)
+- Phone button highlighted red when active
+- Previous desktop theme remembered when switching to/from Phone
+
+> ✅ **QA-013:** Compact theme toggle implemented. [See QA-013](./QA.md#qa-013)
+
+---
+
 ### 3.2 Day Theme Palette
 
 | Element | Color | Hex |

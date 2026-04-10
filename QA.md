@@ -27,6 +27,8 @@
 | [QA-009](#qa-009) | Data Display | Body stats missing: mass, radius, diameter, surface gravity, escape velocity | 🔴 High | ✅ Fixed |
 | [QA-010](#qa-010) | UI | App is multi-page — should be single-page with tab anchors | 🟠 Medium | ✅ Fixed |
 | [QA-011](#qa-011) | Engine | Hot Jupiter migration rule not implemented — inner zone clearing | 🔴 High | ✅ Fixed |
+| [QA-012](#qa-012) | Dev Tool | Debug Batch Export button for statistical analysis | 🟡 Low | ✅ Fixed |
+| [QA-013](#qa-013) | UI | Theme toggle buttons — Dark/Day should share space to save header width | 🟡 Low | ✅ Fixed |
 
 ---
 
@@ -245,6 +247,52 @@ Pre-placement migration sweep added in `generatePlanetarySystem()`:
 
 ---
 
+### QA-012
+
+**Title:** Debug Batch Export button for statistical analysis  
+**Area:** Dev Tools — Data Export  
+**Priority:** 🟡 Low  
+**Status:** ✅ Fixed  
+**File(s):** `src/components/GeneratorDashboard.tsx`
+
+**Description:**  
+No way to generate multiple systems for bulk statistical analysis. Need a development-only batch export feature.
+
+**Fix Applied:**  
+- Added `DebugBatchExport` component (DEV mode only) below Generate button
+- Configurable batch size (default 40, max 500)
+- Exports full system data including:
+  - Star properties (class, grade, mass, luminosity)
+  - Main world habitability breakdown (atmosphere, temp, gravity, hazard, biochem, TL mods)
+  - Inhabitants data (wealth, government, starport, travel zone)
+  - Complete planetary system with all bodies
+  - Hot Jupiter flag per system
+- JSON download with metadata and summary statistics
+- Console logging of mean habitability and hot Jupiter frequency
+
+---
+
+### QA-013
+
+**Title:** Theme toggle buttons take too much header space — Dark/Day should share space  
+**Area:** UI — Navigation  
+**Priority:** 🟡 Low  
+**Status:** ✅ Fixed  
+**File(s):** `src/components/Navigation.tsx`
+
+**Description:**  
+Three theme buttons (Dark, Day, Phone) consumed significant header width. On smaller screens this caused layout issues.
+
+**Fix Applied:**  
+- Dark/Day now occupy the same button position (toggle behavior):
+  - When in Dark mode: show Sun icon → click switches to Day
+  - When in Day mode: show Moon icon → click switches to Dark
+- Phone remains as separate toggle button (always visible)
+- Phone button highlighted in red when active; clicking again returns to previous desktop theme
+- Saves ~40px of header width
+
+---
+
 ## Additional Feature Issues
 
 ---
@@ -289,3 +337,4 @@ CSV export format needed a formal specification.
 |---------|------|---------|
 | 1.0 | 2026-04-09 | Initial QA document — 11 bugs + 2 additional feature issues |
 | 1.1 | 2026-04-10 | All 11 bugs marked fixed; QA-ADD-001 fixed; QA-ADD-002 spec created |
+| 1.2 | 2026-04-10 | Added QA-012 (Debug Batch Export), QA-013 (compact theme toggle); Hill Sphere and Habitability fixes |
