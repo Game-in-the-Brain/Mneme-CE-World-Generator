@@ -259,6 +259,14 @@ npm run preview
 
 ---
 
+## Credits
+
+- **[GitHub](https://github.com)** — Repository hosting and GitHub Pages deployment
+- **[DeepSeek](https://deepseek.ai)** — AI code generation and technical assistance
+- **[Kimi](https://kimi.ai)** — AI development assistance and code review
+
+---
+
 ## Based On
 
 **Mneme World Generator** by Justin Cesar Aquino / Game in the Brain  
