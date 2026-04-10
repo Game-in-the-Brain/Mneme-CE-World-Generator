@@ -46,13 +46,13 @@ disks only." />
 zone possible. Adv+2 on planet count and mass rolls." />
         <GlossaryEntry term="Class G" unit="Yellow (Sun-like)"
           def="Temperature 5,200–6,000 K. Sun-like luminosity (0.6–1.5 L☉). Optimal for
-life. Adv+1 on planet count and mass rolls." />
+life. Baseline — no planet count modifier (REF-007 v1.1)." />
         <GlossaryEntry term="Class K" unit="Orange dwarf"
-          def="Temperature 3,700–5,200 K. Below-average luminosity (0.1–0.6 L☉). Good
-stable habitable zone. No modifier." />
+          def="Temperature 3,700–5,200 K. Below-average luminosity (0.1–0.6 L☉). Stable
+habitable zone; tidally locked worlds possible. Dis+2 on planet count (REF-007 v1.1)." />
         <GlossaryEntry term="Class M" unit="Red dwarf"
           def="Temperature < 3,700 K. Dim (< 0.1 L☉). Very common. Narrow habitable zone;
-tidally locked planets possible. Dis+1 on planet count and mass rolls." />
+tidally locked planets possible. Dis+4 on planet count (REF-007 v1.1)." />
         <GlossaryEntry term="Grade" unit="0–9"
           def="Luminosity subdivision within a class. Grade 0 is the most luminous within
 the class; Grade 9 is the least. A G0 star is brighter than a G9 star." />
@@ -128,10 +128,11 @@ gas giant class." />
       </GlossarySection>
 
       <GlossarySection title="Inhabitants &amp; Society">
-        <GlossaryEntry term="TL"         unit="Tech Level"
-          def="Technology Level — a scale from 7 to 16 representing the society's
-technological sophistication. TL 7 = Early Space Age (c.1950–2000); TL 16 =
-Self-Sufficient Megastructures." />
+        <GlossaryEntry term="TL / MTL"   unit="Tech Level"
+          def="Mneme Technology Level — a scale from 9 to 18 representing the society's
+technological and civilisational sophistication. MTL 9 = New Space Race (c.2050); MTL 16 =
+Self-Sufficient Megastructures (c.2700+). Each level includes a Cepheus Engine CE TL
+equivalent, era name, and key technologies. See the Technology Levels section below." />
         <GlossaryEntry term="PVS"        unit="Port Value Score"
           def="Port Value Score — an internal calculated value used to determine starport
 class. Formula: (Habitability ÷ 4) + (TL − 7) + Wealth modifier + Development modifier."
@@ -161,6 +162,69 @@ specific purpose." />
 negative DM = worse outcome. The Governance DM reflects how effectively a society is
 administered." />
       </GlossarySection>
+
+        <GlossarySection title="Technology Levels (MTL)">
+          <GlossaryEntry term="MTL 9"  unit="2050 CE — New Space Race"
+            def="Reliable orbit access, maker era, companion AI, graphene fibre, orbital
+manufacturing, Lunar colonisation. Xeno-surrogacy and human gene-engineering emerge. CE TL
+7.0." />
+          <GlossaryEntry term="MTL 10" unit="2100 CE — Cis-Lunar Development"
+            def="Skyhook networks, Lagrange manufacturing, Lunar Frontier Economy. Voidborn
+colonisation begins. Combined Cis-Lunar economy exceeds any single nation on Earth. CE TL
+8.0." />
+          <GlossaryEntry term="MTL 11" unit="2200 CE — Interplanetary Settlement"
+            def="Space economy surpasses Earth. Jupiter colonisation via Carbon Nanotube
+construction. Jovian Variant humans. Space elevators. Jovian economy surpasses Cis-Lunar.
+CE TL 8.5." />
+          <GlossaryEntry term="MTL 12" unit="2300 CE — Post-Earth Dependence"
+            def="Early jump gate at Jupiter/Sol Lagrange. Jovian Hammers harvest Jupiter's
+atmosphere. The Bakunawa/Antaboga Coil (898,394 km particle accelerator) creates antimatter
+for jump gates. CE TL 9.0." />
+          <GlossaryEntry term="MTL 13" unit="2400 CE — Outer System Development"
+            def="World Serpents and jump gates connect star systems. Great Trees and
+Celestials terraform worlds. Colony ships — O'Neill cylinders and spiral CNT constructs —
+jump to new stars. Earth restoration begins. CE TL 9.5." />
+          <GlossaryEntry term="MTL 14" unit="2500 CE — Early Interstellar"
+            def="Jump opens nearby systems. First contact with Divergent Humans. Convergent
+technology exchange. Venus and Mars terraforming progresses. Intense population exodus from
+Sol. CE TL 10.0." />
+          <GlossaryEntry term="MTL 15" unit="2600 CE — Interstellar Colonisation"
+            def="100 billion+ people outside Sol. Self-directed Spiral Ships carry
+communities to new stars. CE TL 10.5." />
+          <GlossaryEntry term="MTL 16" unit="2700 CE — Self-Sufficient Megastructures"
+            def="Serpents, Trees, and Celestials become self-directed — jumping and spreading
+outward independently. CE TL 11.0." />
+          <GlossaryEntry term="Bakunawa Coil" unit="MTL 12 megastructure"
+            def="A particle accelerator 898,394 km in circumference (≈ the Sun's
+circumference) at the Jupiter/Sol Lagrange point. Named after mythological world serpents.
+Produces antimatter to power jump gates." />
+          <GlossaryEntry term="Celestials"    unit="Solar swarm megastructure"
+            def="Self-directed solar swarm megastructures (MTL 13). Manipulate solar energy
+to terraform worlds. Become fully autonomous by MTL 16." />
+          <GlossaryEntry term="Divergent Humans" unit="MTL 14 first contact"
+            def="Human populations who left Sol using early 23rd-century FTL and colonised
+other stars independently. First contact at MTL 14. Distinct cultures, biology, and
+technology — then convergence." />
+          <GlossaryEntry term="Great Trees"   unit="Space elevator megastructure"
+            def="Enormous space elevator megastructures (MTL 13). Become self-directed by MTL
+16, capable of jumping between star systems." />
+          <GlossaryEntry term="Jovian Hammers" unit="MTL 12 industry"
+            def="Industrial spacecraft skimming Jupiter's atmosphere to harvest materials
+only producible under gas-giant conditions." />
+          <GlossaryEntry term="Jovian Variant" unit="MTL 11 human variant"
+            def="A branch of humanity adapted for life in and around Jupiter's environment —
+high gravity, high radiation, extreme cold. Emerges at MTL 11." />
+          <GlossaryEntry term="Spiral Ships"  unit="MTL 15–16 colony vessels"
+            def="Self-directed CNT colony vessels that jump to new stars and spawn further
+ships. Generated primarily by the Jovian economy." />
+          <GlossaryEntry term="Voidborn"      unit="MTL 10 social class"
+            def="Humans born and raised entirely in space with no planetary origin. The first
+generation for whom Earth is an abstraction. Emerges as a distinct population at MTL 10." 
+/>
+          <GlossaryEntry term="World Serpents" unit="Jump infrastructure"
+            def="Mobile, self-extending jump gate infrastructure that unfolds between star
+systems. First appear at MTL 13; become autonomous at MTL 16." />
+        </GlossarySection>
 
       <GlossarySection title="Dice Notation">
         <GlossaryEntry term="2D6"      unit="" def="Roll two six-sided dice and sum them.

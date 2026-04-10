@@ -10,6 +10,7 @@ import {
   POWER_STRUCTURE_DESCRIPTIONS,
   DEVELOPMENT_DESCRIPTIONS,
   SOURCE_OF_POWER_DESCRIPTIONS,
+  TL_TABLE,
 } from '../lib/worldData';
 
 interface SystemViewerProps {
@@ -462,6 +463,59 @@ function CultureTraitCard({ trait }: { trait: string }) {
   );
 }
 
+function TechLevelCard({ tl }: { tl: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const entry = TL_TABLE[tl];
+
+  if (!entry) {
+    return (
+      <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
+        <span className="font-bold text-lg" style={{ color: 'var(--accent-red)' }}>MTL {tl}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded overflow-hidden" style={{ border: '1px solid var(--border-color)' }}>
+      {/* Collapsed header — always visible */}
+      <div
+        className="flex items-center justify-between p-3 cursor-pointer"
+        style={{ backgroundColor: 'var(--row-hover)' }}
+        onClick={() => setExpanded(e => !e)}
+      >
+        <div className="flex items-center gap-3">
+          <span className="font-bold text-lg" style={{ color: 'var(--accent-red)' }}>
+            MTL {entry.mtl}
+          </span>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded"
+                style={{ backgroundColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
+            CE TL {entry.ceTL}
+          </span>
+          <span className="text-sm font-semibold">{entry.eraName}</span>
+        </div>
+        <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-xs">{entry.ceYear}</span>
+          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </div>
+      </div>
+
+      {/* Expanded key technologies */}
+      {expanded && (
+        <div className="p-3 border-t text-sm" style={{
+          borderColor: 'var(--border-color)',
+          backgroundColor: 'var(--bg-card)',
+          color: 'var(--text-secondary)',
+        }}>
+          <div className="text-xs font-semibold mb-1" style={{ color: 'var(--accent-red)' }}>
+            Key Technologies — {entry.heYear}
+          </div>
+          {entry.keyTechnologies}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DescriptionCard({ title, subtitle, description }: {
   title: string;
   subtitle?: string;
@@ -523,9 +577,7 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Demographics</h3>
 
-        <div className="space-y-2">
-          <DataRow label="Tech Level" value={`TL ${inhabitants.techLevel}`} />
-        </div>
+        <TechLevelCard tl={inhabitants.techLevel} />
 
         {/* Population — prominent */}
         <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
