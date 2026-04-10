@@ -698,10 +698,23 @@ See [REF-006: Culture Table](./references/REF-006-culture-table.md) for full 36�
 | Function | Roll | Output |
 |----------|------|--------|
 | `generateCircumstellarDisks()` | 2D3-2 | Number of disks |
-| `generateDwarfPlanets()` | 3D6-3 | Number of dwarf planets |
-| `generateTerrestrialWorlds()` | 2D6-2 | Number of terrestrial worlds |
-| `generateIceWorlds()` | 2D3-2 | Number of ice worlds |
-| `generateGasWorlds()` | 2D3-2 | Number of gas worlds |
+| `generateDwarfPlanets()` | 3D6-3 (Half Dice + Dis+3 for K, Half Dice + Dis+1 for M) | Number of dwarf planets |
+| `generateTerrestrialWorlds()` | 2D6-2 (Half Dice + Dis+3 for K, Half Dice + Dis+1 for M) | Number of terrestrial worlds |
+| `generateIceWorlds()` | 2D3-2 (Half Dice + Dis+3 for K, Half Dice + Dis+1 for M) | Number of ice worlds |
+| `generateGasWorlds()` | 2D3-2 (Half Dice + Dis+3 for K, Half Dice + Dis+1 for M) | Number of gas worlds |
+
+**Half Dice Mechanism:**
+For K and M class stars, body count generation uses **Half Dice** (d3 instead of d6) combined with Disadvantage:
+- **Half Dice** = Use d3 (1-3) instead of d6 (1-6), reducing potential outcomes by half
+- **Dis+N** = Roll N extra dice, keep the lowest results
+
+| Body Type | K-class (Half Dice + Dis+3) | M-class (Half Dice + Dis+1) |
+|-----------|----------------------------|----------------------------|
+| Disks | 1d3-1, roll 4d3 keep lowest 1 | 1d3-1, roll 2d3 keep lowest 1 |
+| Dwarfs | 3d3-3, roll 6d3 keep lowest 3 | 3d3-3, roll 4d3 keep lowest 3 |
+| Terrestrials | 2d3-2, roll 5d3 keep lowest 2 | 2d3-2, roll 3d3 keep lowest 2 |
+| Ices | 1d3-1, roll 4d3 keep lowest 1 | 1d3-1, roll 2d3 keep lowest 1 |
+| Gases | 1d3-1, roll 4d3 keep lowest 1 | 1d3-1, roll 2d3 keep lowest 1 |
 
 ### 8.2 Body Mass Generation
 
@@ -713,16 +726,17 @@ See [REF-007: Planetary Systems Table](./references/REF-007-planetary-systems-ta
 
 **Stellar Class Modifiers:**
 
-| Class | Modifier |
-|-------|----------|
-| F | Adv+2 |
-| G | Baseline (no modifier) |
-| K | Dis+2 |
-| M | Dis+4 |
-| O, B, A | Disks only |
+| Class | Modifier | Notes |
+|-------|----------|-------|
+| F | Adv+2 | Roll extra d6, keep highest |
+| G | Baseline (no modifier) | Standard dice |
+| K | **Half Dice + Dis+3** | d3 instead of d6, roll 3 extra dice, keep lowest |
+| M | **Half Dice + Dis+1** | d3 instead of d6, roll 1 extra die, keep lowest |
+| O, B, A | Disks only | No other body types |
 
 > ✅ **QA-007:** Advantage/Disadvantage modifiers applied to body count rolls. O/B/A stars generate disks only. [See QA-007](./QA.md#qa-007)
-> 🏠 **REF-007 v1.1 (House Rule):** G=Baseline, K=Dis+2, M=Dis+4. Effective 2026-04-10.
+> ✅ **QA-015:** Half Dice mechanic for K and M class stars to significantly reduce planet counts. [See QA-015](./QA.md#qa-015)
+> 🏠 **REF-007 v1.2 (House Rule):** G=Baseline, K=Half Dice+Dis+3, M=Half Dice+Dis+1. Effective 2026-04-10.
 
 ### 8.3 Gas World Classification
 

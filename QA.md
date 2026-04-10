@@ -30,6 +30,7 @@
 | [QA-012](#qa-012) | Dev Tool | Debug Batch Export button for statistical analysis | 🟡 Low | ✅ Fixed |
 | [QA-013](#qa-013) | UI | Theme toggle buttons — Dark/Day should share space to save header width | 🟡 Low | ✅ Fixed |
 | [QA-014](#qa-014) | Settings | Debug mode toggle — user-configurable, default ON | 🟡 Low | ✅ Fixed |
+| [QA-015](#qa-015) | Engine | Half Dice mechanic for K/M stars — significantly reduce planet counts | 🟠 Medium | ✅ Fixed |
 
 ---
 
@@ -316,6 +317,45 @@ The Batch Export feature (QA-012) was only visible in development builds (`impor
 
 ---
 
+### QA-015
+
+**Title:** Half Dice mechanic for K/M class stars — significantly reduce planet counts  
+**Area:** Engine — Planetary System Generation  
+**Priority:** 🟠 Medium  
+**Status:** ✅ Fixed  
+**File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`
+
+**Description:**  
+K and M class stars were generating too many planetary bodies. The Dis+2 (K) and Dis+4 (M) modifiers on d6 dice were not reducing counts enough. K-class median was 10 worlds, M-class median was 7 worlds — too high for these star types.
+
+**Fix Applied:**  
+Introduced **Half Dice** mechanic — using d3 (1-3) instead of d6 (1-6) for body count generation, combined with Disadvantage:
+
+| Star Class | Mechanism | Median Bodies |
+|------------|-----------|---------------|
+| **K-class** | Half Dice (d3) + Dis+3 | ~2 |
+| **M-class** | Half Dice (d3) + Dis+1 | ~5 |
+
+**Half Dice Details:**
+
+For **K-class** stars:
+- Disks: 1d3-1, roll 4d3 keep lowest 1
+- Dwarfs: 3d3-3, roll 6d3 keep lowest 3  
+- Terrestrials: 2d3-2, roll 5d3 keep lowest 2
+- Ices: 1d3-1, roll 4d3 keep lowest 1
+- Gases: 1d3-1, roll 4d3 keep lowest 1
+
+For **M-class** stars:
+- Disks: 1d3-1, roll 2d3 keep lowest 1
+- Dwarfs: 3d3-3, roll 4d3 keep lowest 3
+- Terrestrials: 2d3-2, roll 3d3 keep lowest 2
+- Ices: 1d3-1, roll 2d3 keep lowest 1
+- Gases: 1d3-1, roll 2d3 keep lowest 1
+
+**Result:** K-class now generates significantly fewer worlds (~2 median), M-class generates moderately fewer (~5 median), matching expected stellar system characteristics for these cooler, less massive stars.
+
+---
+
 ## Additional Feature Issues
 
 ---
@@ -364,3 +404,4 @@ CSV export format needed a formal specification.
 | 1.3 | 2026-04-10 | Fixed radius/escape velocity calculations; added Terraforming Worms; glossary updates |
 | 1.5 | 2026-04-10 | **CORRECTION:** Escape velocity formula fixed to `sqrt(0.0196 * gravity * size * 0.5)` — proper unit conversion for km/s |
 | 1.4 | 2026-04-10 | QA-014: Debug mode toggle in Settings (default ON, user-configurable) |
+| 1.6 | 2026-04-10 | QA-015: Half Dice mechanic — K-class uses d3+Dis+3, M-class uses d3+Dis+1 to reduce planet counts |

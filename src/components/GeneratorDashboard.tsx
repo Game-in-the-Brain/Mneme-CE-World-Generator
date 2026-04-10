@@ -467,9 +467,9 @@ function DebugBatchExport() {
         <input
           type="number"
           min={1}
-          max={500}
+          max={1000}
           value={batchSize}
-          onChange={(e) => setBatchSize(Math.max(1, Math.min(500, Number(e.target.value))))}
+          onChange={(e) => setBatchSize(Math.max(1, Math.min(1000, Number(e.target.value))))}
           className="w-20 text-center text-sm rounded px-2 py-1"
           style={{
             backgroundColor: 'var(--bg-primary)',
