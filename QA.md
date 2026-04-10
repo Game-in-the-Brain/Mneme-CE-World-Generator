@@ -329,30 +329,24 @@ The Batch Export feature (QA-012) was only visible in development builds (`impor
 K and M class stars were generating too many planetary bodies. The Dis+2 (K) and Dis+4 (M) modifiers on d6 dice were not reducing counts enough. K-class median was 10 worlds, M-class median was 7 worlds — too high for these star types.
 
 **Fix Applied:**  
-Introduced **Half Dice** mechanic — using d3 (1-3) instead of d6 (1-6) for body count generation, combined with Disadvantage:
 
 | Star Class | Mechanism | Median Bodies |
 |------------|-----------|---------------|
-| **K-class** | Half Dice (d3) + Dis+3 | ~2 |
-| **M-class** | Half Dice (d3) + Dis+1 | ~5 |
+| **K-class** | **Dis+3 on d6** | ~5 |
+| **M-class** | **Half Dice (d3) + Dis+1** | ~5 |
 
-**Half Dice Details:**
+**K-class:** Uses standard d6 dice with Dis+3 (roll 3 extra d6, keep lowest):
+- Dwarfs: 3d6-3, roll 6d6 keep lowest 3
+- Terrestrials: 2d6-2, roll 5d6 keep lowest 2
 
-For **K-class** stars:
-- Disks: 1d3-1, roll 4d3 keep lowest 1
-- Dwarfs: 3d3-3, roll 6d3 keep lowest 3  
-- Terrestrials: 2d3-2, roll 5d3 keep lowest 2
-- Ices: 1d3-1, roll 4d3 keep lowest 1
-- Gases: 1d3-1, roll 4d3 keep lowest 1
-
-For **M-class** stars:
+**M-class (Half Dice):** Uses d3 (1-3) instead of d6 with Dis+1:
 - Disks: 1d3-1, roll 2d3 keep lowest 1
 - Dwarfs: 3d3-3, roll 4d3 keep lowest 3
 - Terrestrials: 2d3-2, roll 3d3 keep lowest 2
 - Ices: 1d3-1, roll 2d3 keep lowest 1
 - Gases: 1d3-1, roll 2d3 keep lowest 1
 
-**Result:** K-class now generates significantly fewer worlds (~2 median), M-class generates moderately fewer (~5 median), matching expected stellar system characteristics for these cooler, less massive stars.
+**Result:** Both K-class and M-class now generate fewer worlds (~5 median each), matching expected stellar system characteristics for these cooler, less massive stars.
 
 ---
 

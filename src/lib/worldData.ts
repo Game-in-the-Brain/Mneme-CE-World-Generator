@@ -520,13 +520,13 @@ export const SOURCE_OF_POWER_DESCRIPTIONS: Record<PowerSource, { description: st
  * |-------|------------------------|
  * | F     | Adv+2 on d6            |
  * | G     | Baseline (d6)          |
- * | K     | Half Dice + Dis+3 (d3) |
+ * | K     | Dis+3 on d6            |
  * | M     | Half Dice + Dis+1 (d3) |
  * | O,B,A | Disks only             |
  *
- * House Rule REF-007 v1.2 — Half Dice mechanic for K/M class stars (QA-015).
- * K-class: d3 with Dis+3 (significantly reduced planet counts).
- * M-class: d3 with Dis+1 (moderately reduced planet counts).
+ * House Rule REF-007 v1.2 — Half Dice mechanic for M-class stars (QA-015).
+ * K-class: d6 with Dis+3 (reduced planet counts).
+ * M-class: d3 with Dis+1 (significantly reduced planet counts — Half Dice).
  * F-class: Adv+2 on d6 (more planets).
  * G-class: Baseline d6 (standard distribution).
  */
@@ -554,42 +554,30 @@ export function getBodyCount(
   }
 
   const advExtra = stellarClass === 'F' ? 2 : 0;
-  
-  // Half Dice mechanic (QA-015): K and M use d3 instead of d6
-  const isHalfDice = stellarClass === 'K' || stellarClass === 'M';
-  const disExtraHalfDice = stellarClass === 'K' ? 3 : stellarClass === 'M' ? 1 : 0;
-  const disExtra = isHalfDice ? 0 : 0; // K/M use disExtraHalfDice instead
+  const disExtraK = stellarClass === 'K' ? 3 : 0; // K-class: Dis+3 on d6
+  // M-class: Half Dice (d3) with Dis+1 — handled separately per type
 
   switch (type) {
     case 'disk': {
-      if (stellarClass === 'K') {
-        // Half Dice + Dis+3: 1d3-1, roll 4d3 keep lowest 1
-        const rolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 3) + 1);
-        rolls.sort((a, b) => a - b);
-        return Math.max(0, rolls[0] - 1);
-      }
       if (stellarClass === 'M') {
         // Half Dice + Dis+1: 1d3-1, roll 2d3 keep lowest 1
         const rolls = Array.from({ length: 2 }, () => Math.floor(Math.random() * 3) + 1);
         rolls.sort((a, b) => a - b);
         return Math.max(0, rolls[0] - 1);
       }
-      // Standard: 2D3 - 2
+      // Standard: 2D3 - 2 (disks use d3 for all stars)
       const r1 = Math.floor(Math.random() * 3) + 1;
       const r2 = Math.floor(Math.random() * 3) + 1;
       return Math.max(0, r1 + r2 - 2);
     }
     case 'dwarf': {
-      if (stellarClass === 'K') {
-        // Half Dice + Dis+3: 3d3-3, roll 6d3 keep lowest 3
-        return Math.max(0, rollNd3KeepM(6, 3, true) - 3);
-      }
       if (stellarClass === 'M') {
         // Half Dice + Dis+1: 3d3-3, roll 4d3 keep lowest 3
         return Math.max(0, rollNd3KeepM(4, 3, true) - 3);
       }
       // Standard: 3D6 - 3 with Adv/Dis
       if (advExtra > 0) return Math.max(0, rollNd6KeepM(3 + advExtra, 3, false) - 3);
+      if (disExtraK > 0) return Math.max(0, rollNd6KeepM(3 + disExtraK, 3, true) - 3);
       return Math.max(0,
         (Math.floor(Math.random() * 6) + 1) +
         (Math.floor(Math.random() * 6) + 1) +
@@ -597,53 +585,38 @@ export function getBodyCount(
       );
     }
     case 'terrestrial': {
-      if (stellarClass === 'K') {
-        // Half Dice + Dis+3: 2d3-2, roll 5d3 keep lowest 2
-        return Math.max(0, rollNd3KeepM(5, 2, true) - 2);
-      }
       if (stellarClass === 'M') {
         // Half Dice + Dis+1: 2d3-2, roll 3d3 keep lowest 2
         return Math.max(0, rollNd3KeepM(3, 2, true) - 2);
       }
       // Standard: 2D6 - 2 with Adv/Dis
       if (advExtra > 0) return Math.max(0, rollNd6KeepM(2 + advExtra, 2, false) - 2);
+      if (disExtraK > 0) return Math.max(0, rollNd6KeepM(2 + disExtraK, 2, true) - 2);
       return Math.max(0,
         (Math.floor(Math.random() * 6) + 1) +
         (Math.floor(Math.random() * 6) + 1) - 2
       );
     }
     case 'ice': {
-      if (stellarClass === 'K') {
-        // Half Dice + Dis+3: 1d3-1, roll 4d3 keep lowest 1
-        const rolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 3) + 1);
-        rolls.sort((a, b) => a - b);
-        return Math.max(0, rolls[0] - 1);
-      }
       if (stellarClass === 'M') {
         // Half Dice + Dis+1: 1d3-1, roll 2d3 keep lowest 1
         const rolls = Array.from({ length: 2 }, () => Math.floor(Math.random() * 3) + 1);
         rolls.sort((a, b) => a - b);
         return Math.max(0, rolls[0] - 1);
       }
-      // Standard: 2D3 - 2
+      // Standard: 2D3 - 2 (ice worlds use d3 for all stars)
       const r1 = Math.floor(Math.random() * 3) + 1;
       const r2 = Math.floor(Math.random() * 3) + 1;
       return Math.max(0, r1 + r2 - 2);
     }
     case 'gas': {
-      if (stellarClass === 'K') {
-        // Half Dice + Dis+3: 1d3-1, roll 4d3 keep lowest 1
-        const rolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 3) + 1);
-        rolls.sort((a, b) => a - b);
-        return Math.max(0, rolls[0] - 1);
-      }
       if (stellarClass === 'M') {
         // Half Dice + Dis+1: 1d3-1, roll 2d3 keep lowest 1
         const rolls = Array.from({ length: 2 }, () => Math.floor(Math.random() * 3) + 1);
         rolls.sort((a, b) => a - b);
         return Math.max(0, rolls[0] - 1);
       }
-      // Standard: 2D3 - 2
+      // Standard: 2D3 - 2 (gas worlds use d3 for all stars)
       const r1 = Math.floor(Math.random() * 3) + 1;
       const r2 = Math.floor(Math.random() * 3) + 1;
       return Math.max(0, r1 + r2 - 2);
