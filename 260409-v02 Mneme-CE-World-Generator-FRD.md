@@ -434,20 +434,26 @@ See [REF-005: World Position Table](./references/REF-005-world-position-table.md
 
 | Function | Roll | Output |
 |----------|------|--------|
-| `generateTechLevel()` | 2D6 | TL 7-16 |
+| `generateTechLevel()` | 2D6 | MTL 9–18 |
 
-| 2D6 | TL | Description |
-|-----|-----|-------------|
-| 2 | 7 | Early Space Age (1950-2000) |
-| 3 | 8 | Commercial Space (2000-2050) |
-| 4 | 9 | New Space Race (2050-2100) |
-| 5 | 10 | Cis Lunar Development (2100-2200) |
-| 6-7 | 11 | Interstellar Settlement (2200-2300) |
-| 8 | 12 | Post Earth Dependence (2300-2400) |
-| 9 | 13 | Early Jump-Drive (2400-2500) |
-| 10 | 14 | Interstellar Space (2500-2600) |
-| 11 | 15 | Interstellar Colonization |
-| 12 | 16 | Self-Sufficient Mega Structures |
+See [REF-013: Technology Level Reference](./references/REF-013-tech-level.md) for the full TL table with Cepheus Engine TL cross-reference, CE/HE years, era names, key technologies, and glossary terms.
+
+#### Quick Reference (2D6 → MTL)
+
+| 2D6 | MTL | CE TL | Era Name | CE Year Range |
+|-----|-----|-------|----------|---------------|
+| 2 | 9 | 7.0 | New Space Race / Space Industrialisation | 2050–2100 CE |
+| 3 | 10 | 8.0 | Cis-Lunar Development | 2100–2200 CE |
+| 4 | 11 | 8.5 | Interplanetary Settlement & Jovian Colonisation | 2200–2300 CE |
+| 5 | 12 | 9.0 | Post-Earth Dependence | 2300–2400 CE |
+| 6–7 | 13 | 9.5 | Outer System Development | 2400–2500 CE |
+| 8 | 14 | 10.0 | Early Interstellar Trade & Exploration | 2500–2600 CE |
+| 9 | 15 | 10.5 | Interstellar Colonisation | 2600–2700 CE |
+| 10 | 16 | 11.0 | Self-Sufficient Megastructures & Swarms | 2700+ CE |
+| 11 | 17 | 11.5 | Post-Megastructure Expansion | 2800+ CE |
+| 12 | 18 | 12.0 | Unknown Future | 2900+ CE |
+
+**UI Note:** The Inhabitants tab should display MTL, CE TL, era name, and a collapsible "Key Technologies" panel for each generated world. See REF-013 for the full key technologies text per level.
 
 ### 7.2 Population
 
@@ -1106,6 +1112,7 @@ The following reference documents contain detailed tables and implementation not
 | [REF-010-densities](./references/REF-010-planet-densities.md) | Planet Type Densities | Density values + formulas for radius, surface gravity, escape velocity |
 | [REF-011](./references/REF-011-hill-sphere-orbits.ts) | Hill Sphere Orbits | TypeScript implementation of orbital placement with Hill sphere spacing (source for section 8.6) |
 | [REF-012](./references/REF-012-csv-export-format.md) | CSV Export Format | Wide-row format spec, key naming convention, column reference |
+| [REF-013](./references/REF-013-tech-level.md) | Technology Level Reference | Full MTL table with CE TL, CE/HE years, era names, key technologies, and glossary terms |
 
 ---
 
@@ -1117,3 +1124,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.1 | 2026-04-09 | Added visual design spec, clarified companion star logic, added reference document index |
 | 1.2 | 2026-04-09 | Fixed REF-001 mass/luminosity values, corrected temperature bounds, added Governance DM table, documented Red Zone as manual-only, clarified 6.9 gravity modifier input |
 | 1.3 | 2026-04-10 | Logo + GitHub link added (QA-002); title corrected to "Mneme CE World Generator" (QA-001); Phone theme spec added (QA-005); Hot Jupiter migration rule added (8.4a, QA-011); Hill Sphere minimum separation documented (QA-006); Adv/Dis planet roll bug fixed (QA-007); Physical properties added to PlanetaryBody interface (QA-009); Ice Worlds label fixed (QA-008); single-page tab nav specified (QA-010); number formatting spec added (QA-004); CSV export format specified (QA-ADD-002); REF-010-planet-densities.md and REF-012-csv-export-format.md created; QA.md created and linked throughout |
+| 1.4 | 2026-04-10 | REF-007 v1.1 house rule applied (G=baseline, K=Dis+2, M=Dis+4); REF-013 tech level reference created; Section 7.1 expanded with full MTL table, CE TL, era names, key technologies; REF-013 added to reference index |
