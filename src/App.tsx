@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { StarSystem, ViewMode } from './types';
 import { generateStarSystem } from './lib/generator';
-import { 
+import {
   saveSystem, getAllSystems, deleteSystem, clearAllSystems,
   exportToJSON, exportAllToJSON, exportToCSV, downloadFile, importSystemsFromJSON
 } from './lib/db';
@@ -9,7 +9,7 @@ import { GeneratorDashboard } from './components/GeneratorDashboard';
 import { SystemViewer } from './components/SystemViewer';
 import { DataLog } from './components/DataLog';
 import { Settings } from './components/Settings';
-import { Navigation } from './components/Navigation';
+import { Navigation, type Theme } from './components/Navigation';
 import './App.css';
 
 function App() {
@@ -18,6 +18,16 @@ function App() {
   const [savedSystems, setSavedSystems] = useState<StarSystem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Theme state — persisted to localStorage (QA-005)
+  const [theme, setTheme] = useState<Theme>(() => {
+    return (localStorage.getItem('mneme_theme') as Theme) || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('mneme_theme', theme);
+  }, [theme]);
 
   // Load saved systems on mount
   useEffect(() => {
@@ -120,8 +130,8 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-[#e0e0e0]">
-      <Navigation currentView={view} onViewChange={setView} />
+    <div className="min-h-screen phone-layout-root" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      <Navigation currentView={view} onViewChange={setView} theme={theme} onThemeChange={setTheme} />
       
       <main className="container mx-auto px-4 py-6">
         {notification && (

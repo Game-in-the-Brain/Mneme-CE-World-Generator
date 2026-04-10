@@ -12,9 +12,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'MNEME World Generator',
-        short_name: 'MNEME Generator',
-        description: 'Cepheus Engine Star System and World Generator',
+        name: 'Mneme CE World Generator',
+        short_name: 'Mneme CE',
+        description: 'Mneme CE World Generator — Cepheus Engine Star System and World Generator',
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
         display: 'standalone',

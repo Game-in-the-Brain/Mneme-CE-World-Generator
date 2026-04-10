@@ -1,8 +1,12 @@
-# MNEME World Generator PWA - Function Requirements Document (FRD)
+<div align="right"><a href="https://github.com/Game-in-the-Brain"><img src="./references/gitb_gi7b_logo_512.png" alt="Game in the Brain" width="64"/></a></div>
+
+# Mneme CE World Generator — Function Requirements Document (FRD)
 
 **Version 1.3** | **Date:** 2026-04-09  
-**Project:** MNEME World Generator for Cepheus Engine RPG  
-**Format:** Progressive Web App (PWA)
+**Project:** Mneme CE World Generator PWA (Cepheus Engine variant)  
+**Repo:** [Game-in-the-Brain / Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain)
+
+> ⚠️ **Known Issues:** See [QA.md](./QA.md) for the full list of open bugs and feature gaps.
 
 ---
 
@@ -41,6 +45,9 @@ The MNEME World Generator PWA is a Progressive Web App that replicates and enhan
 | 3 | Starport base generation (Naval/Scout/Pirate) | ✅ YES |
 | 4 | Visual Theme | ✅ Dark sci-fi with red accent (Cepheus/Traveller), toggle to day theme |
 | 5 | Dice Animation | ❌ NO - rolls displayed clearly but not animated |
+| 6 | Phone theme (vertical single-column layout) | ✅ YES — see [QA-005](./QA.md#qa-005) |
+| 7 | Single-page layout with tab anchors (not multi-page routes) | ✅ YES — see [QA-010](./QA.md#qa-010) |
+| 8 | Logo in top-right linking to GitHub | ✅ YES — see [QA-002](./QA.md#qa-002) |
 
 ---
 
@@ -66,6 +73,25 @@ The MNEME World Generator PWA is a Progressive Web App that replicates and enhan
 | Star G | Yellow | `#ffecb3` |
 | Star K | Orange | `#ffcc80` |
 | Star M | Red | `#ff8a65` |
+
+### 3.3 Phone Theme
+
+A third theme optimised for narrow portrait screens.
+
+| Behaviour | Rule |
+|-----------|------|
+| Layout | Single column, full width |
+| Cards | Stack vertically, no side-by-side panels |
+| Touch targets | Minimum 44px height for all interactive elements |
+| Hidden elements | Collapse non-essential sidebars and decorative zone diagrams |
+| Font size | Base 16px (no smaller) |
+| Tab bar | Fixed to bottom of screen |
+
+**Theme key:** `"phone"` — stored in localStorage alongside `"dark"` / `"day"`.
+
+> ✅ **QA-005:** Phone theme implemented. [See QA-005](./QA.md#qa-005)
+
+---
 
 ### 3.2 Day Theme Palette
 
@@ -126,6 +152,10 @@ All rolls must be clearly displayed in the UI:
 | Function | Input | Output | Table |
 |----------|-------|--------|-------|
 | `generatePrimaryStar()` | None | `{ class, grade, mass, luminosity }` | [REF-001: Stellar Tables](./references/REF-001-stellar-tables.md) |
+
+> 📷 **Visual Reference:** A stellar classification chart showing the colour spectrum of each class (O through M) is available in `references/Class-[X]-star.png`. This is displayed as a collapsible reference panel in the UI for users who have not memorised the class colours.
+>
+> ✅ **QA-003:** Star classification PNG now surfaced in UI as collapsible panel on the Star section. [See QA-003](./QA.md#qa-003)
 
 ### 5.2 Zone Calculation
 
@@ -651,6 +681,8 @@ See [REF-007: Planetary Systems Table](./references/REF-007-planetary-systems-ta
 | M | Dis+1 |
 | O, B, A | Disks only |
 
+> ✅ **QA-007:** Advantage/Disadvantage modifiers are now applied to body count rolls. O/B/A stars generate disks only. [See QA-007](./QA.md#qa-007)
+
 ### 8.3 Gas World Classification
 
 | Function | Roll | Output |
@@ -677,6 +709,20 @@ See [REF-008: Gas World Classification](./references/REF-008-gas-world-classific
 
 > **Position Modifier:** Apply the Lesser Earth Type position modifier from section 6.2 (+1 Carbonaceous, +0 Silicaceous, −1 Metallic/Other) to the 1D6 zone roll before lookup. Clamp modified roll to 1–6.
 
+### 8.4a Hot Jupiter Migration Rule
+
+If a Gas World of **Class III, IV, or V** is placed in the **Infernal** or **Hot** zone, it is a **hot Jupiter** — a gas giant that migrated inward early in the system's history, clearing the zone of all other bodies.
+
+**Rules:**
+1. Before the Hill Sphere placement loop runs, scan all gas worlds for hot Jupiters.
+2. For each hot Jupiter found:
+   - **Clear the entire zone** of all other non-disk bodies.
+   - The hot Jupiter occupies that zone **alone**.
+   - Roll 2D6. On **11+**, one captured rogue world exists in the cleared zone — place it using Hill sphere spacing from the gas giant.
+3. This pre-sweep runs **before** `placePlanetaryBodies()`.
+
+> ✅ **QA-011:** Hot Jupiter migration rule implemented. [See QA-011](./QA.md#qa-011)
+
 ### 8.5 Disk Zone
 
 | Function | Roll | Output |
@@ -684,6 +730,8 @@ See [REF-008: Gas World Classification](./references/REF-008-gas-world-classific
 | `generateDiskZone()` | 2D6 | Zone |
 
 See [REF-009: Disk Zone Table](./references/REF-009-disk-zone-table.md) for full table.
+
+> ✅ **QA-006:** Circumstellar disk AU positions are now randomised; a minimum separation floor (0.05 AU inner / 0.2 AU outer) is enforced across all bodies after generation. [See QA-006](./QA.md#qa-006)
 
 ### 8.6 Orbital Placement — Hill Sphere Spacing
 
@@ -854,11 +902,26 @@ interface Inhabitants {
 
 interface PlanetaryBody {
   id: string;
+  type: BodyType;       // "ice" stored as 'ice' internally; displayed as "Ice Worlds" — see QA-008
   massEM: number;        // mass in Earth Masses (normalised — see 8.6 constants for conversions)
   zone: Zone;            // final zone after orbital placement (may differ from rolled zone)
   distanceAU: number;    // final AU after Hill sphere placement (see section 8.6)
   hillRadiusAU: number;  // computed by placePlanetaryBodies()
+
+  // Derived physical properties — see REF-010-planet-densities.md and QA-009
+  densityGcm3?: number;       // g/cm³ from body type lookup
+  volumeM3?: number;
+  radiusKm?: number;
+  diameterKm?: number;
+  surfaceGravityG?: number;   // in g (Earth = 1.0)
+  escapeVelocityMs?: number;  // in m/s (ΔV to escape surface)
 }
+```
+
+> ✅ **QA-008:** Body type label "Ice" is now displayed as "Ice Worlds". Internal type key `'ice'` unchanged. [See QA-008](./QA.md#qa-008)
+> ✅ **QA-009:** Physical properties calculated and displayed for all non-disk bodies. [See QA-009](./QA.md#qa-009)
+
+```typescript
 
 interface Disk extends PlanetaryBody {
   type: "circumstellar";
@@ -903,14 +966,27 @@ interface GasWorld extends PlanetaryBody {
 | **Data Log Table** | Saved systems with search/filter |
 | **Export Controls** | JSON/CSV export buttons |
 
-### 10.2 Navigation
+### 10.2 Navigation — Single Page with Tab Anchors
 
-| Route | Content |
-|-------|---------|
-| `/` | Generator Dashboard |
-| `/system/:id` | View specific saved system |
-| `/log` | Data Log (all saved systems) |
-| `/settings` | App settings, export/import |
+The generator view is a **single page**. The five tabs jump to anchored sections within the same page — they do not navigate to new routes.
+
+| Tab | Anchor | Content |
+|-----|--------|---------|
+| Overview | `#overview` | System summary card, generate button |
+| Star | `#star` | Primary star + companions, zone diagram |
+| World | `#world` | Main world properties, habitability |
+| Inhabitants | `#inhabitants` | TL, population, government, starport, culture |
+| Planetary System | `#planetary-system` | All bodies with mass, radius, gravity, ΔV |
+
+**Separate views** (not tabs):
+
+| View | Content |
+|------|---------|
+| `dashboard` | Generator (single page above) |
+| `log` | Saved systems log |
+| `settings` | Theme toggle, export/import |
+
+> ✅ **QA-010:** Single-page with anchor tabs implemented. [See QA-010](./QA.md#qa-010)
 
 ---
 
@@ -930,6 +1006,29 @@ class MnemeDatabase extends Dexie {
   }
 }
 ```
+
+### 11.3 Number Formatting
+
+All displayed values use formatted output — no raw scientific notation.
+
+```typescript
+// src/lib/format.ts
+formatValue(87376105.82, "people")   // → "87,376,106 people"
+formatValue(3516325, "L☉")           // → "3,516,325 L☉"
+formatValue(0.0123, "EM")            // → "0.0123 EM"
+formatNumber(1.19e25)                // → "11,900,000,000,000,000,000,000,000"
+formatCredits(1e12)                  // → "1,000,000,000,000 Cr/week"
+```
+
+> ✅ **QA-004:** Number formatting implemented via `src/lib/format.ts`. [See QA-004](./QA.md#qa-004)
+
+### 11.4 CSV Export Format
+
+See [QA-ADD-002](./QA.md#qa-add-002) and [REF-012](./references/REF-012-csv-export-format.md) for the full wide-row CSV column specification.
+
+**Format summary:** One system = one row. Standard fields for star + main world, then open-ended prefixed columns for companions (`S1_`, `S2_`) and planetary bodies (`P01_`, `P02_`, `D01_`).
+
+**Key format:** `YYMMDD-HHMMSS-[CLASS][GRADE]-[3-char-random]` (e.g. `260409-143022-G2-XKR`)
 
 ### 11.2 CRUD Operations
 
@@ -988,8 +1087,10 @@ The following reference documents contain detailed tables and implementation not
 | [REF-007](./references/REF-007-planetary-systems-table.md) | Planetary Systems Table | Body mass generation |
 | [REF-008](./references/REF-008-gas-world-classification.md) | Gas World Classification | Class I-V determination |
 | [REF-009](./references/REF-009-disk-zone-table.md) | Disk Zone Table | Circumstellar disk zone determination |
-| [REF-010](./references/REF-010-travel-zone.md) | Travel Zone v1.3 | Full Travel Zone mechanic — Amber auto-triggers, Red Zone procedural generation, Stability Mode, Reason table |
+| [REF-010-travel-zone](./references/REF-010-travel-zone.md) | Travel Zone v1.3 | Full Travel Zone mechanic — Amber auto-triggers, Red Zone procedural generation, Stability Mode, Reason table |
+| [REF-010-densities](./references/REF-010-planet-densities.md) | Planet Type Densities | Density values + formulas for radius, surface gravity, escape velocity |
 | [REF-011](./references/REF-011-hill-sphere-orbits.ts) | Hill Sphere Orbits | TypeScript implementation of orbital placement with Hill sphere spacing (source for section 8.6) |
+| [REF-012](./references/REF-012-csv-export-format.md) | CSV Export Format | Wide-row format spec, key naming convention, column reference |
 
 ---
 
@@ -998,5 +1099,6 @@ The following reference documents contain detailed tables and implementation not
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2026-04-09 | Initial FRD |
-| 1.1 | 2026-04-09 | Added visual design spec, clarified companion star logic, added reference document index
+| 1.1 | 2026-04-09 | Added visual design spec, clarified companion star logic, added reference document index |
 | 1.2 | 2026-04-09 | Fixed REF-001 mass/luminosity values, corrected temperature bounds, added Governance DM table, documented Red Zone as manual-only, clarified 6.9 gravity modifier input |
+| 1.3 | 2026-04-10 | Logo + GitHub link added (QA-002); title corrected to "Mneme CE World Generator" (QA-001); Phone theme spec added (QA-005); Hot Jupiter migration rule added (8.4a, QA-011); Hill Sphere minimum separation documented (QA-006); Adv/Dis planet roll bug fixed (QA-007); Physical properties added to PlanetaryBody interface (QA-009); Ice Worlds label fixed (QA-008); single-page tab nav specified (QA-010); number formatting spec added (QA-004); CSV export format specified (QA-ADD-002); REF-010-planet-densities.md and REF-012-csv-export-format.md created; QA.md created and linked throughout |

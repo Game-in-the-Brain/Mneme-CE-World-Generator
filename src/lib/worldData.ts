@@ -381,18 +381,74 @@ export function generateCultureTraits(count: number = 1): string[] {
 // Planetary System
 // =====================
 
-export function getBodyCount(type: 'disk' | 'dwarf' | 'terrestrial' | 'ice' | 'gas'): number {
+/**
+ * Generate body count with optional stellar class Adv/Dis modifiers (QA-007 / FRD 8.1-8.2).
+ *
+ * | Class | Modifier       |
+ * |-------|---------------|
+ * | F     | Adv+2          |
+ * | G     | Adv+1          |
+ * | K     | None           |
+ * | M     | Dis+1          |
+ * | O,B,A | Disks only     |
+ */
+export function getBodyCount(
+  type: 'disk' | 'dwarf' | 'terrestrial' | 'ice' | 'gas',
+  stellarClass?: StellarClass
+): number {
+  // O, B, A stars: only circumstellar disks
+  if (stellarClass && (stellarClass === 'O' || stellarClass === 'B' || stellarClass === 'A')) {
+    if (type !== 'disk') return 0;
+  }
+
+  // Roll N dice, keep best/worst M
+  function rollNd6KeepM(n: number, keep: number, keepLowest: boolean): number {
+    const rolls = Array.from({ length: n }, () => Math.floor(Math.random() * 6) + 1);
+    rolls.sort((a, b) => keepLowest ? a - b : b - a);
+    return rolls.slice(0, keep).reduce((s, r) => s + r, 0);
+  }
+
+  const advExtra = stellarClass === 'F' ? 2 : stellarClass === 'G' ? 1 : 0;
+  const disExtra = stellarClass === 'M' ? 1 : 0;
+
   switch (type) {
-    case 'disk':
-      return Math.max(0, (Math.floor(Math.random() * 3) + 1) + (Math.floor(Math.random() * 3) + 1) - 2);
-    case 'dwarf':
-      return Math.max(0, (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1) - 3);
-    case 'terrestrial':
-      return Math.max(0, (Math.floor(Math.random() * 6) + 1) + (Math.floor(Math.random() * 6) + 1) - 2);
-    case 'ice':
-      return Math.max(0, (Math.floor(Math.random() * 3) + 1) + (Math.floor(Math.random() * 3) + 1) - 2);
-    case 'gas':
-      return Math.max(0, (Math.floor(Math.random() * 3) + 1) + (Math.floor(Math.random() * 3) + 1) - 2);
+    case 'disk': {
+      // 2D3 - 2 — no class modifier (disks exist around any star)
+      const r1 = Math.floor(Math.random() * 3) + 1;
+      const r2 = Math.floor(Math.random() * 3) + 1;
+      return Math.max(0, r1 + r2 - 2);
+    }
+    case 'dwarf': {
+      // 3D6 - 3 with Adv/Dis
+      if (advExtra > 0) return Math.max(0, rollNd6KeepM(3 + advExtra, 3, false) - 3);
+      if (disExtra > 0) return Math.max(0, rollNd6KeepM(3 + disExtra, 3, true) - 3);
+      return Math.max(0,
+        (Math.floor(Math.random() * 6) + 1) +
+        (Math.floor(Math.random() * 6) + 1) +
+        (Math.floor(Math.random() * 6) + 1) - 3
+      );
+    }
+    case 'terrestrial': {
+      // 2D6 - 2 with Adv/Dis
+      if (advExtra > 0) return Math.max(0, rollNd6KeepM(2 + advExtra, 2, false) - 2);
+      if (disExtra > 0) return Math.max(0, rollNd6KeepM(2 + disExtra, 2, true) - 2);
+      return Math.max(0,
+        (Math.floor(Math.random() * 6) + 1) +
+        (Math.floor(Math.random() * 6) + 1) - 2
+      );
+    }
+    case 'ice': {
+      // 2D3 - 2 — no class modifier
+      const r1 = Math.floor(Math.random() * 3) + 1;
+      const r2 = Math.floor(Math.random() * 3) + 1;
+      return Math.max(0, r1 + r2 - 2);
+    }
+    case 'gas': {
+      // 2D3 - 2 — no class modifier
+      const r1 = Math.floor(Math.random() * 3) + 1;
+      const r2 = Math.floor(Math.random() * 3) + 1;
+      return Math.max(0, r1 + r2 - 2);
+    }
   }
 }
 

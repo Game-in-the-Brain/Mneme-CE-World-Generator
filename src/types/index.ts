@@ -110,6 +110,12 @@ export interface PlanetaryBody {
   gravity?: number;
   atmosphere?: string;
   density?: number;
+  // Derived physical properties — see QA-009, REF-010-planet-densities.md
+  densityGcm3?: number;
+  radiusKm?: number;
+  diameterKm?: number;
+  surfaceGravityG?: number;
+  escapeVelocityMs?: number;
 }
 
 export interface StarSystem {
