@@ -4,7 +4,8 @@
 
 **Version 1.3** | **Date:** 2026-04-09  
 **Project:** Mneme CE World Generator PWA (Cepheus Engine variant)  
-**Repo:** [Game-in-the-Brain / Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain)
+**GitHub Repository:** [github.com/Game-in-the-Brain/Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator)  
+**Book Series:** [DriveThruRPG — Game in the Brain](https://www.drivethrurpg.com/en/publisher/17858/game-in-the-brain)
 
 > ⚠️ **Known Issues:** See [QA.md](./QA.md) for the full list of open bugs and feature gaps.
 
@@ -1094,6 +1095,40 @@ See [QA-ADD-002](./QA.md#qa-add-002) and [REF-012](./references/REF-012-csv-expo
 | **Theme Toggle** | Dark (default) / Day mode |
 | **Storage** | IndexedDB (Dexie.js) |
 | **Background Sync** | Optional for future cloud sync |
+
+### 12.1 Installing the App
+
+The Mneme CE World Generator is a Progressive Web App (PWA) that can be installed on your device for offline use.
+
+#### Mobile (iOS/Android)
+
+**iPhone/iPad (Safari):**
+1. Open the app in Safari
+2. Tap the **Share** button (rectangle with arrow)
+3. Scroll down and tap **"Add to Home Screen"**
+4. Tap **"Add"** in the top-right corner
+5. The app icon appears on your home screen — tap to launch
+
+**Android (Chrome):**
+1. Open the app in Chrome
+2. Tap the **menu (⋮)** or look for the **"Add to Home screen"** banner
+3. Tap **"Install"** or **"Add to Home screen"**
+4. Confirm by tapping **"Install"**
+5. The app icon appears on your home screen
+
+#### Desktop (Chrome/Edge)
+
+1. Open the app in Chrome or Edge
+2. Look for the **download/install icon** (↓) in the address bar
+3. Click **"Install Mneme CE World Generator..."**
+4. Alternatively: click the **menu (⋮)** → **"Install Mneme CE World Generator"**
+5. The app opens in its own window and can be launched from your desktop/start menu
+
+#### Benefits of Installing
+- ✅ **Offline access** — Generate systems without internet
+- ✅ **Full-screen experience** — No browser UI clutter
+- ✅ **Quick launch** — App icon on home screen/desktop
+- ✅ **Automatic updates** — New features download in background
 
 ---
 
