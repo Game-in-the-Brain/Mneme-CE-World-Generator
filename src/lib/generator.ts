@@ -383,8 +383,8 @@ const MIN_FLOOR_AU_OUTER = 0.15;  // Outer zone
 function hillSphereAU(a: number, m: number, M: number): number {
   // Hill sphere ≈ a * (m / 3M)^(1/3)
   // m is in Earth masses, M is in Solar masses
-  // 1 Solar mass = 332,946 Earth masses
-  const mSolar = m / 332946; // Convert Earth masses to Solar masses
+  // 1 Solar mass = 333,000 Earth masses
+  const mSolar = m / 333000; // Convert Earth masses to Solar masses
   const ratio = mSolar / (3 * M);
   if (ratio <= 0) return 0;
   return a * Math.cbrt(ratio);

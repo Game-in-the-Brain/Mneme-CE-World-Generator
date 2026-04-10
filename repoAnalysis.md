@@ -23,7 +23,7 @@
 | Layer | Technology | Notes |
 |-------|------------|-------|
 | Framework | React 19 + TypeScript (strict) | Functional components, hooks only |
-| Build | Vite 6 | `npm run dev` / `npm run build` |
+| Build | Vite 8 | `npm run dev` / `npm run build` |
 | Styling | Tailwind CSS v4 | Uses `@import "tailwindcss"` (v4 syntax) |
 | State | React hooks + localStorage | No Redux/Zustand |
 | DB | Dexie.js (IndexedDB wrapper) | Async CRUD in `src/lib/db.ts` |
@@ -170,8 +170,13 @@ Entry: `generateStarSystem(options?)` in `src/lib/generator.ts`
    │   ├── F: Adv+2 on ALL body types (dwarf, terrestrial, ice, gas)
    │   ├── G: Baseline (no modifier)
    │   ├── K: Dis+2 on ALL body types
-   │   ├── M: Dis+4 on dwarfs, Dis+2 on terrestrials, Dis+4 on ice/gas
+   │   ├── M: Dis+4 on ALL body types (dwarf, terrestrial, ice, gas)
    │   └── O/B/A: disks only
+   │
+   │   NOTE: Adv/Dis modifiers apply to BOTH count rolls AND mass
+   │   rolls. Original book applied modifier to mass rolls only.
+   │   v1.1 extends same modifier to count rolls (house rule).
+   │   See 260410-Update.md Section 1 for rationale.
    ├── generateBody() for each type
    │   └── calculatePhysicalProperties() — density → radius/gravity/escape velocity
    ├── applyHotJupiterMigration() — QA-011: clear zones with Class III/IV/V gas
@@ -309,7 +314,7 @@ Generate a G5 star with Average atmo/temp, no hazard, Abundant biochem, TL 14:
 
 ## 10. Gotchas & Common Mistakes
 
-1. **Mass units**: PlanetaryBody.mass is in Earth masses (EM). For Hill sphere calc, convert: `mSolar = m / 332946`
+1. **Mass units**: PlanetaryBody.mass is in Earth masses (EM). For Hill sphere calc, convert: `mSolar = m / 333000`
 
 2. **Habitability vs Population**: Population uses `10^habitability`, so Hab=0 gives tiny populations. This is correct — Hab≤0 worlds use MVT/GVT table instead.
 
@@ -383,7 +388,7 @@ DEV-only feature for statistical validation:
 **Expected Body Counts by Stellar Class:**
 | Class | Dwarfs | Terrestrials | Ice | Gas | Total |
 |-------|--------|--------------|-----|-----|-------|
-| M (Dis+4/+2) | ~3 | ~2 | ~2 | ~2 | ~9 |
-| K (Dis+2) | ~5 | ~3 | ~3 | ~3 | ~14 |
-| G (Baseline) | ~8 | ~5 | ~4 | ~4 | ~21 |
-| F (Adv+2) | ~11 | ~7 | ~5 | ~5 | ~28 |
+| M (Dis+4) | ~2 | ~1 | ~1 | ~1 | ~4-6 |
+| K (Dis+2) | ~3 | ~2 | ~2 | ~2 | ~7-9 |
+| G (Baseline) | ~5 | ~3 | ~2 | ~2 | ~12-15 |
+| F (Adv+2) | ~9 | ~6 | ~4 | ~4 | ~22-26 |
