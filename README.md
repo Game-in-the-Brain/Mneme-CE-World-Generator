@@ -47,6 +47,61 @@ The original tool was a Google Sheets spreadsheet with a Google Apps Script macr
 
 ---
 
+## Recent Updates
+
+### Version 1.3.1 (2026-04-10)
+
+#### New Features
+- **Visible Version Badge** — Version number now displays subtly beside the MNEME CE logo in the header for easy reference
+- **Debug Mode Toggle** — Settings page now includes a Debug Mode toggle (default ON) to show/hide the Batch Export feature for statistical analysis
+- **Credits & Contributors** — Added recognition for GitHub, DeepSeek, and Kimi in the README
+
+#### Physics & Calculation Fixes
+- **Escape Velocity Formula** — Corrected to proper metric formula: `√(0.0196 × gravity × size × 0.5)` km/s
+  - Verified: Earth now correctly calculates to ~11.17 km/s (matches real-world 11.2 km/s)
+- **Radius Calculation** — Fixed to `size × 0.5` (radius is half the diameter)
+- **Complete Test Suite** — Added Python-based physics validation tests
+
+#### Documentation Updates
+- **QA-014** — Debug Mode Toggle documentation
+- **Glossary Corrections** — Fixed definitions for World Serpents, Celestials, Divergent/Variant Humans, Spiral Ships, and added Terraforming Worms
+- **FRD v1.4** — Updated with GitHub repo links, DriveThruRPG links, and PWA installation instructions
+
+---
+
+### Version 1.3.0 (2026-04-10)
+
+#### Major Bug Fixes
+| Issue | Description | Status |
+|-------|-------------|--------|
+| **QA-006** | Hill Sphere orbital spacing — prevents disk collisions | ✅ Fixed |
+| **QA-007** | Adv/Dis modifiers now applied to planet count and size rolls | ✅ Fixed |
+| **QA-009** | Body stats display — mass, radius, diameter, surface gravity, escape velocity | ✅ Fixed |
+| **QA-011** | Hot Jupiter migration rule — inner zone clearing for Class III/IV/V gas giants | ✅ Fixed |
+
+#### UI Improvements
+| Issue | Description | Status |
+|-------|-------------|--------|
+| **QA-003** | Star classification visual cues — OBAFGKM spectrum images | ✅ Fixed |
+| **QA-004** | Scientific notation replaced with formatted numbers (e.g., "1.5M" instead of "1.5e+6") | ✅ Fixed |
+| **QA-005** | Phone theme toggle — vertical single-column layout for mobile | ✅ Fixed |
+| **QA-008** | "Ice" renamed to "Ice Worlds" for clarity | ✅ Fixed |
+| **QA-010** | Single-page layout with tab anchors (Generator/Glossary/Settings) | ✅ Fixed |
+| **QA-013** | Compact theme toggle — Dark/Day share button space | ✅ Fixed |
+
+#### Dev Tools
+| Issue | Description | Status |
+|-------|-------------|--------|
+| **QA-012** | Debug Batch Export — generate 10-100 systems for statistical analysis with JSON export | ✅ Fixed |
+| **QA-014** | Debug Mode Toggle in Settings — user-configurable, default ON | ✅ Fixed |
+
+#### Data & References
+- **Physical Properties** — All planetary bodies now show density, radius, diameter, surface gravity, and escape velocity
+- **Hill Sphere Spacing** — Bodies placed using proper Hill sphere minimum separation formula
+- **Hot Jupiter Rule** — Class III/IV/V gas giants in inner zones clear all other bodies
+
+---
+
 ## Features
 
 ### ⭐ Star Generation
@@ -185,6 +240,32 @@ Each body is displayed with its full physical stats: mass, radius, diameter, sur
 | **Desktop layout** | Multi-panel view with zone visualisation diagram |
 | **Day theme** | Light colour scheme for bright environments |
 | **Dark theme** | Default deep-space dark theme |
+
+---
+
+## Settings & Data Management
+
+The **Settings** page provides full data control:
+
+### Data Management
+- **Import JSON** — Load previously exported systems or share systems between devices
+- **Export All** — Download all saved systems as a single JSON file for backup
+- **Clear All** — Delete all saved systems (with confirmation)
+- **Debug Mode Toggle** — Show/hide the Batch Export feature (default ON)
+
+### Data Log (System Library)
+Browse all saved systems in a searchable, sortable table:
+- **Search** — Find systems by name, star class, or world type
+- **Pagination** — Navigate large libraries (10 systems per page)
+- **View** — Click to view any saved system's full details
+- **Delete** — Remove individual systems
+- **Total Count** — Shows total number of saved systems
+
+### Debug Batch Export (QA-012)
+When Debug Mode is enabled, the Generator page includes a Batch Export panel:
+- Generate 10–100 systems at once for statistical analysis
+- Exports JSON with summary statistics (mean habitability, hot Jupiter frequency, etc.)
+- Useful for balancing and testing the generation algorithms
 
 ---
 
