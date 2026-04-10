@@ -273,8 +273,8 @@ class TestRocketEquationImplications(unittest.TestCase):
         print(f"  Required fuel ratio: {mass_ratio:.2e}x")
         print(f"  That's {mass_ratio/1e6:.0f} million kg of fuel per kg of payload!")
         
-        # This is why you need World Serpents (particle accelerators) 
-        # to create antimatter for high-efficiency drives
+        # This is why you need Great Trees (space elevators) to escape high-G worlds
+        # and World Serpents (antimatter generators) to power high-efficiency drives
         self.assertGreater(mass_ratio, 1e6,
             msg="Jupiter escape should require impossible fuel ratios with chemical rockets")
 
@@ -375,7 +375,8 @@ def run_tests():
         print("\nKey findings:")
         print("  • Escape velocity scales LINEARLY with planet size (constant density)")
         print("  • But fuel requirements scale EXPONENTIALLY (rocket equation)")
-        print("  • This is why larger planets need World Serpents (antimatter drives)")
+        print("  • This is why high-G worlds need Great Trees (space elevators)")
+        print("  • And why interstellar travel needs World Serpents (antimatter generators)")
     else:
         print("❌ TESTS FAILED")
         print("\nYour calculator may have implementation errors.")
