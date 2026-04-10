@@ -47,14 +47,14 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
   // Generate companion stars
   const companionStars = generateCompanionStars(primaryStar);
 
-  // Generate main world
-  const mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType);
+  // Generate planetary system FIRST to determine largest body mass (for Habitat sizing)
+  const { disks, dwarfs, terrestrials, ices, gases, largestBodyMass } = generatePlanetarySystem(primaryStar, zones);
+
+  // Generate main world (Habitats use largestBodyMass if applicable)
+  const mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
 
   // Generate inhabitants
   const inhabitants = generateInhabitants(mainWorld, opts.populated);
-
-  // Generate planetary system (passes stellar class for Adv/Dis — QA-007)
-  const { disks, dwarfs, terrestrials, ices, gases } = generatePlanetarySystem(primaryStar, zones);
 
   return {
     id,
@@ -166,7 +166,8 @@ function generateCompanionStars(primaryStar: Star): Star[] {
 function generateMainWorld(
   primaryStar: Star,
   _zones: ZoneBoundaries,
-  forcedType: WorldType | 'random' = 'random'
+  forcedType: WorldType | 'random' = 'random',
+  largestBodyMass: number = 1.0
 ): MainWorld {
   let worldType: WorldType;
   let size: number;
@@ -180,7 +181,10 @@ function generateMainWorld(
     } else if (worldType === 'Terrestrial') {
       size = Math.floor(Math.random() * 3000) + 2000;
     } else {
-      size = Math.floor(Math.random() * 2000) + 6000;
+      // Habitat: size based on largest body mass in system (radius = mass^0.33 × Earth radius)
+      const earthRadius = 6371;
+      const radiusFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2 variation
+      size = Math.round(Math.pow(largestBodyMass, 0.33) * earthRadius * radiusFactor);
     }
   } else {
     const { dice, keep } = getWorldTypeRoll(primaryStar.class);
@@ -194,7 +198,10 @@ function generateMainWorld(
       size = Math.floor(Math.random() * 3000) + 2000;
     } else {
       worldType = 'Habitat';
-      size = Math.floor(Math.random() * 2000) + 6000;
+      // Habitat: size based on largest body mass in system (radius = mass^0.33 × Earth radius)
+      const earthRadius = 6371;
+      const radiusFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2 variation
+      size = Math.round(Math.pow(largestBodyMass, 0.33) * earthRadius * radiusFactor);
     }
   }
 
@@ -587,6 +594,12 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
   // Verify spacing and log violations
   const spacingCheck = verifySpacing(allBodies, starMass);
 
+  // Find largest body mass for Habitat sizing (excluding stars)
+  const nonDiskBodies = allBodies.filter(b => b.type !== 'disk');
+  const largestBodyMass = nonDiskBodies.length > 0 
+    ? Math.max(...nonDiskBodies.map(b => b.mass))
+    : 1.0; // Default to 1 EM if only disks exist
+
   // Log summary in dev mode
   if (import.meta.env.DEV) {
     console.log('[Planetary System] Generated:', {
@@ -596,6 +609,7 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
       terrestrials: allBodies.filter(b => b.type === 'terrestrial').length,
       ices: allBodies.filter(b => b.type === 'ice').length,
       gases: allBodies.filter(b => b.type === 'gas').length,
+      largestBodyMass: largestBodyMass.toFixed(3) + ' EM',
       hotJupiterCleared: hjResult.clearedZones,
       hillViolations: spacingCheck.violations,
     });
@@ -607,6 +621,7 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
     terrestrials: allBodies.filter(b => b.type === 'terrestrial'),
     ices:         allBodies.filter(b => b.type === 'ice'),
     gases:        allBodies.filter(b => b.type === 'gas'),
+    largestBodyMass,
   };
 }
 

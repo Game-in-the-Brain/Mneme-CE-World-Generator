@@ -30,7 +30,9 @@
 | [QA-012](#qa-012) | Dev Tool | Debug Batch Export button for statistical analysis | 🟡 Low | ✅ Fixed |
 | [QA-013](#qa-013) | UI | Theme toggle buttons — Dark/Day should share space to save header width | 🟡 Low | ✅ Fixed |
 | [QA-014](#qa-014) | Settings | Debug mode toggle — user-configurable, default ON | 🟡 Low | ✅ Fixed |
-| [QA-015](#qa-015) | Engine | Half Dice mechanic for K/M stars — significantly reduce planet counts | 🟠 Medium | ✅ Fixed |
+| [QA-015](#qa-015) | Engine | Half Dice mechanic for M-class stars (d3 + Dis+1) to reduce planet counts | 🟠 Medium | ✅ Fixed |
+| [QA-016](#qa-016) | Dev Tool | Batch export enhanced with planet counts by star class and main world breakdown | 🟡 Low | ✅ Fixed |
+| [QA-017](#qa-017) | Engine | Habitats sized by largest body mass in system | 🟡 Low | ✅ Fixed |
 
 ---
 
@@ -350,6 +352,72 @@ K and M class stars were generating too many planetary bodies. The Dis+2 (K) and
 
 ---
 
+### QA-016
+
+**Title:** Batch export enhanced with planet counts by star class  
+**Area:** Dev Tool — Batch Export  
+**Priority:** 🟡 Low  
+**Status:** ✅ Fixed  
+**File(s):** `src/components/GeneratorDashboard.tsx`
+
+**Description:**  
+Batch export statistics were limited — only showed mean habitability and hot Jupiter count. Users needed breakdown by stellar class to validate the Half Dice mechanic.
+
+**Fix Applied:**  
+Added `byStarClass` statistics to batch export meta:
+
+```json
+{
+  "meta": {
+    "statistics": {
+      "byStarClass": {
+        "M": {
+          "count": 676,
+          "medianTotalBodies": 5,
+          "medianTerrestrials": 1,
+          "medianDwarfs": 2,
+          "mainWorldPercent": { "terrestrial": 34, "dwarf": 58, "habitat": 8 }
+        }
+      }
+    }
+  }
+}
+```
+
+Each star class includes:
+- Count of systems
+- Median total bodies
+- Median by type (terrestrials, dwarfs, ices, gases, disks)
+- Main world type distribution (percentage terrestrial/dwarf/habitat)
+
+---
+
+### QA-017
+
+**Title:** Habitats sized by largest body mass in system  
+**Area:** Engine — Main World Generation  
+**Priority:** 🟡 Low  
+**Status:** ✅ Fixed  
+**File(s):** `src/lib/generator.ts`
+
+**Description:**  
+Habitats (artificial megastructures) previously had random sizing (6000-8000 km). This didn't reflect that habitats are typically built around or from the largest available mass in a system.
+
+**Fix Applied:**  
+- Restructured generation order: planetary system generated BEFORE main world
+- `generatePlanetarySystem()` now returns `largestBodyMass` (in Earth Masses)
+- `generateMainWorld()` accepts `largestBodyMass` parameter
+- Habitat size calculated as: `radius = mass^0.33 × Earth radius × (0.8 to 1.2)`
+
+**Formula:**
+```
+size (km) = (largestBodyMass ^ 0.33) × 6371 km × randomFactor
+```
+
+Where `randomFactor` is 0.8-1.2 for variation. This ensures Habitats are appropriately sized relative to the largest planet/moon in the system they're built in.
+
+---
+
 ## Additional Feature Issues
 
 ---
@@ -398,4 +466,5 @@ CSV export format needed a formal specification.
 | 1.3 | 2026-04-10 | Fixed radius/escape velocity calculations; added Terraforming Worms; glossary updates |
 | 1.5 | 2026-04-10 | **CORRECTION:** Escape velocity formula fixed to `sqrt(0.0196 * gravity * size * 0.5)` — proper unit conversion for km/s |
 | 1.4 | 2026-04-10 | QA-014: Debug mode toggle in Settings (default ON, user-configurable) |
-| 1.6 | 2026-04-10 | QA-015: Half Dice mechanic — K-class uses d3+Dis+3, M-class uses d3+Dis+1 to reduce planet counts |
+| 1.6 | 2026-04-10 | QA-015: Half Dice mechanic — M-class uses d3+Dis+1 to reduce planet counts |
+| 1.7 | 2026-04-10 | QA-016: Batch export enhanced with planet counts by star class; QA-017: Habitats sized by largest body mass |

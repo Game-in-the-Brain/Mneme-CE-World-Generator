@@ -289,6 +289,23 @@ See [REF-003: Orbit Table](./references/REF-003-orbit-table.md) for full table.
 
 See [REF-004: World Type & Size Tables](./references/REF-004-world-type-tables.md) for full tables.
 
+**Habitat Size Calculation (QA-017):**
+
+Habitats are artificial megastructures sized based on the largest planetary body mass in the system:
+
+```
+Habitat Radius (km) = (largestBodyMass ^ 0.33) × 6371 km × randomFactor
+```
+
+Where:
+- `largestBodyMass` = Mass of largest non-star body in system (in Earth Masses)
+- `6371 km` = Earth's radius
+- `randomFactor` = 0.8 to 1.2 (±20% variation)
+
+This ensures habitats are appropriately scaled to the largest available mass in their system — whether built around a planet, moon, or constructed from asteroids.
+
+> ✅ **QA-017:** Habitats sized by largest body mass in system. [See QA-017](./QA.md#qa-017)
+
 ### 6.2 Lesser Earth Type (Dwarf Worlds)
 
 | Function | Roll | Output |

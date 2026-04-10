@@ -422,16 +422,93 @@ function DebugBatchExport() {
       systems.push(record);
     }
 
+    // Calculate statistics by star class
+    const classStats: Record<string, {
+      count: number;
+      totalBodies: number[];
+      terrestrials: number[];
+      dwarfs: number[];
+      ices: number[];
+      gases: number[];
+      disks: number[];
+      mainWorldTypes: { terrestrial: number; dwarf: number; habitat: number };
+    }> = {};
+    
+    for (const sys of systems) {
+      const cls = sys.star.class;
+      if (!classStats[cls]) {
+        classStats[cls] = {
+          count: 0,
+          totalBodies: [],
+          terrestrials: [],
+          dwarfs: [],
+          ices: [],
+          gases: [],
+          disks: [],
+          mainWorldTypes: { terrestrial: 0, dwarf: 0, habitat: 0 },
+        };
+      }
+      
+      classStats[cls].count++;
+      classStats[cls].totalBodies.push(sys.planetarySystem.totalBodies);
+      classStats[cls].terrestrials.push(sys.planetarySystem.terrestrials);
+      classStats[cls].dwarfs.push(sys.planetarySystem.dwarfs);
+      classStats[cls].ices.push(sys.planetarySystem.ices);
+      classStats[cls].gases.push(sys.planetarySystem.gases);
+      classStats[cls].disks.push(sys.planetarySystem.disks);
+      
+      // Track main world types
+      if (sys.mainWorld.type === 'Terrestrial') classStats[cls].mainWorldTypes.terrestrial++;
+      else if (sys.mainWorld.type === 'Dwarf') classStats[cls].mainWorldTypes.dwarf++;
+      else if (sys.mainWorld.type === 'Habitat') classStats[cls].mainWorldTypes.habitat++;
+    }
+    
+    // Calculate medians for each class
+    const median = (arr: number[]) => {
+      const sorted = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    };
+    
+    const classBreakdown: Record<string, {
+      count: number;
+      medianTotalBodies: number;
+      medianTerrestrials: number;
+      medianDwarfs: number;
+      medianIces: number;
+      medianGases: number;
+      medianDisks: number;
+      mainWorldPercent: { terrestrial: number; dwarf: number; habitat: number };
+    }> = {};
+    
+    for (const [cls, stats] of Object.entries(classStats)) {
+      classBreakdown[cls] = {
+        count: stats.count,
+        medianTotalBodies: median(stats.totalBodies),
+        medianTerrestrials: median(stats.terrestrials),
+        medianDwarfs: median(stats.dwarfs),
+        medianIces: median(stats.ices),
+        medianGases: median(stats.gases),
+        medianDisks: median(stats.disks),
+        mainWorldPercent: {
+          terrestrial: Math.round((stats.mainWorldTypes.terrestrial / stats.count) * 100),
+          dwarf: Math.round((stats.mainWorldTypes.dwarf / stats.count) * 100),
+          habitat: Math.round((stats.mainWorldTypes.habitat / stats.count) * 100),
+        },
+      };
+    }
+
     const exportData = {
       meta: {
         generatedAt: new Date().toISOString(),
         count: batchSize,
-        version: '1.2.0',
+        version: '1.3.2',
         description: 'Mneme CE World Generator — batch statistical export (QA-012)',
         statistics: {
           meanHabitability: Math.round((totalHabitability / batchSize) * 100) / 100,
           hotJupiterSystems: hotJupiterCount,
           hotJupiterPercent: Math.round((hotJupiterCount / batchSize) * 100),
+          byStarClass: classBreakdown,
         },
       },
       systems,
