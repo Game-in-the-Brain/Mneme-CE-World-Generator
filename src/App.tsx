@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { StarSystem, ViewMode } from './types';
+import type { StarSystem, ViewMode, GeneratorOptions } from './types';
 import { generateStarSystem } from './lib/generator';
 import {
   saveSystem, getAllSystems, deleteSystem, clearAllSystems,
@@ -49,12 +49,12 @@ function App() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleGenerate = useCallback(async () => {
+  const handleGenerate = useCallback(async (options: GeneratorOptions) => {
     setIsGenerating(true);
     try {
       // Simulate generation delay for effect
       await new Promise(resolve => setTimeout(resolve, 500));
-      const system = generateStarSystem();
+      const system = generateStarSystem(options);
       setCurrentSystem(system);
       await saveSystem(system);
       await loadSavedSystems();

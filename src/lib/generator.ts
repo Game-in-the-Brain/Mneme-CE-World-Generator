@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import type {
   StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody,
-  StellarClass, StellarGrade, Zone, BodyType, GasWorldClass, LesserEarthType, ZoneBoundaries
+  StellarClass, StellarGrade, Zone, BodyType, GasWorldClass, LesserEarthType, ZoneBoundaries,
+  WorldType, GeneratorOptions
 } from '../types';
 import { roll5D6, roll2D6, roll3D6, rollKeep, rollD6 } from './dice';
 import {
@@ -18,7 +19,7 @@ import {
   getWealth, getPowerStructure, getDevelopment, getSourceOfPower,
   getGovernanceDM, calculateStarport, rollForBase, determineTravelZone,
   generateCultureTraits, getBodyCount, getGasWorldClass, calculateWorldPosition,
-  getWorldTypeRoll
+  getWorldTypeRoll, getHabitatSize
 } from './worldData';
 import { calculatePhysicalProperties } from './physicalProperties';
 
@@ -26,12 +27,19 @@ import { calculatePhysicalProperties } from './physicalProperties';
 // Star System Generator
 // =====================
 
-export function generateStarSystem(): StarSystem {
+export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSystem {
+  const opts: GeneratorOptions = {
+    starClass:     options?.starClass     ?? 'random',
+    starGrade:     options?.starGrade     ?? 'random',
+    mainWorldType: options?.mainWorldType ?? 'random',
+    populated:     options?.populated     ?? true,
+  };
+
   const id = uuidv4();
   const createdAt = Date.now();
 
   // Generate primary star
-  const primaryStar = generatePrimaryStar();
+  const primaryStar = generatePrimaryStar(opts);
 
   // Calculate zones based on primary star luminosity
   const zones = calculateZoneBoundaries(primaryStar.luminosity);
@@ -40,10 +48,10 @@ export function generateStarSystem(): StarSystem {
   const companionStars = generateCompanionStars(primaryStar);
 
   // Generate main world
-  const mainWorld = generateMainWorld(primaryStar, zones);
+  const mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType);
 
   // Generate inhabitants
-  const inhabitants = generateInhabitants(mainWorld);
+  const inhabitants = generateInhabitants(mainWorld, opts.populated);
 
   // Generate planetary system (passes stellar class for Adv/Dis — QA-007)
   const { disks, dwarfs, terrestrials, ices, gases } = generatePlanetarySystem(primaryStar, zones);
@@ -68,12 +76,14 @@ export function generateStarSystem(): StarSystem {
 // Star Generation
 // =====================
 
-function generatePrimaryStar(): Star {
-  const classRoll = roll5D6().value;
-  const gradeRoll = roll5D6().value;
+function generatePrimaryStar(opts: GeneratorOptions): Star {
+  const stellarClass: StellarClass = opts.starClass === 'random'
+    ? getClassFromRoll(roll5D6().value)
+    : (opts.starClass as StellarClass);
 
-  const stellarClass = getClassFromRoll(classRoll);
-  const grade = getGradeFromRoll(gradeRoll);
+  const grade: StellarGrade = opts.starGrade === 'random'
+    ? getGradeFromRoll(roll5D6().value)
+    : (opts.starGrade as StellarGrade);
 
   return createStar(stellarClass, grade, true);
 }
@@ -153,25 +163,39 @@ function generateCompanionStars(primaryStar: Star): Star[] {
 // Main World Generation
 // =====================
 
-function generateMainWorld(primaryStar: Star, _zones: ZoneBoundaries): MainWorld {
-  const { dice, keep } = getWorldTypeRoll(primaryStar.class);
-  const typeRoll = rollKeep(dice, 6, keep, 'highest', 0).value;
-
-  let worldType: 'Habitat' | 'Dwarf' | 'Terrestrial';
+function generateMainWorld(
+  primaryStar: Star,
+  _zones: ZoneBoundaries,
+  forcedType: WorldType | 'random' = 'random'
+): MainWorld {
+  let worldType: WorldType;
   let size: number;
   let lesserEarthType: LesserEarthType | undefined;
 
-  if (typeRoll <= 7) {
-    worldType = 'Dwarf';
-    size = Math.floor(Math.random() * 500) + 100;
-    const lesserResult = getLesserEarthType(roll2D6().value);
-    lesserEarthType = lesserResult.type;
-  } else if (typeRoll <= 10) {
-    worldType = 'Terrestrial';
-    size = Math.floor(Math.random() * 3000) + 2000;
+  if (forcedType !== 'random') {
+    worldType = forcedType;
+    if (worldType === 'Dwarf') {
+      size = Math.floor(Math.random() * 500) + 100;
+      lesserEarthType = getLesserEarthType(roll2D6().value).type;
+    } else if (worldType === 'Terrestrial') {
+      size = Math.floor(Math.random() * 3000) + 2000;
+    } else {
+      size = Math.floor(Math.random() * 2000) + 6000;
+    }
   } else {
-    worldType = 'Habitat';
-    size = Math.floor(Math.random() * 2000) + 6000;
+    const { dice, keep } = getWorldTypeRoll(primaryStar.class);
+    const typeRoll = rollKeep(dice, 6, keep, 'highest', 0).value;
+    if (typeRoll <= 7) {
+      worldType = 'Dwarf';
+      size = Math.floor(Math.random() * 500) + 100;
+      lesserEarthType = getLesserEarthType(roll2D6().value).type;
+    } else if (typeRoll <= 10) {
+      worldType = 'Terrestrial';
+      size = Math.floor(Math.random() * 3000) + 2000;
+    } else {
+      worldType = 'Habitat';
+      size = Math.floor(Math.random() * 2000) + 6000;
+    }
   }
 
   const gravityRoll = roll2D6().value;
@@ -238,12 +262,40 @@ function generateMainWorld(primaryStar: Star, _zones: ZoneBoundaries): MainWorld
 // Inhabitant Generation
 // =====================
 
-function generateInhabitants(mainWorld: MainWorld): Inhabitants {
+function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabitants {
+  if (!populated) {
+    return {
+      populated: false,
+      techLevel: 0,
+      population: 0,
+      wealth: 'Average',
+      powerStructure: 'Anarchy',
+      development: 'UnderDeveloped',
+      sourceOfPower: 'Kratocracy',
+      governance: -9,
+      starport: { class: 'X', output: 0, hasNavalBase: false, hasScoutBase: false, hasPirateBase: false },
+      travelZone: 'Green',
+      cultureTraits: [],
+    };
+  }
+
   const tlRoll = roll2D6().value;
   const techLevel = getTechLevel(tlRoll);
 
-  const popRoll = roll2D6().value;
-  const population = calculatePopulation(mainWorld.habitability, popRoll);
+  // Population fork: natural surface population vs artificial habitat (QA — Hab ≤ 0)
+  let population: number;
+  let habitatType: string | undefined;
+
+  if (mainWorld.habitability <= 0) {
+    // Hab ≤ 0: inhabitants live in an artificial habitat, not on the surface
+    const habitatRoll = roll2D6().value;
+    const habitatResult = getHabitatSize(habitatRoll);
+    population = habitatResult.population;
+    habitatType = habitatResult.type;
+  } else {
+    const popRoll = roll2D6().value;
+    population = calculatePopulation(mainWorld.habitability, popRoll);
+  }
 
   const wealthRoll = roll2D6().value;
   const wealth = getWealth(wealthRoll, mainWorld.biochemicalResources);
@@ -273,6 +325,8 @@ function generateInhabitants(mainWorld: MainWorld): Inhabitants {
   const cultureTraits = generateCultureTraits(2);
 
   return {
+    populated: true,
+    habitatType,
     techLevel,
     population,
     wealth,
@@ -471,7 +525,7 @@ function generateBody(type: BodyType, primaryStar: Star, _zones: ZoneBoundaries)
   const body: PlanetaryBody = {
     id,
     type,
-    mass: Math.round(mass * 1000) / 1000,
+    mass: Math.round(mass * 10000) / 10000,
     zone,
     distanceAU: Math.round(distanceAU * 100) / 100,
     gasClass,

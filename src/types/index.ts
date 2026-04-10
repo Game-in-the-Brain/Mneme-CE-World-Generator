@@ -86,6 +86,8 @@ export interface Starport {
 }
 
 export interface Inhabitants {
+  populated?: boolean;      // false = unpopulated world; undefined treated as true
+  habitatType?: string;     // set when Hab ≤ 0 and populated — inhabitants live in artificial habitat
   techLevel: number;
   population: number;
   wealth: WealthLevel;
@@ -164,4 +166,11 @@ export interface GeneratorState {
   savedSystems: StarSystem[];
   view: ViewMode;
   isGenerating: boolean;
+}
+
+export interface GeneratorOptions {
+  starClass: StellarClass | 'random';
+  starGrade: StellarGrade | 'random';
+  mainWorldType: WorldType | 'random';
+  populated: boolean;
 }

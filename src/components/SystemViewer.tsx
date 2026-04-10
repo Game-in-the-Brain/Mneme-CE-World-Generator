@@ -461,6 +461,20 @@ function FootnoteBlock({ children }: { children: React.ReactNode }) {
 }
 
 function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
+  const isPopulated = inhabitants.populated !== false;
+
+  if (!isPopulated) {
+    return (
+      <div className="card text-center py-12">
+        <div className="text-2xl font-bold mb-3" style={{ color: 'var(--text-secondary)' }}>—</div>
+        <h3 className="text-xl font-semibold mb-2">Unpopulated World</h3>
+        <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--text-secondary)' }}>
+          No permanent inhabitants. No starport, government, or cultural institutions exist on this world.
+        </p>
+      </div>
+    );
+  }
+
   const wealthDesc = WEALTH_DESCRIPTIONS[inhabitants.wealth];
   const govDesc    = POWER_STRUCTURE_DESCRIPTIONS[inhabitants.powerStructure];
   const devDesc    = DEVELOPMENT_DESCRIPTIONS[inhabitants.development];
@@ -484,6 +498,17 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
             {formatPopulation(inhabitants.population)}
           </div>
           <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Population</div>
+          {inhabitants.habitatType && (
+            <div className="mt-2 text-xs font-semibold px-2 py-1 rounded inline-block"
+                 style={{ backgroundColor: 'var(--border-color)', color: 'var(--text-primary)' }}>
+              {inhabitants.habitatType} — Artificial Habitat
+            </div>
+          )}
+          {inhabitants.habitatType && (
+            <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+              Habitability ≤ 0: surface is inhospitable. Inhabitants live and work inside an enclosed artificial structure.
+            </p>
+          )}
         </div>
 
         {/* Wealth */}

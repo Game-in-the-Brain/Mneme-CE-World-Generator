@@ -590,4 +590,17 @@ export function calculateWorldPosition(
   return { zone: baseZone, distanceAU: Math.round(distance * 100) / 100 };
 }
 
+// =====================
+// Habitat Size Table (Hab ≤ 0 populated worlds — MVT/GVT)
+// =====================
+
+export function getHabitatSize(roll: number): { type: string; population: number } {
+  if (roll === 2)  return { type: 'Frontier Outpost',   population: Math.floor(Math.random() * 90)       + 10 };
+  if (roll <= 4)   return { type: 'Research Station',   population: Math.floor(Math.random() * 900)      + 100 };
+  if (roll <= 6)   return { type: 'Mining Habitat',     population: Math.floor(Math.random() * 9000)     + 1000 };
+  if (roll <= 8)   return { type: 'Industrial Habitat', population: Math.floor(Math.random() * 90000)    + 10000 };
+  if (roll <= 10)  return { type: 'Colonial Habitat',   population: Math.floor(Math.random() * 900000)   + 100000 };
+  if (roll === 11) return { type: 'City Habitat',       population: Math.floor(Math.random() * 9000000)  + 1000000 };
+  return             { type: 'Megastructure',           population: Math.floor(Math.random() * 90000000) + 10000000 };
+}
 
