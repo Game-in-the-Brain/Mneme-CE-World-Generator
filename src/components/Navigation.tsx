@@ -11,18 +11,10 @@ interface NavigationProps {
   onThemeChange: (theme: Theme) => void;
 }
 
-const THEME_CYCLE: Theme[] = ['dark', 'day', 'phone'];
-
 const THEME_ICON: Record<Theme, React.ReactNode> = {
   dark:  <Moon  size={16} />,
   day:   <Sun   size={16} />,
   phone: <Smartphone size={16} />,
-};
-
-const THEME_LABEL: Record<Theme, string> = {
-  dark:  'Dark',
-  day:   'Day',
-  phone: 'Phone',
 };
 
 export function Navigation({ currentView, onViewChange, theme, onThemeChange }: NavigationProps) {
@@ -66,22 +58,43 @@ export function Navigation({ currentView, onViewChange, theme, onThemeChange }: 
               </button>
             ))}
 
-            {/* Theme selector — three always-visible icon buttons (QA-005) */}
+            {/* Theme selector — Dark/Day buttons + Phone toggle (QA-005) */}
             <div className="flex items-center gap-0.5">
-              {THEME_CYCLE.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => onThemeChange(t)}
-                  title={`${THEME_LABEL[t]} theme`}
-                  className={`p-2 rounded-lg transition-all ${
-                    theme === t
-                      ? 'bg-[#e53935] text-white'
-                      : 'text-[#9e9e9e] hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  {THEME_ICON[t]}
-                </button>
-              ))}
+              {/* Desktop themes: Dark & Day */}
+              <button
+                onClick={() => onThemeChange('dark')}
+                title="Dark theme"
+                className={`p-2 rounded-lg transition-all ${
+                  theme === 'dark'
+                    ? 'bg-[#e53935] text-white'
+                    : 'text-[#9e9e9e] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {THEME_ICON['dark']}
+              </button>
+              <button
+                onClick={() => onThemeChange('day')}
+                title="Day theme"
+                className={`p-2 rounded-lg transition-all ${
+                  theme === 'day'
+                    ? 'bg-[#e53935] text-white'
+                    : 'text-[#9e9e9e] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {THEME_ICON['day']}
+              </button>
+              {/* Phone layout toggle — click again to return to desktop */}
+              <button
+                onClick={() => onThemeChange('phone')}
+                title={theme === 'phone' ? 'Return to desktop layout' : 'Phone layout'}
+                className={`p-2 rounded-lg transition-all ${
+                  theme === 'phone'
+                    ? 'bg-[#e53935] text-white'
+                    : 'text-[#9e9e9e] hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {THEME_ICON['phone']}
+              </button>
             </div>
 
             {/* GI7B logo (QA-002) */}

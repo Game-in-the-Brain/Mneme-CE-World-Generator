@@ -24,11 +24,29 @@ function App() {
   const [theme, setTheme] = useState<Theme>(() => {
     return (localStorage.getItem('mneme_theme') as Theme) || 'dark';
   });
+  // Track desktop theme for phone toggle — when toggling off phone, restore this
+  const [desktopTheme, setDesktopTheme] = useState<Exclude<Theme, 'phone'>>(() => {
+    const saved = localStorage.getItem('mneme_theme') as Theme;
+    return saved === 'day' ? 'day' : 'dark';
+  });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('mneme_theme', theme);
+    // When switching to a desktop theme, remember it
+    if (theme !== 'phone') {
+      setDesktopTheme(theme);
+    }
   }, [theme]);
+
+  const handleThemeChange = useCallback((newTheme: Theme) => {
+    // If clicking phone while on phone, go back to desktop
+    if (newTheme === 'phone' && theme === 'phone') {
+      setTheme(desktopTheme);
+    } else {
+      setTheme(newTheme);
+    }
+  }, [theme, desktopTheme]);
 
   // Load saved systems on mount
   useEffect(() => {
@@ -132,7 +150,7 @@ function App() {
 
   return (
     <div className="min-h-screen phone-layout-root" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-      <Navigation currentView={view} onViewChange={setView} theme={theme} onThemeChange={setTheme} />
+      <Navigation currentView={view} onViewChange={setView} theme={theme} onThemeChange={handleThemeChange} />
       
       <main className="container mx-auto px-4 py-6">
         {notification && (
