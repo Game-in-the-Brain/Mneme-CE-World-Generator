@@ -367,14 +367,18 @@ npm run preview
 **Last Updated:** 2026-04-10  
 **Version:** 1.3.0
 
-## 13. Batch Export & Statistical Analysis (QA-012)
+## 13. Batch Export & Statistical Analysis (QA-012, QA-016)
 
 **Location:** `src/components/GeneratorDashboard.tsx` → `DebugBatchExport`
 
 DEV-only feature for statistical validation:
-- Configurable batch size (default 40, max 500)
+- Configurable batch size (default 40, max 1000)
 - Exports full system data including habitability component breakdown
-- Tracks: star class distribution, mean habitability, hot Jupiter frequency
+- **QA-016 Enhancement:** Star class breakdown with median body counts
+  - Count per stellar class
+  - Median total bodies, terrestrials, dwarfs, ices, gases, disks
+  - Main world type distribution (terrestrial/dwarf/habitat %)
+- Tracks: mean habitability, hot Jupiter frequency
 - JSON format with metadata and summary statistics
 
 ## 14. Recent Fixes (2026-04-10)
@@ -385,10 +389,14 @@ DEV-only feature for statistical validation:
 | Habitability components | `types/index.ts`, `generator.ts` | Added breakdown field for debugging |
 | Temperature roll | `generator.ts` | Verified: Average requires modified roll ≥12 (2.78% chance) |
 
-**Expected Body Counts by Stellar Class:**
-| Class | Dwarfs | Terrestrials | Ice | Gas | Total |
-|-------|--------|--------------|-----|-----|-------|
-| M (Dis+4) | ~2 | ~1 | ~1 | ~1 | ~4-6 |
-| K (Dis+2) | ~3 | ~2 | ~2 | ~2 | ~7-9 |
-| G (Baseline) | ~5 | ~3 | ~2 | ~2 | ~12-15 |
-| F (Adv+2) | ~9 | ~6 | ~4 | ~4 | ~22-26 |
+**Validated Body Counts by Stellar Class (1000 Systems):**
+
+| Class | Mechanism | Dwarfs | Terrestrials | Ice | Gas | Total |
+|-------|-----------|--------|--------------|-----|-----|-------|
+| M | Half Dice (d3) + Dis+1 | ~2 | ~1 | ~0 | ~0 | **~5** |
+| K | Dis+3 on d6 | ~3 | ~2 | ~2 | ~2 | **~11** |
+| G | Baseline d6 | ~6 | ~4 | ~2 | ~2 | **~17** |
+| F | Adv+2 on d6 | ~9 | ~7 | ~2 | ~2 | **~20** |
+| A/B | Disks only | ~0 | ~0 | ~0 | ~0 | **~2** |
+
+**Note:** M-class uses Half Dice (d3), all others use standard d6.
