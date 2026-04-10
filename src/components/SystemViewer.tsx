@@ -3,7 +3,13 @@ import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarCl
 import { FileJson, FileSpreadsheet, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 // @ts-ignore - lucide-react types
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatPopulation } from '../lib/format';
-import { CULTURE_TRAIT_DESCRIPTIONS } from '../lib/worldData';
+import {
+  CULTURE_TRAIT_DESCRIPTIONS,
+  WEALTH_DESCRIPTIONS,
+  POWER_STRUCTURE_DESCRIPTIONS,
+  DEVELOPMENT_DESCRIPTIONS,
+  SOURCE_OF_POWER_DESCRIPTIONS,
+} from '../lib/worldData';
 
 interface SystemViewerProps {
   system: StarSystem;
@@ -421,33 +427,129 @@ function CultureTraitCard({ trait }: { trait: string }) {
   );
 }
 
+function DescriptionCard({ title, subtitle, description }: {
+  title: string;
+  subtitle?: string;
+  description: string;
+}) {
+  return (
+    <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)',
+         borderLeft: '3px solid var(--accent-red)' }}>
+      <div className="flex items-baseline gap-2 mb-1">
+        <span className="font-semibold text-sm">{title}</span>
+        {subtitle && (
+          <span className="text-xs font-medium" style={{ color: 'var(--accent-red)' }}>{subtitle}</span>
+        )}
+      </div>
+      <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+        {description}
+      </div>
+    </div>
+  );
+}
+
+function FootnoteBlock({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-1 p-2 rounded text-xs" style={{
+      backgroundColor: 'var(--row-hover)',
+      color: 'var(--text-secondary)',
+      borderLeft: '2px solid var(--border-color)',
+    }}>
+      {children}
+    </div>
+  );
+}
+
 function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
+  const wealthDesc = WEALTH_DESCRIPTIONS[inhabitants.wealth];
+  const govDesc    = POWER_STRUCTURE_DESCRIPTIONS[inhabitants.powerStructure];
+  const devDesc    = DEVELOPMENT_DESCRIPTIONS[inhabitants.development];
+  const powerDesc  = SOURCE_OF_POWER_DESCRIPTIONS[inhabitants.sourceOfPower];
+  const govSign    = inhabitants.governance >= 0 ? `+${inhabitants.governance}` : `${inhabitants.governance}`;
+
   return (
     <div className="grid md:grid-cols-2 gap-6">
+
+      {/* Demographics */}
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Demographics</h3>
+
         <div className="space-y-2">
-          <DataRow label="Tech Level"  value={`TL ${inhabitants.techLevel}`} />
-          <DataRow label="Population"  value={formatPopulation(inhabitants.population)} />
-          <DataRow label="Wealth"      value={inhabitants.wealth} />
-          <DataRow label="Development" value={inhabitants.development} />
+          <DataRow label="Tech Level" value={`TL ${inhabitants.techLevel}`} />
+        </div>
+
+        {/* Population — prominent */}
+        <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+          <div className="text-3xl font-bold" style={{ color: 'var(--accent-red)' }}>
+            {formatPopulation(inhabitants.population)}
+          </div>
+          <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Population</div>
+        </div>
+
+        {/* Wealth */}
+        <div>
+          <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Wealth</div>
+          <DescriptionCard
+            title={inhabitants.wealth}
+            description={wealthDesc.description}
+          />
+        </div>
+
+        {/* Development */}
+        <div>
+          <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>World Development</div>
+          <DescriptionCard
+            title={inhabitants.development}
+            subtitle={`HDI ${devDesc.hdi}`}
+            description={devDesc.description}
+          />
         </div>
       </div>
 
+      {/* Government */}
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Government</h3>
-        <div className="space-y-2">
-          <DataRow label="Power Structure"  value={inhabitants.powerStructure} />
-          <DataRow label="Source of Power"  value={inhabitants.sourceOfPower} />
-          <DataRow label="Governance DM"    value={inhabitants.governance > 0 ? `+${inhabitants.governance}` : inhabitants.governance.toString()} />
+
+        {/* Power Structure */}
+        <div>
+          <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Power Structure</div>
+          <DescriptionCard
+            title={inhabitants.powerStructure}
+            description={govDesc.description}
+          />
+        </div>
+
+        {/* Source of Power */}
+        <div>
+          <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Source of Power</div>
+          <DescriptionCard
+            title={inhabitants.sourceOfPower}
+            description={powerDesc.description}
+          />
+        </div>
+
+        {/* Governance DM */}
+        <div>
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Governance DM</span>
+            <span className="font-bold text-lg">{govSign}</span>
+          </div>
+          <FootnoteBlock>
+            <strong>What this means:</strong> The Governance DM is a cross-table modifier derived from
+            Development Level × Wealth Level. It ranges from −9 (UnderDeveloped / Average) to +14
+            (Very Developed / Affluent). A high positive DM reflects a world whose wealth and
+            development create stable, effective institutions. A large negative DM indicates a
+            fragile or predatory state where governance is contested, corrupt, or absent. The DM
+            is applied to social and political encounter rolls throughout the game.
+          </FootnoteBlock>
         </div>
       </div>
 
+      {/* Starport */}
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Starport</h3>
         <div className="space-y-2">
-          <DataRow label="Class"         value={inhabitants.starport.class} />
-          <DataRow label="Weekly Output" value={formatCredits(inhabitants.starport.output)} />
+          <DataRow label="Class" value={`Class ${inhabitants.starport.class}`} />
           <DataRow
             label="Bases"
             value={[
@@ -457,23 +559,42 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
             ].filter(Boolean).join(', ') || 'None'}
           />
         </div>
+
+        {/* Starport output with footnote */}
+        <div>
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Weekly Output</span>
+            <span className="font-bold">{formatCredits(inhabitants.starport.output)}</span>
+          </div>
+          <FootnoteBlock>
+            <strong>What this means:</strong> Weekly Output is the total volume of ships, cargo,
+            and services processed by this starport each week. A Class A port sees multi-million
+            credit vessels continuously — bulk freighters, passenger liners, and naval contracts
+            fill every berth. At the other extreme, a Class X port handles only message probes and
+            small parcels; the entire week's commerce may amount to roughly 10 Cr. Output scales
+            as 10<sup>PVS</sup> Cr/week, where PVS is derived from habitability, tech level,
+            wealth, and development.
+          </FootnoteBlock>
+        </div>
       </div>
 
+      {/* Travel & Culture */}
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Travel &amp; Culture</h3>
         <div className="space-y-2">
           <DataRow
             label="Travel Zone"
-            value={inhabitants.travelZone + (inhabitants.travelZoneReason ? ` (${inhabitants.travelZoneReason})` : '')}
+            value={inhabitants.travelZone + (inhabitants.travelZoneReason ? ` — ${inhabitants.travelZoneReason}` : '')}
           />
-          <div className="pt-1">
-            <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
-              Culture Traits
-            </div>
-            <CultureTraitList traits={inhabitants.cultureTraits} />
+        </div>
+        <div>
+          <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
+            Culture Traits
           </div>
+          <CultureTraitList traits={inhabitants.cultureTraits} />
         </div>
       </div>
+
     </div>
   );
 }
