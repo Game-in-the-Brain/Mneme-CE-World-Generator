@@ -1048,6 +1048,29 @@ interface GasWorld extends PlanetaryBody {
 | **Data Log Table** | Saved systems with search/filter |
 | **Export Controls** | JSON/CSV export buttons |
 
+### 10.3 Generator Options Persistence (FR-028)
+
+**Requirement:** Generator options must persist across generations and page navigations. The app must not reset to defaults each time the user leaves and returns to the generator view.
+
+**Fields persisted:**
+
+| Field | Type | Default |
+|-------|------|---------|
+| `starClass` | `StellarClass \| 'random'` | `'random'` |
+| `starGrade` | `StellarGrade \| 'random'` | `'random'` |
+| `mainWorldType` | `WorldType \| 'random'` | `'random'` |
+| `populated` | `boolean` | `true` |
+
+**localStorage key:** `mneme_generator_options` (JSON object with the four fields above)
+
+**Behaviour:**
+- On component mount: read from `mneme_generator_options`; if present, initialise state from stored values; if absent, use defaults above.
+- On any option change (star class, grade, world type, populated toggle): write updated values to `mneme_generator_options`.
+- No explicit "save" button required — auto-persist on change.
+- Stored values are validated on load (e.g. unknown string → fall back to `'random'`).
+
+---
+
 ### 10.2 Navigation — Single Page with Tab Anchors
 
 The generator view is a **single page**. The five tabs jump to anchored sections within the same page — they do not navigate to new routes.
@@ -1220,3 +1243,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.2 | 2026-04-09 | Fixed REF-001 mass/luminosity values, corrected temperature bounds, added Governance DM table, documented Red Zone as manual-only, clarified 6.9 gravity modifier input |
 | 1.3 | 2026-04-10 | Logo + GitHub link added (QA-002); title corrected to "Mneme CE World Generator" (QA-001); Phone theme spec added (QA-005); Hot Jupiter migration rule added (8.4a, QA-011); Hill Sphere minimum separation documented (QA-006); Adv/Dis planet roll bug fixed (QA-007); Physical properties added to PlanetaryBody interface (QA-009); Ice Worlds label fixed (QA-008); single-page tab nav specified (QA-010); number formatting spec added (QA-004); CSV export format specified (QA-ADD-002); REF-010-planet-densities.md and REF-012-csv-export-format.md created; QA.md created and linked throughout |
 | 1.4 | 2026-04-10 | REF-007 v1.1 house rule applied (G=baseline, K=Dis+2, M=Dis+4); REF-013 tech level reference created; Section 7.1 expanded with full MTL table, CE TL, era names, key technologies; REF-013 added to reference index |
+| 1.5 | 2026-04-11 | FR-028: Generator options persistence — added section 10.3 specifying localStorage key `mneme_generator_options` for starClass, starGrade, mainWorldType, populated |

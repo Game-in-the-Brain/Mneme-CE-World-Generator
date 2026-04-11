@@ -33,6 +33,7 @@
 | [QA-015](#qa-015) | Engine | Half Dice mechanic for M-class stars (d3 + Dis+1) to reduce planet counts | 🟠 Medium | ✅ Fixed |
 | [QA-016](#qa-016) | Dev Tool | Batch export enhanced with planet counts by star class and main world breakdown | 🟡 Low | ✅ Fixed |
 | [QA-017](#qa-017) | Engine | Habitats sized by largest body mass in system | 🟡 Low | ✅ Fixed |
+| [QA-018](#qa-018) | UI | Generator options reset on every navigation — last-used settings not preserved | 🟠 Medium | 📋 Open |
 
 ---
 
@@ -418,6 +419,39 @@ Where `randomFactor` is 0.8-1.2 for variation. This ensures Habitats are appropr
 
 ---
 
+### QA-018
+
+**Title:** Generator options reset on every navigation — last-used settings not preserved  
+**Area:** UI — Generator Dashboard  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Open  
+**File(s):** `src/components/GeneratorDashboard.tsx`
+
+**Description:**  
+Each time the user navigates away from the generator view and returns (or triggers a new generation), all four generator option controls reset to their defaults:
+- Star Class → Random
+- Star Grade → Random
+- Main World Type → Random
+- Populated → true
+
+Presets (pinned combinations like "G-class, populated, terrestrial") are lost with every navigation.
+
+**Expected Behaviour:**  
+Options should persist across view changes and app reloads. The last-used selection for each control should be restored on mount.
+
+**Root Cause:**  
+All four options are plain `useState` hooks with hardcoded defaults. The `GeneratorDashboard` component remounts on navigation, reinitialising all state.
+
+**Fix Spec (FR-028):**  
+- On any option change: write `{ starClass, starGrade, mainWorldType, populated }` to `localStorage` key `mneme_generator_options` (JSON).
+- On mount: read `mneme_generator_options`; if present and valid, use stored values as initial state.
+- Validate on load: unknown string values fall back to `'random'`; non-boolean `populated` falls back to `true`.
+- No UI change required — auto-persist on change is sufficient.
+
+**localStorage Key:** `mneme_generator_options`
+
+---
+
 ## Additional Feature Issues
 
 ---
@@ -468,3 +502,4 @@ CSV export format needed a formal specification.
 | 1.4 | 2026-04-10 | QA-014: Debug mode toggle in Settings (default ON, user-configurable) |
 | 1.6 | 2026-04-10 | QA-015: Half Dice mechanic — M-class uses d3+Dis+1 to reduce planet counts |
 | 1.7 | 2026-04-10 | QA-016: Batch export enhanced with planet counts by star class; QA-017: Habitats sized by largest body mass |
+| 1.8 | 2026-04-11 | QA-018: Generator options reset on navigation — opened, spec links to FR-028 |

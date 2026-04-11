@@ -286,8 +286,10 @@ formatCredits(10000);      // "10,000 Cr"
 
 ### LocalStorage Keys
 ```
-mneme_theme        // 'dark' | 'day' | 'phone'
+mneme_theme                  // 'dark' | 'day' | 'phone'
 mneme_annotations_${systemId}  // Body name/notes per system
+mneme_generator_options      // FR-028: { starClass, starGrade, mainWorldType, populated } — last-used generator controls
+mneme_debug_mode             // 'true' | 'false' — Batch Export visibility (QA-014)
 ```
 
 ---
@@ -364,8 +366,8 @@ npm run preview
 
 ---
 
-**Last Updated:** 2026-04-10  
-**Version:** 1.3.0
+**Last Updated:** 2026-04-11  
+**Version:** 1.3.1
 
 ## 13. Batch Export & Statistical Analysis (QA-012, QA-016)
 
@@ -380,6 +382,14 @@ DEV-only feature for statistical validation:
   - Main world type distribution (terrestrial/dwarf/habitat %)
 - Tracks: mean habitability, hot Jupiter frequency
 - JSON format with metadata and summary statistics
+
+## 15. Open Issues (2026-04-11)
+
+| Issue | Location | Description |
+|-------|----------|-------------|
+| QA-018 / FR-028 | `GeneratorDashboard.tsx` | Generator options (starClass, starGrade, mainWorldType, populated) reset on every navigation. Fix: persist to `mneme_generator_options` in localStorage; load on mount with validation fallback. |
+
+---
 
 ## 14. Recent Fixes (2026-04-10)
 
