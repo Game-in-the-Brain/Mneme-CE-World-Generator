@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType } from '../types';
 import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
+import { APP_VERSION } from '../lib/version';
 // @ts-ignore - lucide-react types
 
 // Import generator for batch export
@@ -531,7 +532,7 @@ function DebugBatchExport() {
       meta: {
         generatedAt: new Date().toISOString(),
         count: batchSize,
-        version: '1.3.2',
+        version: APP_VERSION,
         description: 'Mneme CE World Generator — batch statistical export (QA-012)',
         statistics: {
           meanHabitability: Math.round((totalHabitability / batchSize) * 100) / 100,
