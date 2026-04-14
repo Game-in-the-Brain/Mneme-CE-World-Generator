@@ -8,7 +8,7 @@
 
 **Project:** Mneme CE World Generator PWA  
 **Repo:** [Game-in-the-Brain / Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain)  
-**Last Updated:** 2026-04-10
+**Last Updated:** 2026-04-14
 
 ---
 
@@ -34,6 +34,11 @@
 | [QA-016](#qa-016) | Dev Tool | Batch export enhanced with planet counts by star class and main world breakdown | 🟡 Low | ✅ Fixed |
 | [QA-017](#qa-017) | Engine | Habitats sized by largest body mass in system | 🟡 Low | ✅ Fixed |
 | [QA-018](#qa-018) | UI | Generator options reset on every navigation — last-used settings not preserved | 🟠 Medium | 📋 Open |
+| [QA-019](#qa-019) | Engine | Starport PSS v1.1 — replace PVS formula with GDP-based PSS + TL capability cap | 🔴 High | ✅ Fixed |
+| [QA-020](#qa-020) | Engine — Culture Generation | Culture traits should reroll opposing or duplicate results | 🟠 Medium | 📋 Open |
+| [QA-021](#qa-021) | Engine — Inhabitants | Source of Power and Culture traits can generate contradictory combinations | 🔴 High | 📋 Open |
+| [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | 📋 Open |
+| [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
 
 ---
 
@@ -452,6 +457,65 @@ All four options are plain `useState` hooks with hardcoded defaults. The `Genera
 
 ---
 
+---
+
+### QA-019
+
+**Title:** Starport PSS v1.1 — replace PVS formula with GDP-based Port Size Score + TL capability cap
+**Area:** Engine — Inhabitants / Starport
+**Priority:** 🔴 High
+**Status:** ✅ Fixed
+**File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`, `src/types/index.ts`, `src/components/SystemViewer.tsx`, `src/lib/exportDocx.ts`, `src/lib/format.ts`
+
+**Description:**
+Two structural flaws in the old `PVS = floor(Hab/4) + (TL−7) + WealthMod + DevMod` formula:
+1. **TL double-counts** — TL already drives population (via TLmod table), which drives wealth; adding TL again as a direct addend double-counted it.
+2. **Scale blindness** — A world with 100T people at TL 9 and one with 700M at TL 14 could score identically. No measure of total economic output.
+
+Old system also produced clearly wrong results: a TL 11 world with 700B people rated Class E (frontier port). A 100-person TL 14 research station rated Class A.
+
+**Fix Applied:**
+
+**Step 1 — Port Size Score (PSS):**
+```typescript
+const annualTrade = population × gdpPerDay × 365 × tradeFraction × wealthMultiplier;
+const pss = Math.floor(Math.log10(annualTrade)) - 10;
+const rawClass = pssToClass(pss);  // X / E / D / C / B / A
+```
+
+GDP/person/day table by TL (7: 205 Cr → 16: 578M Cr). Trade fraction by development (5%–30%). Wealth multiplier (×1.0–×2.0).
+
+**Step 2 — TL Capability Cap:**
+```typescript
+const tlCap = getTLCapClass(tl);  // TL 7–9 → C max; TL 10–11 → B max; TL 12+ → A
+const finalClass = min(rawClass, tlCap);
+```
+No amount of money lets a TL 9 world build jump drives.
+
+**Step 3 — Weekly Activity (3D6):**
+```typescript
+const weeklyBase     = annualTrade / 364;
+const weeklyActivity = weeklyBase * roll3D6();
+```
+3D6 used for lower variance. ÷364 includes ~1.43× transit multiplier.
+
+**Population formula also updated** in this fix (dependency): `calculatePopulation(envHab, tl, roll)` using TL_POP_MOD table. Fork condition updated: fires when `envHab + TLmod ≤ 0` (not `habitability ≤ 0`).
+
+**Old vs New:**
+
+| World | TL | OLD | NEW | Verdict |
+|-------|-----|-----|-----|---------|
+| Standard World | 11 | E | C | ✅ Correct — 700B population |
+| Huge Poor World | 8 | X | D | ✅ Correct — India model |
+| High TL Tiny Pop | 14 | A | D | ✅ Correct — no economic scale |
+| Tiny Frontier | 7 | X | X | ✅ Same |
+| Prosperous World | 13 | A | A | ✅ Same |
+
+**Starport interface** updated — `output` replaced by `pss`, `rawClass`, `tlCap`, `annualTrade`, `weeklyBase`, `weeklyActivity`.
+**format.ts** updated — `formatCreditScale()` + `formatAnnualTrade()` added for large credit values.
+
+---
+
 ## Additional Feature Issues
 
 ---
@@ -488,6 +552,196 @@ CSV export format needed a formal specification.
 - Created `references/REF-012-csv-export-format.md` with full wide-row column spec, key naming convention, and parser notes
 - Implementation of `exportToCSV()` in `src/data/exportCSV.ts` is pending
 
+### QA-020
+
+**Title:** Culture traits should reroll opposing or duplicate results  
+**Area:** Engine — Culture Generation  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Open  
+**Date Opened:** 2026-04-14  
+**File(s):** `src/lib/worldData.ts`, `references/REF-006-culture-table.md`
+
+**Description:**  
+Currently, culture trait generation allows opposing traits (e.g., Pacifist and Militarist) and duplicate traits. According to the BRC document, opposing and same culture results cannot be results and should trigger a reroll of the second result.
+
+**Expected Behaviour:**  
+When generating multiple culture traits, if a newly rolled trait is either identical to an existing trait or is an opposing trait (as defined by the BRC document's opposing pairs), that trait should be rerolled until a non-duplicate, non-opposing trait is obtained.
+
+---
+
+---
+
+### QA-021
+
+**Title:** Source of Power and Culture traits can generate contradictory combinations  
+**Area:** Engine — Inhabitants  
+**Priority:** 🔴 High  
+**Status:** 📋 Open  
+**Date Opened:** 2026-04-14  
+**Reported by:** Neil Lucock  
+**File(s):** `src/lib/worldData.ts` (`getSourceOfPower`, `generateCultureTraits`), `src/lib/generator.ts`
+
+**Description:**  
+The inhabitants generator rolls Source of Power and Culture traits independently. This produces world descriptions that are logically self-contradictory. Neil Lucock reported the following example:
+
+> Government: **Kratocracy** — "Power belongs to the strongest. Might makes right — leadership changes through contest, coup, or demonstrated dominance."  
+> Culture: **Pacifist** — "Violence is culturally abhorrent. Conflict is resolved through mediation or passive resistance. Military forces are minimal."
+
+A society cannot simultaneously be governed by the rule of force and culturally abhor violence. These combinations undermine the world description and should be excluded.
+
+**Root Cause:**  
+`generateCultureTraits()` has no awareness of the world's `PowerSource`. All 36 culture traits are treated as equally valid regardless of how power is structured.
+
+**Incompatible Pairs — Source of Power → Culture traits to exclude:**
+
+| Source of Power | Excluded Culture Traits | Reason |
+|-----------------|------------------------|--------|
+| **Kratocracy** | Pacifist | Rule-by-force is incompatible with violence being culturally abhorrent |
+| **Kratocracy** | Egalitarian | Might-makes-right hierarchy is incompatible with universal equality |
+| **Kratocracy** | Legalistic | Dominance contests override rule of law |
+| **Democracy** | Anarchist | Elected representative government cannot coexist with rejection of all authority |
+| **Aristocracy** | Egalitarian | Hereditary class privilege is incompatible with equal treatment regardless of birth |
+| **Meritocracy** | Caste system | Achievement-based power contradicts birth-fixed social hierarchy |
+| **Ideocracy** | Anarchist | State-enforced ideology requires central authority; no-authority rejects this |
+| **Ideocracy** | Libertarian | Mandatory ideological conformity contradicts personal freedom as supreme value |
+
+**Expected Behaviour:**  
+When generating culture traits for a world, any trait that is incompatible with the world's Source of Power should be rerolled (up to N attempts to avoid infinite loops). This is an extension of the same reroll mechanism being specified in QA-020 for opposing trait pairs.
+
+**Suggested Implementation:**  
+
+```typescript
+// In generator.ts, after rolling powerSource and before generateCultureTraits():
+const POWER_CULTURE_CONFLICTS: Record<PowerSource, string[]> = {
+  'Kratocracy':  ['Pacifist', 'Egalitarian', 'Legalistic'],
+  'Democracy':   ['Anarchist'],
+  'Aristocracy': ['Egalitarian'],
+  'Meritocracy': ['Caste system'],
+  'Ideocracy':   ['Anarchist', 'Libertarian'],
+};
+
+// Pass the conflict list into generateCultureTraits() as an exclusion set
+function generateCultureTraits(count: number, exclude: string[] = []): string[] {
+  // ... existing logic ...
+  // When a rolled trait matches exclude[], reroll (max 20 attempts per trait)
+}
+```
+
+**Notes:**  
+- This should be implemented together with QA-020 (opposing/duplicate trait reroll) — both use the same reroll mechanism.
+- A trait excluded by Source of Power conflict should be treated identically to an opposing-pair reroll — not recorded, attempt again.
+- Some pairings (e.g., Kratocracy + Honest, Aristocracy + Degenerate) are thematically tense but not logically impossible — do not exclude them.
+
+---
+
+### QA-022
+
+**Title:** Main world gravity and size are independent rolls — physically impossible combinations produced  
+**Area:** Engine — World Physics  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Open  
+**Date Opened:** 2026-04-14  
+**Reported by:** Neil Lucock  
+**File(s):** `src/lib/generator.ts` (main world generation), `src/lib/worldData.ts` (`getDwarfGravity`, `getTerrestrialGravity`)
+
+**Description:**  
+Neil Lucock reported a generated world showing **342 km diameter** with **0.18 G surface gravity**. This is physically impossible.
+
+**Physics check:**  
+For a 342 km diameter body (radius = 171 km = 171,000 m):
+- At maximum plausible dwarf density (3.5 g/cm³): mass = 7.31 × 10¹⁹ kg  
+- Derived surface gravity = G × mass / r² = 0.0146 G  
+- **Maximum physically achievable gravity at 342 km = ~0.017 G**
+
+To produce 0.18 G at 342 km, the body would require a density of **~37 g/cm³** — more than 1.6× denser than osmium (22.6 g/cm³), the densest naturally occurring element. Impossible.
+
+**Root Cause:**  
+The **main world** generates `size` and `gravity` through two independent mechanisms:
+1. `size` — computed from world type (Terrestrial: 2000–5000 km random; Dwarf size is not set from the same physical formula)
+2. `gravity` — rolled on `getDwarfGravity(2D6)` or `getTerrestrialGravity(2D6)`, returning table values from 0.001 G to 3.0 G
+
+These two values are never cross-validated. Any size + gravity combination is possible.
+
+**Contrast with body objects:** Planets in the planetary system use `calculatePhysicalProperties(massEM, bodyType)` which correctly derives diameter AND gravity from mass + density. The main world does not use this function.
+
+**Dwarf gravity table range and implied densities at 342 km:**
+
+| Roll | Gravity (G) | Required density for 342 km | Physically possible? |
+|------|------------|----------------------------|----------------------|
+| 2    | 0.001 G    | 0.20 g/cm³                 | ❌ Too low (gas) |
+| 7    | 0.10 G     | 20.7 g/cm³                 | ❌ Exceeds osmium |
+| 11   | 0.18 G     | 37.2 g/cm³                 | ❌ Impossible |
+| 12   | 0.20 G     | 41.3 g/cm³                 | ❌ Impossible |
+
+Almost every gravity roll is inconsistent with a 342 km object.
+
+**Expected Behaviour:**  
+Main world surface gravity should be **derived** from its size and density assumption (as body objects already are), not rolled independently.
+
+**Recommended Fix:**  
+
+Option A (preferred — consistent with body physics):  
+Replace independent gravity roll with `calculatePhysicalProperties(massEM, 'dwarf')` for dwarf worlds and equivalent for terrestrial. Gravity becomes a derived output, not a rolled one.
+
+Option B (table-compatible fallback):  
+After rolling gravity, derive the implied density from the rolled gravity + size:
+```
+density = g × r² / (G × (4/3 × π × r³ × 1000))
+```
+If `density > 22.6 g/cm³` (osmium) or `density < 0.5 g/cm³` (below ice), reroll gravity until a plausible result is obtained (max 10 attempts, then clamp to nearest valid value).
+
+**Notes:**  
+- The gravity table values themselves are fine as a distribution — the problem is applying them without size awareness.
+- Prioritise Option A for a new generation pass if the size/mass relationship is being refactored.
+- Option B can be implemented as a quick validation pass on the existing tables with minimal disruption.
+
+---
+
+### QA-INV-001
+
+**Title:** Investigation — E/X port dominance: is the PSS formula excluding higher-class ports?  
+**Area:** Engine — Starport  
+**Priority:** 📋 Investigated  
+**Status:** ✅ No Bug — Behaviour Correct  
+**Date Investigated:** 2026-04-14  
+**Reported by:** Neil Lucock
+
+**Observation:**  
+Neil Lucock reported never seeing a port class better than E or X across many generated worlds.
+
+**Investigation:**  
+
+The PSS formula is:
+```
+annualTrade = population × GDP/day(TL) × 365 × tradeFraction(dev) × wealthMultiplier
+PSS = floor(log10(annualTrade)) - 10
+```
+
+The TL capability cap (`getTLCapClass`) only sets an **upper bound** on port class — it never prevents E or X. The `minClass(rawClass, tlCap)` call takes the lower of the two, so PSS-driven X/E results pass through unchanged.
+
+**Why E/X dominates on typical generated worlds:**
+
+The population formula `10^max(0, envHab + TLmod) × roll` produces:
+- EnvHab = 0, TL 11 → pop ~ 200M–1.2B → borderline E/D (wealth/dev dependent)
+- EnvHab = −3 (moderate hostility) TL 11 → pop ~ 200K–1.2M → X class
+
+Most generated worlds have negative EnvHab contributions (hostile atmosphere, extreme temperature, hazards), driving population into the hundreds of thousands to low millions. At those populations:
+
+| TL | Pop | Dev / Wealth | PSS | Class |
+|----|-----|-------------|-----|-------|
+| 11 | 1M  | Underdeveloped / Average | −1 | X |
+| 11 | 50M | Mature / Average | 3 | X |
+| 11 | 200M | Mature / Average | 4 | **E** |
+| 11 | 1B  | Developed / Prosperous | 5 | **E** |
+| 11 | 3B  | Developed / Prosperous | 6 | **D** |
+| 13 | 100M | Very Developed / Affluent | 6 | **D** |
+| 15 | 10M | Very Developed / Affluent | 5 | **E** |
+
+**Conclusion:**  
+The PSS formula is working correctly. E and X are the expected outcome for frontier and hostile worlds, which make up the majority of generated systems. C/B/A class ports require high population (hundreds of millions to billions), high TL (12+), and favourable wealth/development — a combination rare in natural random generation but achievable on the most developed worlds.
+
+**No fix required.** Document this in the user guide as expected game behaviour: most frontier worlds have E/X ports; only developed core worlds reach C+.
+
 ---
 
 ## Document History
@@ -503,3 +757,6 @@ CSV export format needed a formal specification.
 | 1.6 | 2026-04-10 | QA-015: Half Dice mechanic — M-class uses d3+Dis+1 to reduce planet counts |
 | 1.7 | 2026-04-10 | QA-016: Batch export enhanced with planet counts by star class; QA-017: Habitats sized by largest body mass |
 | 1.8 | 2026-04-11 | QA-018: Generator options reset on navigation — opened, spec links to FR-028 |
+| 1.9 | 2026-04-13 | QA-019: Starport PSS v1.1 — GDP-based Port Size Score + TL capability cap + 3D6 weekly activity; population formula updated to TLmod lookup table |
+| 1.10 | 2026-04-14 | Added QA-020: Culture traits reroll rule for opposing/duplicate results |
+| 1.11 | 2026-04-14 | Added QA-021: Source of Power / Culture trait contradictions (Neil Lucock); QA-022: Main world gravity/size inconsistency (Neil Lucock); QA-INV-001: E/X port dominance investigation — no bug |
