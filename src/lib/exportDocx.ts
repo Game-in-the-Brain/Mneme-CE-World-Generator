@@ -201,12 +201,29 @@ function buildInhabitants(s: StarSystem, shipsInArea?: ShipsInAreaResult | null)
     sections.push(h2('Ships in the Area'));
     sections.push(line('Budget', formatCredits(shipsInArea.budget)));
 
-    const locations = ['Orbit', 'System', 'Docked'] as const;
-    for (const loc of locations) {
-      const locShips = shipsInArea.ships.filter(s => s.location === loc);
-      if (locShips.length === 0) continue;
+    // Orbit and Docked as flat groups; System grouped by body position (QA-024)
+    const orbitShips = shipsInArea.ships.filter(s => s.location === 'Orbit');
+    const dockedShips = shipsInArea.ships.filter(s => s.location === 'Docked');
+    const systemShips = shipsInArea.ships.filter(s => s.location === 'System');
 
-      const label = loc === 'Docked' ? 'Docked at Starport' : `In ${loc}`;
+    // Build display groups: Orbit, then System by body index, then Docked
+    type DocxGroup = { label: string; ships: typeof orbitShips };
+    const groups: DocxGroup[] = [];
+    if (orbitShips.length > 0) groups.push({ label: 'In Orbit', ships: orbitShips });
+    if (systemShips.length > 0) {
+      const byBody = new Map<number, typeof systemShips>();
+      for (const ship of systemShips) {
+        const pos = ship.systemPosition ?? 1;
+        if (!byBody.has(pos)) byBody.set(pos, []);
+        byBody.get(pos)!.push(ship);
+      }
+      for (const [pos, ships] of Array.from(byBody.entries()).sort(([a], [b]) => a - b)) {
+        groups.push({ label: `In System — Body ${pos}`, ships });
+      }
+    }
+    if (dockedShips.length > 0) groups.push({ label: 'Docked at Starport', ships: dockedShips });
+
+    for (const { label, ships: locShips } of groups) {
       sections.push(new Paragraph({ children: [run(label, { bold: true, color: BLUE, size: 22 })], spacing: { before: 120, after: 60 } }));
 
       const counts = new Map<string, { count: number; dt: number; cost: number }>();

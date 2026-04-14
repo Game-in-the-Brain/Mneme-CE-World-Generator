@@ -595,7 +595,14 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
   }
 
   function handleGenerateShips() {
-    const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity);
+    // QA-024: pass total body count so "In System" ships get a position index 1–N
+    const totalBodies =
+      (system.circumstellarDisks?.length ?? 0) +
+      (system.dwarfPlanets?.length ?? 0) +
+      (system.terrestrialWorlds?.length ?? 0) +
+      (system.iceWorlds?.length ?? 0) +
+      (system.gasWorlds?.length ?? 0);
+    const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity, totalBodies);
     setShipsResult(result);
   }
 
@@ -759,15 +766,33 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
             <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               Budget: {formatCredits(shipsResult.budget)} ({shipsResult.distributionRoll} on distribution table)
             </div>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="space-y-3">
               <ShipLocationGroup
                 label="In Orbit"
                 ships={shipsResult.ships.filter(s => s.location === 'Orbit')}
               />
-              <ShipLocationGroup
-                label="In System"
-                ships={shipsResult.ships.filter(s => s.location === 'System')}
-              />
+              {/* QA-024: "In System" ships shown per body position */}
+              {(() => {
+                const systemShips = shipsResult.ships.filter(s => s.location === 'System');
+                if (systemShips.length === 0) return (
+                  <ShipLocationGroup label="In System" ships={[]} />
+                );
+                const byBody = new Map<number, typeof systemShips>();
+                for (const ship of systemShips) {
+                  const pos = ship.systemPosition ?? 1;
+                  if (!byBody.has(pos)) byBody.set(pos, []);
+                  byBody.get(pos)!.push(ship);
+                }
+                return Array.from(byBody.entries())
+                  .sort(([a], [b]) => a - b)
+                  .map(([pos, ships]) => (
+                    <ShipLocationGroup
+                      key={`system-${pos}`}
+                      label={`In System — Body ${pos}`}
+                      ships={ships}
+                    />
+                  ));
+              })()}
               <ShipLocationGroup
                 label="Docked at Starport"
                 ships={shipsResult.ships.filter(s => s.location === 'Docked')}
@@ -798,7 +823,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
   );
 }
 
-function ShipLocationGroup({ label, ships }: { label: string; ships: { name: string; dt: number; monthlyOperatingCost: number; location: ShipLocation; trafficPool: 'small' | 'civilian' | 'warship' }[] }) {
+function ShipLocationGroup({ label, ships }: { label: string; ships: { name: string; dt: number; monthlyOperatingCost: number; location: ShipLocation; systemPosition?: number; trafficPool: 'small' | 'civilian' | 'warship' }[] }) {
   if (ships.length === 0) {
     return (
       <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>

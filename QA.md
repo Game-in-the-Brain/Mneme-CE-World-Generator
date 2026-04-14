@@ -31,15 +31,8 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | QA-022 | ✅ Fixed | `gravityImpliesDensity()` + reroll loop in `generator.ts` |
 | FR-029 | ✅ Fixed | Roll 3D6 button in Starport card, persists via `onUpdateSystem` |
 | FR-030 | ✅ Fixed | `src/lib/shipsInArea.ts`, wired to UI + `.docx` export |
-| **QA-024** | 📋 Open | "In System" ships need body index 1–N — see [QA-024](#qa-024) for full spec |
 | **QA-023** | ⏸ Proposed | Replace gravity tables with mass-derived gravity — **awaiting user approval** |
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
-
-### Open Task — QA-024
-
-Implement `systemPosition` on "In System" ships — see [QA-024](#qa-024) for the full step-by-step implementation spec (types → shipsInArea.ts → call site → display → docx export).
-
-Commit: `fix(engine): QA-024 In System ships get body index 1-N`
 
 ### ⚠️ QA-023 — DO NOT IMPLEMENT without explicit user instruction
 Full spec in [QA-023](#qa-023). This is a significant engine rewrite. Wait for approval.
@@ -92,7 +85,7 @@ Full spec in [QA-023](#qa-023). This is a significant engine rewrite. Wait for a
 | [QA-021](#qa-021) | Engine — Inhabitants | Source of Power and Culture traits can generate contradictory combinations | 🔴 High | ✅ Fixed |
 | [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | ✅ Fixed |
 | [QA-023](#qa-023) | Engine — World Physics | Replace gravity tables with density tables + mass-derived gravity | 🟠 Medium | 📋 **Proposed — awaiting approval** |
-| [QA-024](#qa-024) | Engine — FR-030 Ships | "In System" ships have no position — missing body index 1–N | 🟠 Medium | 📋 Open |
+| [QA-024](#qa-024) | Engine — FR-030 Ships | "In System" ships have no position — missing body index 1–N | 🟠 Medium | ✅ Fixed |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
 
 ---
@@ -1264,3 +1257,4 @@ Awaiting user approval of this proposal. Once approved, the above implementation
 | 1.14 | 2026-04-14 | QA-022: gravity/size physics validation implemented; QA-018: generator options persistence verified fixed; FR-029: Weekly 3D6 roll button implemented; FR-030: Ships in the Area generator implemented |
 | 1.15 | 2026-04-14 | Handoff block updated to reflect all tasks complete; traffic_pool short keys (`small`/`civilian`/`warship`) documented — aligned with shipsInArea.ts implementation; FRD and .md reference updated to match |
 | 1.16 | 2026-04-14 | QA-024: "In System" ships missing body position index — added spec; FRD §7.10 Step 5 updated with position roll and display format |
+| 1.17 | 2026-04-14 | QA-024 implemented: systemPosition field on ShipInArea; shipsInArea.ts accepts totalBodies; display shows "In System — Body N" grouped per body; docx export updated |

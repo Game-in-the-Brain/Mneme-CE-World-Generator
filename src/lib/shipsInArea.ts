@@ -34,18 +34,23 @@ function rollD6(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function rollLocation(): ShipLocation {
+function rollLocationWithPosition(totalBodies: number): { location: ShipLocation; systemPosition?: number } {
   const r = rollD6();
-  if (r <= 2) return 'Orbit';
-  if (r <= 4) return 'System';
-  return 'Docked';
+  if (r <= 2) return { location: 'Orbit' };
+  if (r <= 4) {
+    // QA-024: "In System" ships need a body index 1–N
+    if (totalBodies === 0) return { location: 'Orbit' };
+    const pos = Math.ceil(Math.random() * totalBodies);
+    return { location: 'System', systemPosition: pos };
+  }
+  return { location: 'Docked' };
 }
 
 function pickRandomShip(pool: ShipRef[]): ShipRef {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function generatePoolShips(pool: ShipRef[], budget: number): ShipInArea[] {
+function generatePoolShips(pool: ShipRef[], budget: number, totalBodies: number): ShipInArea[] {
   const result: ShipInArea[] = [];
   if (pool.length === 0 || budget <= 0) return result;
 
@@ -58,11 +63,13 @@ function generatePoolShips(pool: ShipRef[], budget: number): ShipInArea[] {
     const ship = pickRandomShip(pool);
     if (ship.monthly_operating_cost_cr <= remaining) {
       remaining -= ship.monthly_operating_cost_cr;
+      const { location, systemPosition } = rollLocationWithPosition(totalBodies);
       result.push({
         name: ship.name,
         dt: ship.dt,
         monthlyOperatingCost: ship.monthly_operating_cost_cr,
-        location: rollLocation(),
+        location,
+        systemPosition,
         trafficPool: ship.traffic_pool,
       });
     }
@@ -72,7 +79,7 @@ function generatePoolShips(pool: ShipRef[], budget: number): ShipInArea[] {
   return result;
 }
 
-export function generateShipsInTheArea(weeklyTradeValue: number): ShipsInAreaResult {
+export function generateShipsInTheArea(weeklyTradeValue: number, totalBodies: number): ShipsInAreaResult {
   // Step 1: Ships Budget = Weekly Trade Value × (1D6 × 10%)
   const budgetRoll = rollD6();
   const budget = weeklyTradeValue * (budgetRoll * 0.1);
@@ -85,10 +92,10 @@ export function generateShipsInTheArea(weeklyTradeValue: number): ShipsInAreaRes
   const civilianBudget = budget * dist.civilian;
   const warshipBudget = budget * dist.warship;
 
-  // Step 4: Generation loop per pool
-  const smallShips = generatePoolShips(POOL_SHIPS.small, smallCraftBudget);
-  const civilianShips = generatePoolShips(POOL_SHIPS.civilian, civilianBudget);
-  const warshipShips = generatePoolShips(POOL_SHIPS.warship, warshipBudget);
+  // Step 4: Generation loop per pool (QA-024: pass totalBodies for In System position roll)
+  const smallShips = generatePoolShips(POOL_SHIPS.small, smallCraftBudget, totalBodies);
+  const civilianShips = generatePoolShips(POOL_SHIPS.civilian, civilianBudget, totalBodies);
+  const warshipShips = generatePoolShips(POOL_SHIPS.warship, warshipBudget, totalBodies);
 
   return {
     budget,

@@ -113,6 +113,7 @@ export interface ShipInArea {
   dt: number;
   monthlyOperatingCost: number;
   location: ShipLocation;
+  systemPosition?: number;  // QA-024: body index 1–N, only set when location === 'System'
   trafficPool: 'small' | 'civilian' | 'warship';
 }
 
