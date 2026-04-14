@@ -21,20 +21,24 @@ Mneme CE World Generator — React 19 + TypeScript 5.8 + Vite PWA that generates
 Working directory: `/home/justin/opencode260220/Mneme-CE-World-Generator`  
 Build command: `npm run build` (runs `tsc && vite build` — must pass with zero TypeScript errors).
 
-### Completed Since Last Handoff
-- ✅ **QA-020** — Culture trait opposing/duplicate reroll (commit `0ceacc7c`)
-- ✅ **QA-021** — Source of Power / Culture conflict filter (commit `0ceacc7c`)
-- ✅ **Ship reference** — `traffic_pool` field added to all 35 ships in `mneme_ship_reference.json` (commit `8816a48e`)
+### All Issues Resolved — Current Open Items
 
-### Completed Tasks (All Done)
+| # | Status | Notes |
+|---|--------|-------|
+| QA-018 / FR-028 | ✅ Fixed | `mneme_generator_options` localStorage in `GeneratorDashboard.tsx` |
+| QA-020 | ✅ Fixed | `CULTURE_OPPOSITES` + 20-attempt reroll |
+| QA-021 | ✅ Fixed | `POWER_CULTURE_CONFLICTS` exclusion list (Neil Lucock) |
+| QA-022 | ✅ Fixed | `gravityImpliesDensity()` + reroll loop in `generator.ts` |
+| FR-029 | ✅ Fixed | Roll 3D6 button in Starport card, persists via `onUpdateSystem` |
+| FR-030 | ✅ Fixed | `src/lib/shipsInArea.ts`, wired to UI + `.docx` export |
+| **QA-023** | ⏸ Proposed | Replace gravity tables with mass-derived gravity — **awaiting user approval** |
+| **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
 
-- ✅ **Task A — QA-022**: Gravity/size physics validation (`gravityImpliesDensity` + reroll loop)
-- ✅ **Task B — QA-018/FR-028**: Generator options persistence (already implemented in `GeneratorDashboard.tsx`)
-- ✅ **Task C — FR-029**: Weekly Activity Roll 3D6 button in Starport card
-- ✅ **Task D — FR-030**: Ships in the Area generator with `traffic_pool` logic and docx export
+### ⚠️ QA-023 — DO NOT IMPLEMENT without explicit user instruction
+Full spec in [QA-023](#qa-023). This is a significant engine rewrite. Wait for approval.
 
-### Do NOT Implement (awaiting approval)
-- **QA-023** — Replace gravity tables with mass-derived gravity. Full spec in [QA-023](#qa-023). Requires explicit user approval before touching.
+### If User Approves QA-023
+See the full 8-step implementation plan in [QA-023](#qa-023) below.
 
 ### Key Files
 
@@ -1174,3 +1178,4 @@ Awaiting user approval of this proposal. Once approved, the above implementation
 | 1.12 | 2026-04-14 | QA-020: Culture trait opposing/duplicate reroll implemented; QA-021: Power/culture conflict filter implemented (Neil Lucock) |
 | 1.13 | 2026-04-14 | Handoff block updated — 4 open tasks clarified for Kimi (QA-022, QA-018/FR-028, FR-029, FR-030); QA-023 flagged awaiting approval; ship traffic_pool field confirmed in JSON |
 | 1.14 | 2026-04-14 | QA-022: gravity/size physics validation implemented; QA-018: generator options persistence verified fixed; FR-029: Weekly 3D6 roll button implemented; FR-030: Ships in the Area generator implemented |
+| 1.15 | 2026-04-14 | Handoff block updated to reflect all tasks complete; traffic_pool short keys (`small`/`civilian`/`warship`) documented — aligned with shipsInArea.ts implementation; FRD and .md reference updated to match |

@@ -842,11 +842,11 @@ Each ship in the JSON carries a **`traffic_pool`** field (pre-populated) that di
 
 | `traffic_pool` value | `category` values included | DT Rule |
 |----------------------|---------------------------|---------|
-| `"Small Craft Pool"` | `"Small Craft"`, `"Fighter"` | ≤ 100 DT |
-| `"Civilian Pool"` | `"Merchant"`, `"Passenger"`, `"Specialized"`, `"Support"` | Any |
-| `"Warship Pool"` | `"Military"` | Any |
+| `"small"` | `"Small Craft"`, `"Fighter"` | ≤ 100 DT |
+| `"civilian"` | `"Merchant"`, `"Passenger"`, `"Specialized"`, `"Support"` | Any |
+| `"warship"` | `"Military"` | Any |
 
-> The `traffic_pool_map` object at the top of `mneme_ship_reference.json` documents the mapping rules. Individual ships carry `traffic_pool` so the generator can filter with a single equality check (`ship.traffic_pool === poolName`) without needing to know the category-to-pool rules.
+> Individual ships carry `traffic_pool` as a short lowercase key (`"small"`, `"civilian"`, `"warship"`) so the generator can filter with a single equality check (`ship.traffic_pool === 'small'` etc.). The `traffic_pool_map` object at the top of `mneme_ship_reference.json` documents the human-readable mapping rules but is not used at runtime.
 
 **Monthly Operating Cost:** Use `monthly_operating_cost_cr` from the JSON reference. This value is set equal to `supplies_cr` (resupply / life-support / minor maintenance cost) for each hull.
 
@@ -1484,3 +1484,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.8 | 2026-04-14 | FR-030: Added Ships in the Area spec (Section 7.10); updated ship reference files with `monthly_operating_cost_cr` |
 | 1.9 | 2026-04-14 | FR-030 Step 3: Added `traffic_pool` field to all 35 ships in `mneme_ship_reference.json`; added `traffic_pool_map` header object; FRD Step 3 updated to specify `traffic_pool` as the filter field — implementation must not re-derive pool membership from `category` |
 | 2.0 | 2026-04-14 | Open items audit: FR-028/QA-018, FR-029, FR-030, QA-022 confirmed open and implementation-ready; QA-023 proposed/pending approval; all specs verified complete against reference data |
+| 2.1 | 2026-04-14 | FR-030 Step 3: traffic_pool values corrected to short lowercase keys (`"small"`, `"civilian"`, `"warship"`) to match shipsInArea.ts implementation |
