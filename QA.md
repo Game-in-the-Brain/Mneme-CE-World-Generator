@@ -26,96 +26,15 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 - ✅ **QA-021** — Source of Power / Culture conflict filter (commit `0ceacc7c`)
 - ✅ **Ship reference** — `traffic_pool` field added to all 35 ships in `mneme_ship_reference.json` (commit `8816a48e`)
 
-### Open Tasks — Implement in This Order
+### Completed Tasks (All Done)
 
----
-
-#### Task A — QA-022 🟠 Medium: Gravity/size physics validation
-**File:** `src/lib/generator.ts` around line 208  
-**Spec:** See [QA-022](#qa-022) below for full detail.
-
-Add `gravityImpliesDensity()` helper and a reroll loop after the gravity roll:
-```typescript
-function gravityImpliesDensity(gravityG: number, diameterKm: number): number {
-  const r = (diameterKm / 2) * 1000;
-  return (gravityG * 9.81) / (6.674e-11 * (4 / 3) * Math.PI * r) / 1000; // g/cm³
-}
-
-const DENSITY_LIMITS = { Dwarf: { min: 1.5, max: 22.6 }, Terrestrial: { min: 4.0, max: 22.6 } };
-const limits = worldType === 'Dwarf' ? DENSITY_LIMITS.Dwarf : DENSITY_LIMITS.Terrestrial;
-let attempts = 0;
-while (attempts < 10) {
-  if (gravityImpliesDensity(gravity, size) >= limits.min &&
-      gravityImpliesDensity(gravity, size) <= limits.max) break;
-  const reroll = roll2D6().value;
-  const result = worldType === 'Dwarf' ? getDwarfGravity(reroll) : getTerrestrialGravity(reroll);
-  gravity = result.gravity;
-  gravityHabitability = result.habitability;
-  attempts++;
-}
-```
-Mark QA-022 ✅ Fixed. Commit: `fix(engine): QA-022 gravity/size physics validation`
-
----
-
-#### Task B — QA-018/FR-028 🟠 Medium: Generator options persistence
-**File:** `src/components/GeneratorDashboard.tsx`  
-**Spec:** See [QA-018](#qa-018) below and FRD §10.3.
-
-On any option change, write to localStorage:
-```typescript
-localStorage.setItem('mneme_generator_options', JSON.stringify({ starClass, starGrade, mainWorldType, populated }));
-```
-On mount, read and validate (unknown strings → `'random'`, non-boolean `populated` → `true`).  
-Mark QA-018 ✅ Fixed. Commit: `fix(ui): QA-018 persist generator options across navigation`
-
----
-
-#### Task C — FR-029 📋 Open: Weekly Activity Roll button
-**File:** `src/components/SystemViewer.tsx` (Starport card section)  
-**Spec:** FRD §7.8 Step 4.
-
-Add a **Roll 3D6** button next to the Weekly Base value in the Starport card. On click:
-1. Roll 3D6, display individual die results (e.g. `[4, 2, 6] = 12`)
-2. Compute `weeklyActivity = weeklyBase × total`
-3. Display result
-4. Store the rolled value in saved system state (persist on reload)
-
-Mark FR-029 as implemented in FRD. Commit: `feat(ui): FR-029 weekly activity re-roll button in starport card`
-
----
-
-#### Task D — FR-030 📋 Open: Ships in the Area generator
-**File:** New function in `src/lib/generator.ts` + UI in `src/components/SystemViewer.tsx`  
-**Spec:** FRD §7.10 — read it in full before implementing. Ship data: `mneme_ship_reference.json`.
-
-**Summary of algorithm:**
-1. `shipsBudget = weeklyActivity × (roll1D6 × 0.10)`
-2. Roll 1D6 → distribution table (FRD §7.10 Step 2) → split into 3 pool budgets
-3. For each pool (`"Small Craft Pool"`, `"Civilian Pool"`, `"Warship Pool"`):
-   - Filter ships by `ship.traffic_pool === poolName`
-   - Find `minCost = Math.min(...pool.map(s => s.monthly_operating_cost_cr))`
-   - While `poolBudget >= minCost`: pick random affordable ship, subtract cost, roll 1D6 for location
-4. Group results by location (`"In Orbit"`, `"In System"`, `"Docked at Starport"`)
-5. UI: "Generate Ships in the Area" button in Starport card; display grouped list
-6. **Do NOT persist in JSON/Dexie** — transient, regenerate on button click
-
-Mark FR-030 as implemented in FRD. Commit: `feat(engine): FR-030 ships in the area generator`
-
----
+- ✅ **Task A — QA-022**: Gravity/size physics validation (`gravityImpliesDensity` + reroll loop)
+- ✅ **Task B — QA-018/FR-028**: Generator options persistence (already implemented in `GeneratorDashboard.tsx`)
+- ✅ **Task C — FR-029**: Weekly Activity Roll 3D6 button in Starport card
+- ✅ **Task D — FR-030**: Ships in the Area generator with `traffic_pool` logic and docx export
 
 ### Do NOT Implement (awaiting approval)
 - **QA-023** — Replace gravity tables with mass-derived gravity. Full spec in [QA-023](#qa-023). Requires explicit user approval before touching.
-
-### After ALL Tasks
-
-```bash
-cd /home/justin/opencode260220/Mneme-CE-World-Generator
-npm run build   # must pass with zero TypeScript errors
-git push origin main
-```
-
-Update Document History in QA.md (version 1.13) and FRD Document History.
 
 ### Key Files
 
@@ -159,11 +78,11 @@ Update Document History in QA.md (version 1.13) and FRD Document History.
 | [QA-015](#qa-015) | Engine | Half Dice mechanic for M-class stars (d3 + Dis+1) to reduce planet counts | 🟠 Medium | ✅ Fixed |
 | [QA-016](#qa-016) | Dev Tool | Batch export enhanced with planet counts by star class and main world breakdown | 🟡 Low | ✅ Fixed |
 | [QA-017](#qa-017) | Engine | Habitats sized by largest body mass in system | 🟡 Low | ✅ Fixed |
-| [QA-018](#qa-018) | UI | Generator options reset on every navigation — last-used settings not preserved | 🟠 Medium | 📋 Open |
+| [QA-018](#qa-018) | UI | Generator options reset on every navigation — last-used settings not preserved | 🟠 Medium | ✅ Fixed |
 | [QA-019](#qa-019) | Engine | Starport PSS v1.1 — replace PVS formula with GDP-based PSS + TL capability cap | 🔴 High | ✅ Fixed |
 | [QA-020](#qa-020) | Engine — Culture Generation | Culture traits should reroll opposing or duplicate results | 🟠 Medium | ✅ Fixed |
 | [QA-021](#qa-021) | Engine — Inhabitants | Source of Power and Culture traits can generate contradictory combinations | 🔴 High | ✅ Fixed |
-| [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | 📋 Open |
+| [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | ✅ Fixed |
 | [QA-023](#qa-023) | Engine — World Physics | Replace gravity tables with density tables + mass-derived gravity | 🟠 Medium | 📋 **Proposed — awaiting approval** |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
 
@@ -556,7 +475,8 @@ Where `randomFactor` is 0.8-1.2 for variation. This ensures Habitats are appropr
 **Title:** Generator options reset on every navigation — last-used settings not preserved  
 **Area:** UI — Generator Dashboard  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Open  
+**Status:** ✅ Fixed  
+**Date Fixed:** 2026-04-14  
 **File(s):** `src/components/GeneratorDashboard.tsx`
 
 **Description:**  
@@ -880,8 +800,9 @@ const cultureTraits = generateCultureTraits(traitCount, cultureExclude);
 **Title:** Main world gravity and size are independent rolls — physically impossible combinations produced  
 **Area:** Engine — World Physics  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Open  
+**Status:** ✅ Fixed  
 **Date Opened:** 2026-04-14  
+**Date Fixed:** 2026-04-14  
 **Reported by:** Neil Lucock  
 **File(s):** `src/lib/generator.ts` (main world generation), `src/lib/worldData.ts` (`getDwarfGravity`, `getTerrestrialGravity`)
 
@@ -1252,3 +1173,4 @@ Awaiting user approval of this proposal. Once approved, the above implementation
 | 1.11 | 2026-04-14 | Added QA-021: Source of Power / Culture trait contradictions (Neil Lucock); QA-022: Main world gravity/size inconsistency (Neil Lucock); QA-INV-001: E/X port dominance investigation — no bug |
 | 1.12 | 2026-04-14 | QA-020: Culture trait opposing/duplicate reroll implemented; QA-021: Power/culture conflict filter implemented (Neil Lucock) |
 | 1.13 | 2026-04-14 | Handoff block updated — 4 open tasks clarified for Kimi (QA-022, QA-018/FR-028, FR-029, FR-030); QA-023 flagged awaiting approval; ship traffic_pool field confirmed in JSON |
+| 1.14 | 2026-04-14 | QA-022: gravity/size physics validation implemented; QA-018: generator options persistence verified fixed; FR-029: Weekly 3D6 roll button implemented; FR-030: Ships in the Area generator implemented |

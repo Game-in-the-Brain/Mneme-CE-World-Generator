@@ -99,9 +99,30 @@ export interface Starport {
   annualTrade: number;      // Annual port trade volume (Credits/year)
   weeklyBase: number;       // annualTrade ÷ 364
   weeklyActivity: number;   // weeklyBase × 3D6 (this week's actual throughput)
+  weeklyRoll?: number;      // FR-029: stored 3D6 roll result
   hasNavalBase: boolean;
   hasScoutBase: boolean;
   hasPirateBase: boolean;
+}
+
+// FR-030: Ships in the Area
+export type ShipLocation = 'Orbit' | 'System' | 'Docked';
+
+export interface ShipInArea {
+  name: string;
+  dt: number;
+  monthlyOperatingCost: number;
+  location: ShipLocation;
+  trafficPool: 'small' | 'civilian' | 'warship';
+}
+
+export interface ShipsInAreaResult {
+  budget: number;
+  distributionRoll: number;
+  smallCraftBudget: number;
+  civilianBudget: number;
+  warshipBudget: number;
+  ships: ShipInArea[];
 }
 
 export interface Inhabitants {

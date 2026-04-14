@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations } from '../types';
+import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult, ShipLocation } from '../types';
 import { exportToDocx } from '../lib/exportDocx';
 import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 // @ts-ignore - lucide-react types
@@ -12,9 +12,11 @@ import {
   SOURCE_OF_POWER_DESCRIPTIONS,
   TL_TABLE,
 } from '../lib/worldData';
+import { generateShipsInTheArea } from '../lib/shipsInArea';
 
 interface SystemViewerProps {
   system: StarSystem;
+  onUpdateSystem?: (system: StarSystem) => void;
   onExportJSON: () => void;
   onExportCSV: () => void;
   onGlossary?: () => void;
@@ -32,7 +34,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 // QA-010: Single-page anchor tabs — each section is always rendered;
 // tab buttons scroll to the corresponding section.
-export function SystemViewer({ system, onExportJSON, onExportCSV, onGlossary }: SystemViewerProps) {
+export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV, onGlossary }: SystemViewerProps) {
   const sectionRefs: Record<TabId, React.RefObject<HTMLDivElement | null>> = {
     overview:    useRef<HTMLDivElement | null>(null),
     star:        useRef<HTMLDivElement | null>(null),
@@ -47,6 +49,7 @@ export function SystemViewer({ system, onExportJSON, onExportCSV, onGlossary }: 
 
   // Body annotations — persisted per system (localStorage)
   const [annotations, setAnnotations] = useState<BodyAnnotations>({});
+  const [shipsResult, setShipsResult] = useState<ShipsInAreaResult | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
@@ -72,8 +75,8 @@ export function SystemViewer({ system, onExportJSON, onExportCSV, onGlossary }: 
   );
 
   const handleExportDocx = useCallback(async () => {
-    await exportToDocx(system, annotations);
-  }, [system, annotations]);
+    await exportToDocx(system, annotations, shipsResult);
+  }, [system, annotations, shipsResult]);
 
   return (
     <div className="space-y-6">
@@ -153,7 +156,7 @@ export function SystemViewer({ system, onExportJSON, onExportCSV, onGlossary }: 
           <Users style={{ color: 'var(--accent-red)' }} size={20} />
           Inhabitants
         </h2>
-        <InhabitantsTab inhabitants={system.inhabitants} />
+        <InhabitantsTab inhabitants={system.inhabitants} system={system} onUpdateSystem={onUpdateSystem} shipsResult={shipsResult} setShipsResult={setShipsResult} />
       </section>
 
       <section ref={sectionRefs.system} id="planetary-system" className="scroll-mt-20">
@@ -549,7 +552,7 @@ function FootnoteBlock({ children }: { children: React.ReactNode }) {
   );
 }
 
-function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
+function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void }) {
   const isPopulated = inhabitants.populated !== false;
 
   if (!isPopulated) {
@@ -569,6 +572,34 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
   const devDesc    = DEVELOPMENT_DESCRIPTIONS[inhabitants.development];
   const powerDesc  = SOURCE_OF_POWER_DESCRIPTIONS[inhabitants.sourceOfPower];
   const govSign    = inhabitants.governance >= 0 ? `+${inhabitants.governance}` : `${inhabitants.governance}`;
+
+  function handleRollWeekly() {
+    if (!onUpdateSystem) return;
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const d3 = Math.floor(Math.random() * 6) + 1;
+    const total = d1 + d2 + d3;
+    const weeklyActivity = inhabitants.starport.weeklyBase * total;
+    const updated: StarSystem = {
+      ...system,
+      inhabitants: {
+        ...system.inhabitants,
+        starport: {
+          ...system.inhabitants.starport,
+          weeklyRoll: total,
+          weeklyActivity,
+        },
+      },
+    };
+    onUpdateSystem(updated);
+  }
+
+  function handleGenerateShips() {
+    const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity);
+    setShipsResult(result);
+  }
+
+  const weeklyRoll = inhabitants.starport.weeklyRoll;
 
   return (
     <div className="grid md:grid-cols-2 gap-6">
@@ -675,12 +706,29 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
           <DataRow label="Weekly Base"  value={formatCredits(inhabitants.starport.weeklyBase)} />
         </div>
 
-        {/* Weekly activity with footnote */}
+        {/* Weekly activity with roll button (FR-029) */}
         <div>
           <div className="flex items-baseline justify-between mb-1">
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>This Week</span>
             <span className="font-bold">{formatCredits(inhabitants.starport.weeklyActivity)}</span>
           </div>
+          {weeklyRoll !== undefined && (
+            <div className="text-xs mb-2" style={{ color: 'var(--text-secondary)' }}>
+              Rolled 3D6: <span className="font-mono">{weeklyRoll}</span>
+            </div>
+          )}
+          <button
+            onClick={handleRollWeekly}
+            disabled={!onUpdateSystem}
+            className="text-xs px-3 py-1.5 rounded border transition-colors"
+            style={{
+              backgroundColor: 'var(--bg-primary)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            Roll 3D6
+          </button>
           <FootnoteBlock>
             <strong>What this means:</strong> Weekly throughput = (Annual Port Trade ÷ 364) × 3D6.
             Annual Port Trade = Population × GDP/person/day × 365 × Trade Fraction × Wealth Multiplier.
@@ -689,6 +737,44 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
             Roll varies week to week; this figure reflects conditions when you arrived.
           </FootnoteBlock>
         </div>
+      </div>
+
+      {/* Ships in the Area (FR-030) */}
+      <div className="card space-y-4 md:col-span-2">
+        <h3 className="text-lg font-semibold">Ships in the Area</h3>
+        <button
+          onClick={handleGenerateShips}
+          className="text-xs px-3 py-1.5 rounded border transition-colors"
+          style={{
+            backgroundColor: 'var(--bg-primary)',
+            borderColor: 'var(--border-color)',
+            color: 'var(--text-primary)',
+          }}
+        >
+          Generate Ships in the Area
+        </button>
+
+        {shipsResult && (
+          <div className="space-y-4">
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Budget: {formatCredits(shipsResult.budget)} ({shipsResult.distributionRoll} on distribution table)
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              <ShipLocationGroup
+                label="In Orbit"
+                ships={shipsResult.ships.filter(s => s.location === 'Orbit')}
+              />
+              <ShipLocationGroup
+                label="In System"
+                ships={shipsResult.ships.filter(s => s.location === 'System')}
+              />
+              <ShipLocationGroup
+                label="Docked at Starport"
+                ships={shipsResult.ships.filter(s => s.location === 'Docked')}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Travel & Culture */}
@@ -708,6 +794,49 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
         </div>
       </div>
 
+    </div>
+  );
+}
+
+function ShipLocationGroup({ label, ships }: { label: string; ships: { name: string; dt: number; monthlyOperatingCost: number; location: ShipLocation; trafficPool: 'small' | 'civilian' | 'warship' }[] }) {
+  if (ships.length === 0) {
+    return (
+      <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
+        <div className="font-medium text-sm mb-1">{label}</div>
+        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>None</div>
+      </div>
+    );
+  }
+
+  const counts = new Map<string, { count: number; dt: number; cost: number }>();
+  for (const s of ships) {
+    const existing = counts.get(s.name);
+    if (existing) {
+      existing.count++;
+      existing.cost += s.monthlyOperatingCost;
+    } else {
+      counts.set(s.name, { count: 1, dt: s.dt, cost: s.monthlyOperatingCost });
+    }
+  }
+
+  const totalCost = ships.reduce((sum, s) => sum + s.monthlyOperatingCost, 0);
+
+  return (
+    <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
+      <div className="font-medium text-sm mb-2 flex items-baseline justify-between">
+        <span>{label}</span>
+        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{ships.length} ship{ships.length === 1 ? '' : 's'}</span>
+      </div>
+      <div className="space-y-1">
+        {Array.from(counts.entries()).map(([name, info]) => (
+          <div key={name} className="flex items-baseline justify-between text-sm">
+            <span>{info.count > 1 ? `${info.count}× ` : ''}{name} ({info.dt} DT)</span>
+          </div>
+        ))}
+      </div>
+      <div className="text-xs mt-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
+        Total operating cost: {formatCredits(totalCost)}
+      </div>
     </div>
   );
 }

@@ -91,6 +91,12 @@ function App() {
     setView('system');
   }, []);
 
+  const handleUpdateSystem = useCallback(async (updated: StarSystem) => {
+    setCurrentSystem(updated);
+    await saveSystem(updated);
+    await loadSavedSystems();
+  }, []);
+
   const handleDeleteSystem = useCallback(async (id: string) => {
     try {
       await deleteSystem(id);
@@ -171,6 +177,7 @@ function App() {
         {view === 'system' && currentSystem && (
           <SystemViewer 
             system={currentSystem}
+            onUpdateSystem={handleUpdateSystem}
             onExportJSON={handleExportJSON}
             onExportCSV={handleExportCSV}
             onGlossary={() => setView('glossary')}

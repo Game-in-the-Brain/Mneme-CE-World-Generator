@@ -163,6 +163,20 @@ function generateCompanionStars(primaryStar: Star): Star[] {
 // Main World Generation
 // =====================
 
+/** Compute the density (g/cm³) implied by a surface gravity and diameter. */
+function gravityImpliesDensity(gravityG: number, diameterKm: number): number {
+  const r = (diameterKm / 2) * 1000; // radius in metres
+  const g = gravityG * 9.81;         // m/s²
+  // From: g = G × (4/3)πr × density_kg_m3
+  // density_kg_m3 = g / (G × (4/3) × π × r)
+  return g / (6.674e-11 * (4 / 3) * Math.PI * r) / 1000; // convert to g/cm³
+}
+
+const DENSITY_LIMITS = {
+  Dwarf:       { min: 1.5, max: 22.6 },
+  Terrestrial: { min: 4.0, max: 22.6 },
+};
+
 function generateMainWorld(
   primaryStar: Star,
   _zones: ZoneBoundaries,
@@ -217,6 +231,19 @@ function generateMainWorld(
     const result = getTerrestrialGravity(gravityRoll);
     gravity = result.gravity;
     gravityHabitability = result.habitability;
+  }
+
+  // QA-022: Validate density and reroll if physically impossible
+  const bodyTypeLimits = worldType === 'Dwarf' ? DENSITY_LIMITS.Dwarf : DENSITY_LIMITS.Terrestrial;
+  let attempts = 0;
+  while (attempts < 10) {
+    const impliedDensity = gravityImpliesDensity(gravity, size);
+    if (impliedDensity >= bodyTypeLimits.min && impliedDensity <= bodyTypeLimits.max) break;
+    const reroll = roll2D6().value;
+    const result = worldType === 'Dwarf' ? getDwarfGravity(reroll) : getTerrestrialGravity(reroll);
+    gravity = result.gravity;
+    gravityHabitability = result.habitability;
+    attempts++;
   }
 
   const atmoRoll = roll2D6().value;

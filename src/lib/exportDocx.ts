@@ -3,8 +3,7 @@ import {
   Table, TableRow, TableCell,
   AlignmentType, WidthType,
 } from 'docx';
-import type { StarSystem } from '../types';
-import type { BodyAnnotations } from '../types';
+import type { StarSystem, ShipsInAreaResult, BodyAnnotations } from '../types';
 import { formatNumber, formatPopulation, formatCredits } from './format';
 
 // ── Colour palette (visible on white paper) ──────────────────────────────────
@@ -157,7 +156,7 @@ function buildMainWorld(s: StarSystem): Paragraph[] {
   ];
 }
 
-function buildInhabitants(s: StarSystem): Paragraph[] {
+function buildInhabitants(s: StarSystem, shipsInArea?: ShipsInAreaResult | null): Paragraph[] {
   const inh = s.inhabitants;
   if (inh.populated === false) {
     return [
@@ -197,6 +196,42 @@ function buildInhabitants(s: StarSystem): Paragraph[] {
     line('Culture Traits',  inh.cultureTraits.join(', ') || 'None'),
     blank(),
   );
+
+  if (shipsInArea && shipsInArea.ships.length > 0) {
+    sections.push(h2('Ships in the Area'));
+    sections.push(line('Budget', formatCredits(shipsInArea.budget)));
+
+    const locations = ['Orbit', 'System', 'Docked'] as const;
+    for (const loc of locations) {
+      const locShips = shipsInArea.ships.filter(s => s.location === loc);
+      if (locShips.length === 0) continue;
+
+      const label = loc === 'Docked' ? 'Docked at Starport' : `In ${loc}`;
+      sections.push(new Paragraph({ children: [run(label, { bold: true, color: BLUE, size: 22 })], spacing: { before: 120, after: 60 } }));
+
+      const counts = new Map<string, { count: number; dt: number; cost: number }>();
+      for (const ship of locShips) {
+        const existing = counts.get(ship.name);
+        if (existing) {
+          existing.count++;
+          existing.cost += ship.monthlyOperatingCost;
+        } else {
+          counts.set(ship.name, { count: 1, dt: ship.dt, cost: ship.monthlyOperatingCost });
+        }
+      }
+
+      for (const [name, info] of counts) {
+        sections.push(
+          line(
+            `${info.count > 1 ? `${info.count}× ` : ''}${name}`,
+            `${info.dt} DT — ${formatCredits(info.cost)}`
+          )
+        );
+      }
+    }
+    sections.push(blank());
+  }
+
   return sections;
 }
 
@@ -315,7 +350,7 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
 
 // ── Public export ─────────────────────────────────────────────────────────────
 
-export async function exportToDocx(system: StarSystem, annotations: BodyAnnotations): Promise<void> {
+export async function exportToDocx(system: StarSystem, annotations: BodyAnnotations, shipsInArea?: ShipsInAreaResult | null): Promise<void> {
   const doc = new Document({
     creator: 'Mneme CE World Generator',
     title:   `${system.primaryStar.class}${system.primaryStar.grade} Star System`,
@@ -325,7 +360,7 @@ export async function exportToDocx(system: StarSystem, annotations: BodyAnnotati
         ...buildStar(system),
         ...buildZones(system),
         ...buildMainWorld(system),
-        ...buildInhabitants(system),
+        ...buildInhabitants(system, shipsInArea),
         ...buildPlanetarySystem(system, annotations),
       ],
     }],
