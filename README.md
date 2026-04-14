@@ -49,6 +49,20 @@ The original tool was a Google Sheets spreadsheet with a Google Apps Script macr
 
 ## Recent Updates
 
+### Version 1.4.0 (2026-04-15)
+
+#### Major Engine Rewrite: Gravity & Density (QA-023)
+- **Mass+Density Physics Pipeline** — Replaced arbitrary gravity lookup tables with mass-derived gravity. Main worlds are now sized in Lunar/Earth Masses (LM/EM) and assigned a density, from which true radius, surface gravity, and escape velocity are derived.
+- **Physical Accuracy** — Eliminated physically impossible combinations (like tiny dense planets with extreme gravities) and corrected terrestrial gravity non-monotonicity. 
+- **Code Cleanups** — Resolved React Hook violations in `SystemViewer.tsx` and cleaned up unused `lucide-react` TS directives.
+
+#### Associated Documentation
+- [**QA.md**](./QA.md) — All initial bugs and features (QA-001 through QA-024) are now fully resolved.
+- [**260410-Update.md**](./260410-Update.md) — Comprehensive explanation of recent engine rule changes vs the original book.
+- [**20260415-mcp-changes.md**](./20260415-mcp-changes.md) — Session logs of the final MCP QA-023 refactor and linting fixes.
+
+---
+
 ### Version 1.3.1 (2026-04-10)
 
 #### New Features
@@ -325,7 +339,9 @@ npm run preview
 | Document | Description |
 |----------|-------------|
 | [FRD](./260409-v02%20Mneme-CE-World-Generator-FRD.md) | Full Function Requirements Document |
-| [QA.md](./QA.md) | Known issues and open bugs |
+| [QA.md](./QA.md) | Resolved issues, open bugs, and session logs |
+| [Update.md](./260410-Update.md) | Mechanics updates and explicit deviations from the original book |
+| [MCP Changes](./20260415-mcp-changes.md) | Detailed session changes and verification logs |
 | [REF-001](./references/REF-001-stellar-tables.md) | Stellar class, mass, and luminosity tables |
 | [REF-002](./references/REF-002-companion-star.md) | Companion star generation logic |
 | [REF-003](./references/REF-003-orbit-table.md) | Companion star orbital distances |
