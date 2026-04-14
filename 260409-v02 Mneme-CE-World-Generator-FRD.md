@@ -838,11 +838,15 @@ Roll 1D6 to divide the Ships Budget among three pools. Small Craft and Civilian 
 
 Ships are drawn from `mneme_ship_reference.json` (`/mneme_ship_reference.md`).
 
-| Pool | Categories | DT Rule |
-|------|------------|---------|
-| **Small Craft** | `Small Craft`, `Fighter` | ≤ 100 DT |
-| **Civilian** | `Merchant`, `Passenger`, `Specialized`, `Support` | Any |
-| **Warship** | `Military` | Any |
+Each ship in the JSON carries a **`traffic_pool`** field (pre-populated) that directly identifies which pool it belongs to. The implementation must filter by `traffic_pool` — do not re-derive pool membership from `category` at runtime.
+
+| `traffic_pool` value | `category` values included | DT Rule |
+|----------------------|---------------------------|---------|
+| `"Small Craft Pool"` | `"Small Craft"`, `"Fighter"` | ≤ 100 DT |
+| `"Civilian Pool"` | `"Merchant"`, `"Passenger"`, `"Specialized"`, `"Support"` | Any |
+| `"Warship Pool"` | `"Military"` | Any |
+
+> The `traffic_pool_map` object at the top of `mneme_ship_reference.json` documents the mapping rules. Individual ships carry `traffic_pool` so the generator can filter with a single equality check (`ship.traffic_pool === poolName`) without needing to know the category-to-pool rules.
 
 **Monthly Operating Cost:** Use `monthly_operating_cost_cr` from the JSON reference. This value is set equal to `supplies_cr` (resupply / life-support / minor maintenance cost) for each hull.
 
@@ -1478,3 +1482,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.6 | 2026-04-14 | Added culture trait reroll rule to section 7.10; updated REF-006 culture table notes |
 | 1.7 | 2026-04-14 | FR-029: Added Weekly Activity Roll Button spec to Section 7.8; QA-020/021 marked fixed |
 | 1.8 | 2026-04-14 | FR-030: Added Ships in the Area spec (Section 7.10); updated ship reference files with `monthly_operating_cost_cr` |
+| 1.9 | 2026-04-14 | FR-030 Step 3: Added `traffic_pool` field to all 35 ships in `mneme_ship_reference.json`; added `traffic_pool_map` header object; FRD Step 3 updated to specify `traffic_pool` as the filter field — implementation must not re-derive pool membership from `category` |

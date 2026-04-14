@@ -11,43 +11,50 @@
 
 > **Note:** `Supplies (Cr)` is treated as the **monthly operating cost** for ship traffic generation (resupply, life support, minor maintenance). The JSON file includes an explicit `monthly_operating_cost_cr` field set equal to `supplies_cr` for app integration.
 
-| Ship Name | TL | DT (Tons) | Total Cost (Cr) | Supplies (Cr) | Category |
-|-----------|-----|-----------|-----------------|---------------|----------|
-| Courier Ship | 9 | 100 | 44,175,000 | 284,000 | Small Craft |
-| Yacht | 9 | 100 | 32,200,000 | 284,000 | Small Craft |
-| Research Vessel | 9 | 200 | 56,545,000 | 9,758,000 | Specialized |
-| Asteroid Miner | 9 | 200 | 87,470,000 | 284,000 | Specialized |
-| Merchant Trader | 9 | 200 | 43,070,000 | 164,000 | Merchant |
-| Merchant Liner | 9 | 300 | 78,254,000 | 254,000 | Passenger |
-| Frontier Trader | 9 | 300 | 91,944,000 | 304,000 | Merchant |
-| Tender | 9 | 100 | 54,720,000 | 114,000 | Support |
-| Habitat Ring | 9 | 300 | 63,645,000 | 164,000 | Specialized |
-| Merchant Freighter | 9 | 400 | 76,994,000 | 174,000 | Merchant |
-| 'Bosco' Merchant Freighter | 9 | 400 | 156,120,000 | 158,000 | Merchant |
-| Patrol Frigate | 9 | 300 | 176,496,000 | 22,096,000 | Military |
-| Corvette | 9 | 300 | 190,179,000 | 629,000 | Military |
-| Exploration Vessel | 9 | 300 | 113,758,000 | 113,758,000 | Specialized |
-| Survey Vessel | 9 | 200 | 82,658,000 | 10,008,000 | Specialized |
-| System Defense Boat | 9 | 400 | 185,084,000 | 764,000 | Military |
-| Missile Frigate | 9 | 400 | 175,870,000 | 404,000 | Military |
-| Escort Frigate | 9 | 400 | 150,270,000 | 204,000 | Military |
-| Raider | 9 | 600 | 288,500,000 | 38,517,000 | Military |
-| Fighter (1BL/2M) | 9 | 10 | 12,930,630 | 11,430,630 | Fighter |
-| Escort Fighter | 9 | 10 | 11,975,630 | 505,630 | Fighter |
-| Fighter (3M) | 9 | 10 | 10,741,630 | 21,630 | Fighter |
-| Medium Fighter | 9 | 20 | 16,156,630 | 21,630 | Fighter |
-| Passenger Ship | 9 | 200 | 48,320,000 | 314,000 | Passenger |
-| Passenger Liner (400DT) | 9 | 400 | 94,544,000 | 174,000 | Passenger |
-| Frontier Passenger | 9 | 300 | 102,094,000 | 174,000 | Passenger |
-| Passenger Liner (1000DT) | 9 | 1,000 | 379,156,000 | 3,249,000 | Passenger |
-| Shuttle | 9 | 90 | 29,715,400 | 965,400 | Small Craft |
-| Boat (10DT) | 9 | 10 | 5,320,400 | 5,400 | Small Craft |
-| Boat (20DT) | 9 | 20 | 5,480,400 | 5,400 | Small Craft |
-| Armed Gig | 9 | 20 | 15,465,400 | 5,400 | Small Craft |
-| Ship's Boat (30DT) | 9 | 30 | 18,651,200 | 16,200 | Small Craft |
-| Ship's Boat (50DT) | 9 | 50 | 13,471,200 | 16,200 | Small Craft |
-| Ship's Boat (70DT) | 9 | 70 | 13,791,200 | 16,200 | Small Craft |
-| Ship's Boat (95DT) | 9 | 95 | 14,191,200 | 16,200 | Small Craft |
+> **Traffic Pool:** Each ship carries a `traffic_pool` field in the JSON identifying which FR-030 generation pool it belongs to. The pool mapping is:
+> - `"Small Craft Pool"` — categories `Small Craft` and `Fighter`, DT ≤ 100
+> - `"Civilian Pool"` — categories `Merchant`, `Passenger`, `Specialized`, `Support`, any DT
+> - `"Warship Pool"` — category `Military`, any DT
+>
+> Filter by `traffic_pool` directly in code — do not re-derive from `category` at runtime.
+
+| Ship Name | TL | DT | Total Cost (Cr) | Supplies (Cr) | Category | Traffic Pool |
+|-----------|----|----|-----------------|---------------|----------|-------------|
+| Courier Ship | 9 | 100 | 44,175,000 | 284,000 | Small Craft | Small Craft Pool |
+| Yacht | 9 | 100 | 32,200,000 | 284,000 | Small Craft | Small Craft Pool |
+| Research Vessel | 9 | 200 | 56,545,000 | 9,758,000 | Specialized | Civilian Pool |
+| Asteroid Miner | 9 | 200 | 87,470,000 | 284,000 | Specialized | Civilian Pool |
+| Merchant Trader | 9 | 200 | 43,070,000 | 164,000 | Merchant | Civilian Pool |
+| Merchant Liner | 9 | 300 | 78,254,000 | 254,000 | Passenger | Civilian Pool |
+| Frontier Trader | 9 | 300 | 91,944,000 | 304,000 | Merchant | Civilian Pool |
+| Tender | 9 | 100 | 54,720,000 | 114,000 | Support | Civilian Pool |
+| Habitat Ring | 9 | 300 | 63,645,000 | 164,000 | Specialized | Civilian Pool |
+| Merchant Freighter | 9 | 400 | 76,994,000 | 174,000 | Merchant | Civilian Pool |
+| 'Bosco' Merchant Freighter | 9 | 400 | 156,120,000 | 158,000 | Merchant | Civilian Pool |
+| Patrol Frigate | 9 | 300 | 176,496,000 | 22,096,000 | Military | Warship Pool |
+| Corvette | 9 | 300 | 190,179,000 | 629,000 | Military | Warship Pool |
+| Exploration Vessel | 9 | 300 | 113,758,000 | 113,758,000 | Specialized | Civilian Pool |
+| Survey Vessel | 9 | 200 | 82,658,000 | 10,008,000 | Specialized | Civilian Pool |
+| System Defense Boat | 9 | 400 | 185,084,000 | 764,000 | Military | Warship Pool |
+| Missile Frigate | 9 | 400 | 175,870,000 | 404,000 | Military | Warship Pool |
+| Escort Frigate | 9 | 400 | 150,270,000 | 204,000 | Military | Warship Pool |
+| Raider | 9 | 600 | 288,500,000 | 38,517,000 | Military | Warship Pool |
+| Fighter (1BL/2M) | 9 | 10 | 12,930,630 | 11,430,630 | Fighter | Small Craft Pool |
+| Escort Fighter | 9 | 10 | 11,975,630 | 505,630 | Fighter | Small Craft Pool |
+| Fighter (3M) | 9 | 10 | 10,741,630 | 21,630 | Fighter | Small Craft Pool |
+| Medium Fighter | 9 | 20 | 16,156,630 | 21,630 | Fighter | Small Craft Pool |
+| Passenger Ship | 9 | 200 | 48,320,000 | 314,000 | Passenger | Civilian Pool |
+| Passenger Liner (400DT) | 9 | 400 | 94,544,000 | 174,000 | Passenger | Civilian Pool |
+| Frontier Passenger | 9 | 300 | 102,094,000 | 174,000 | Passenger | Civilian Pool |
+| Passenger Liner (1000DT) | 9 | 1,000 | 379,156,000 | 3,249,000 | Passenger | Civilian Pool |
+| Shuttle | 9 | 90 | 29,715,400 | 965,400 | Small Craft | Small Craft Pool |
+| Boat (10DT) | 9 | 10 | 5,320,400 | 5,400 | Small Craft | Small Craft Pool |
+| Boat (20DT) | 9 | 20 | 5,480,400 | 5,400 | Small Craft | Small Craft Pool |
+| Armed Gig | 9 | 20 | 15,465,400 | 5,400 | Small Craft | Small Craft Pool |
+| Ship's Boat (30DT) | 9 | 30 | 18,651,200 | 16,200 | Small Craft | Small Craft Pool |
+| Ship's Boat (50DT) | 9 | 50 | 13,471,200 | 16,200 | Small Craft | Small Craft Pool |
+| Ship's Boat (70DT) | 9 | 70 | 13,791,200 | 16,200 | Small Craft | Small Craft Pool |
+| Ship's Boat (95DT) | 9 | 95 | 14,191,200 | 16,200 | Small Craft | Small Craft Pool |
 
 ---
 

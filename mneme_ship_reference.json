@@ -2,6 +2,11 @@
   "source": "GI7B EXTERNAL RAW CE SHIPS 231024-06 240930",
   "tech_level": 9,
   "total_ships": 35,
+  "traffic_pool_map": {
+    "Small Craft Pool": { "categories": ["Small Craft", "Fighter"], "dt_max": 100 },
+    "Civilian Pool":    { "categories": ["Merchant", "Passenger", "Specialized", "Support"], "dt_max": null },
+    "Warship Pool":     { "categories": ["Military"], "dt_max": null }
+  },
   "ships": [
     {
       "name": "Courier Ship",
@@ -10,6 +15,7 @@
       "total_cost_cr": 44175000,
       "supplies_cr": 284000,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 284000
     },
     {
@@ -19,6 +25,7 @@
       "total_cost_cr": 32200000,
       "supplies_cr": 284000,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 284000
     },
     {
@@ -28,6 +35,7 @@
       "total_cost_cr": 56545000,
       "supplies_cr": 9758000,
       "category": "Specialized",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 9758000
     },
     {
@@ -37,6 +45,7 @@
       "total_cost_cr": 87470000,
       "supplies_cr": 284000,
       "category": "Specialized",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 284000
     },
     {
@@ -46,6 +55,7 @@
       "total_cost_cr": 43070000,
       "supplies_cr": 164000,
       "category": "Merchant",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 164000
     },
     {
@@ -55,6 +65,7 @@
       "total_cost_cr": 78254000,
       "supplies_cr": 254000,
       "category": "Passenger",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 254000
     },
     {
@@ -64,6 +75,7 @@
       "total_cost_cr": 91944000,
       "supplies_cr": 304000,
       "category": "Merchant",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 304000
     },
     {
@@ -73,6 +85,7 @@
       "total_cost_cr": 54720000,
       "supplies_cr": 114000,
       "category": "Support",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 114000
     },
     {
@@ -82,6 +95,7 @@
       "total_cost_cr": 63645000,
       "supplies_cr": 164000,
       "category": "Specialized",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 164000
     },
     {
@@ -91,6 +105,7 @@
       "total_cost_cr": 76994000,
       "supplies_cr": 174000,
       "category": "Merchant",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 174000
     },
     {
@@ -100,6 +115,7 @@
       "total_cost_cr": 156120000,
       "supplies_cr": 158000,
       "category": "Merchant",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 158000
     },
     {
@@ -109,6 +125,7 @@
       "total_cost_cr": 176496000,
       "supplies_cr": 22096000,
       "category": "Military",
+      "traffic_pool": "Warship Pool",
       "monthly_operating_cost_cr": 22096000
     },
     {
@@ -118,6 +135,7 @@
       "total_cost_cr": 190179000,
       "supplies_cr": 629000,
       "category": "Military",
+      "traffic_pool": "Warship Pool",
       "monthly_operating_cost_cr": 629000
     },
     {
@@ -127,6 +145,7 @@
       "total_cost_cr": 113758000,
       "supplies_cr": 113758000,
       "category": "Specialized",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 113758000
     },
     {
@@ -136,6 +155,7 @@
       "total_cost_cr": 82658000,
       "supplies_cr": 10008000,
       "category": "Specialized",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 10008000
     },
     {
@@ -145,6 +165,7 @@
       "total_cost_cr": 185084000,
       "supplies_cr": 764000,
       "category": "Military",
+      "traffic_pool": "Warship Pool",
       "monthly_operating_cost_cr": 764000
     },
     {
@@ -154,6 +175,7 @@
       "total_cost_cr": 175870000,
       "supplies_cr": 404000,
       "category": "Military",
+      "traffic_pool": "Warship Pool",
       "monthly_operating_cost_cr": 404000
     },
     {
@@ -163,6 +185,7 @@
       "total_cost_cr": 150270000,
       "supplies_cr": 204000,
       "category": "Military",
+      "traffic_pool": "Warship Pool",
       "monthly_operating_cost_cr": 204000
     },
     {
@@ -172,6 +195,7 @@
       "total_cost_cr": 288500000,
       "supplies_cr": 38517000,
       "category": "Military",
+      "traffic_pool": "Warship Pool",
       "monthly_operating_cost_cr": 38517000
     },
     {
@@ -181,6 +205,7 @@
       "total_cost_cr": 12930630,
       "supplies_cr": 11430630,
       "category": "Fighter",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 11430630
     },
     {
@@ -190,6 +215,7 @@
       "total_cost_cr": 11975630,
       "supplies_cr": 505630,
       "category": "Fighter",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 505630
     },
     {
@@ -199,6 +225,7 @@
       "total_cost_cr": 10741630,
       "supplies_cr": 21630,
       "category": "Fighter",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 21630
     },
     {
@@ -208,6 +235,7 @@
       "total_cost_cr": 16156630,
       "supplies_cr": 21630,
       "category": "Fighter",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 21630
     },
     {
@@ -217,6 +245,7 @@
       "total_cost_cr": 48320000,
       "supplies_cr": 314000,
       "category": "Passenger",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 314000
     },
     {
@@ -226,6 +255,7 @@
       "total_cost_cr": 94544000,
       "supplies_cr": 174000,
       "category": "Passenger",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 174000
     },
     {
@@ -235,6 +265,7 @@
       "total_cost_cr": 102094000,
       "supplies_cr": 174000,
       "category": "Passenger",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 174000
     },
     {
@@ -244,6 +275,7 @@
       "total_cost_cr": 379156000,
       "supplies_cr": 3249000,
       "category": "Passenger",
+      "traffic_pool": "Civilian Pool",
       "monthly_operating_cost_cr": 3249000
     },
     {
@@ -253,6 +285,7 @@
       "total_cost_cr": 29715400,
       "supplies_cr": 965400,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 965400
     },
     {
@@ -262,6 +295,7 @@
       "total_cost_cr": 5320400,
       "supplies_cr": 5400,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 5400
     },
     {
@@ -271,6 +305,7 @@
       "total_cost_cr": 5480400,
       "supplies_cr": 5400,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 5400
     },
     {
@@ -280,6 +315,7 @@
       "total_cost_cr": 15465400,
       "supplies_cr": 5400,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 5400
     },
     {
@@ -289,6 +325,7 @@
       "total_cost_cr": 18651200,
       "supplies_cr": 16200,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 16200
     },
     {
@@ -298,6 +335,7 @@
       "total_cost_cr": 13471200,
       "supplies_cr": 16200,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 16200
     },
     {
@@ -307,6 +345,7 @@
       "total_cost_cr": 13791200,
       "supplies_cr": 16200,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 16200
     },
     {
@@ -316,6 +355,7 @@
       "total_cost_cr": 14191200,
       "supplies_cr": 16200,
       "category": "Small Craft",
+      "traffic_pool": "Small Craft Pool",
       "monthly_operating_cost_cr": 16200
     }
   ]
