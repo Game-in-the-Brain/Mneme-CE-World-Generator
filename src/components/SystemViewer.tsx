@@ -3,7 +3,7 @@ import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarCl
 import { exportToDocx } from '../lib/exportDocx';
 import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 // @ts-ignore - lucide-react types
-import { formatNumber, formatLuminosity, formatValue, formatCredits, formatPopulation } from '../lib/format';
+import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
 import {
   CULTURE_TRAIT_DESCRIPTIONS,
   WEALTH_DESCRIPTIONS,
@@ -240,7 +240,7 @@ function OverviewTab({ system }: { system: StarSystem }) {
         </h3>
         <div className="space-y-2">
           <DataRow label="Starport"    value={`Class ${system.inhabitants.starport.class}`} />
-          <DataRow label="Output"      value={formatCredits(system.inhabitants.starport.output)} />
+          <DataRow label="This week"   value={formatCredits(system.inhabitants.starport.weeklyActivity)} />
           <DataRow label="Bases"       value={[
             system.inhabitants.starport.hasNavalBase  && 'Naval',
             system.inhabitants.starport.hasScoutBase  && 'Scout',
@@ -661,7 +661,8 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Starport</h3>
         <div className="space-y-2">
-          <DataRow label="Class" value={`Class ${inhabitants.starport.class}`} />
+          <DataRow label="Class"      value={`Class ${inhabitants.starport.class}`} />
+          <DataRow label="PSS"        value={`${inhabitants.starport.pss} (raw ${inhabitants.starport.rawClass}, TL cap ${inhabitants.starport.tlCap})`} />
           <DataRow
             label="Bases"
             value={[
@@ -670,22 +671,22 @@ function InhabitantsTab({ inhabitants }: { inhabitants: Inhabitants }) {
               inhabitants.starport.hasPirateBase && 'Pirate Base',
             ].filter(Boolean).join(', ') || 'None'}
           />
+          <DataRow label="Annual Trade" value={formatAnnualTrade(inhabitants.starport.annualTrade)} />
+          <DataRow label="Weekly Base"  value={formatCredits(inhabitants.starport.weeklyBase)} />
         </div>
 
-        {/* Starport output with footnote */}
+        {/* Weekly activity with footnote */}
         <div>
           <div className="flex items-baseline justify-between mb-1">
-            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Weekly Output</span>
-            <span className="font-bold">{formatCredits(inhabitants.starport.output)}</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>This Week</span>
+            <span className="font-bold">{formatCredits(inhabitants.starport.weeklyActivity)}</span>
           </div>
           <FootnoteBlock>
-            <strong>What this means:</strong> Weekly Output is the total volume of ships, cargo,
-            and services processed by this starport each week. A Class A port sees multi-million
-            credit vessels continuously — bulk freighters, passenger liners, and naval contracts
-            fill every berth. At the other extreme, a Class X port handles only message probes and
-            small parcels; the entire week's commerce may amount to roughly 10 Cr. Output scales
-            as 10<sup>PVS</sup> Cr/week, where PVS is derived from habitability, tech level,
-            wealth, and development.
+            <strong>What this means:</strong> Weekly throughput = (Annual Port Trade ÷ 364) × 3D6.
+            Annual Port Trade = Population × GDP/person/day × 365 × Trade Fraction × Wealth Multiplier.
+            PSS = floor(log₁₀(Annual Trade)) − 10. Final class = min(PSS class, TL capability cap).
+            TL sets the capability ceiling — no amount of money lets a TL 9 world build jump drives.
+            Roll varies week to week; this figure reflects conditions when you arrived.
           </FootnoteBlock>
         </div>
       </div>

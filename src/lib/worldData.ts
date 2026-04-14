@@ -231,10 +231,26 @@ export function getTechLevelDescription(tl: number): string {
 // Population
 // =====================
 
-export function calculatePopulation(habitability: number, roll: number): number {
-  // Clamp habitability to 0 minimum before exponent
-  const effectiveHabitability = Math.max(0, habitability);
-  const basePopulation = Math.pow(10, effectiveHabitability);
+// Productivity-derived TL population modifier table.
+// TL 8 and TL 9 share +6 — the Demographic Plateau (HC Constraint Era).
+// See: Mneme Productivity Index & Population Dynamics, April 2026.
+export const TL_POP_MOD: Record<number, number> = {
+  7: 5, 8: 6, 9: 6, 10: 7, 11: 8, 12: 9, 13: 10, 14: 11, 15: 12, 16: 13,
+};
+
+export function getPopTLMod(tl: number): number {
+  return TL_POP_MOD[tl] ?? Math.max(5, tl - 3);
+}
+
+/**
+ * Calculate population from EnvHab (habitability without TL component) and tech level.
+ * Formula: 10^max(0, envHab + TLmod) × roll
+ * TLmod from productivity lookup table — NOT the display TL−7 modifier.
+ */
+export function calculatePopulation(envHab: number, tl: number, roll: number): number {
+  const tlMod = getPopTLMod(tl);
+  const effectiveHab = Math.max(0, envHab + tlMod);
+  const basePopulation = Math.pow(10, effectiveHab);
   return Math.max(10, Math.floor(basePopulation * roll));
 }
 
@@ -330,30 +346,110 @@ export function getGovernanceDM(dev: DevelopmentLevel, wealth: WealthLevel): num
 }
 
 // =====================
-// Starport
+// Starport (PSS v1.1 — GDP-based with TL capability cap)
 // =====================
 
+// GDP per person per day by TL (Credits/day; 2030 anchor: $1 = 1 Cr)
+// From Mneme Productivity Index & Population Dynamics document.
+export const GDP_PER_DAY_BY_TL: Record<number, number> = {
+  7:  205,
+  8:  552,
+  9:  1_486,
+  10: 4_000,
+  11: 29_000,
+  12: 210_000,
+  13: 1_500_000,
+  14: 11_000_000,
+  15: 80_000_000,
+  16: 578_000_000,
+};
+
+export function getGdpPerDay(tl: number): number {
+  return GDP_PER_DAY_BY_TL[tl] ?? (tl < 7 ? 100 : GDP_PER_DAY_BY_TL[16]);
+}
+
+/** Trade fraction of GDP that flows through the starport, by development level. */
+export function getTradeFraction(dev: DevelopmentLevel): number {
+  switch (dev) {
+    case 'UnderDeveloped': return 0.05;
+    case 'Developing':     return 0.10;
+    case 'Mature':         return 0.15;
+    case 'Developed':      return 0.20;
+    case 'Well Developed': return 0.25;
+    case 'Very Developed': return 0.30;
+  }
+}
+
+/** Wealth trade multiplier — wealthier economies generate proportionally more starport traffic. */
+export function getWealthTradeMultiplier(wealth: WealthLevel): number {
+  switch (wealth) {
+    case 'Average':    return 1.0;
+    case 'Better-off': return 1.2;
+    case 'Prosperous': return 1.5;
+    case 'Affluent':   return 2.0;
+  }
+}
+
+/** TL capability ceiling — what the port can physically build/service. */
+export function getTLCapClass(tl: number): StarportClass {
+  if (tl < 4)   return 'X';
+  if (tl <= 5)  return 'E';
+  if (tl <= 7)  return 'D';
+  if (tl <= 9)  return 'C';
+  if (tl <= 11) return 'B';
+  return 'A'; // TL 12+: starship construction capable
+}
+
+const CLASS_ORDER: Record<StarportClass, number> = { X: 0, E: 1, D: 2, C: 3, B: 4, A: 5 };
+const ORDER_TO_CLASS: Record<number, StarportClass> = { 0: 'X', 1: 'E', 2: 'D', 3: 'C', 4: 'B', 5: 'A' };
+
+function pssToClass(pss: number): StarportClass {
+  if (pss < 4)  return 'X';
+  if (pss <= 5) return 'E';
+  if (pss <= 7) return 'D';
+  if (pss <= 9) return 'C';
+  if (pss <= 11) return 'B';
+  return 'A';
+}
+
+function minClass(a: StarportClass, b: StarportClass): StarportClass {
+  return ORDER_TO_CLASS[Math.min(CLASS_ORDER[a], CLASS_ORDER[b])];
+}
+
+/**
+ * Calculate starport class and throughput.
+ * Step 1 — GDP × trade fraction × wealth multiplier → Annual Port Trade → PSS → raw class
+ * Step 2 — TL capability cap
+ * Step 3 — Final class = min(rawClass, tlCap)
+ * Weekly throughput: annualTrade ÷ 364 × weeklyRoll (3D6)
+ */
 export function calculateStarport(
-  habitability: number,
+  population: number,
   tl: number,
   wealth: WealthLevel,
-  dev: DevelopmentLevel
-): { class: StarportClass; pvs: number; output: number } {
-  const pvs = Math.floor(habitability / 4) + (tl - 7) + getWealthModifier(wealth) + getDevelopmentModifier(dev);
-  
-  let starportClass: StarportClass;
-  if (pvs < 4) starportClass = 'X';
-  else if (pvs <= 5) starportClass = 'E';
-  else if (pvs <= 7) starportClass = 'D';
-  else if (pvs <= 9) starportClass = 'C';
-  else if (pvs <= 11) starportClass = 'B';
-  else starportClass = 'A';
-  
-  return {
-    class: starportClass,
-    pvs,
-    output: Math.pow(10, pvs)
-  };
+  dev: DevelopmentLevel,
+  weeklyRoll: number,
+): {
+  class: StarportClass;
+  pss: number;
+  rawClass: StarportClass;
+  tlCap: StarportClass;
+  annualTrade: number;
+  weeklyBase: number;
+  weeklyActivity: number;
+} {
+  const gdpPerDay   = getGdpPerDay(tl);
+  const annualTrade = population * gdpPerDay * 365 * getTradeFraction(dev) * getWealthTradeMultiplier(wealth);
+
+  const pss       = Math.floor(Math.log10(Math.max(1, annualTrade))) - 10;
+  const rawClass  = pssToClass(pss);
+  const tlCap     = getTLCapClass(tl);
+  const finalClass = minClass(rawClass, tlCap);
+
+  const weeklyBase     = annualTrade / 364;
+  const weeklyActivity = weeklyBase * weeklyRoll;
+
+  return { class: finalClass, pss, rawClass, tlCap, annualTrade, weeklyBase, weeklyActivity };
 }
 
 export function rollForBase(starportClass: StarportClass, baseType: 'naval' | 'scout' | 'pirate'): boolean {
@@ -415,23 +511,76 @@ const CULTURE_TRAITS: string[][] = [
   ['Piety', 'Progressive', 'Proud', 'Rustic', 'Ruthless', 'Scheming'],
 ];
 
-export function generateCultureTraits(count: number = 1): string[] {
+export const CULTURE_OPPOSITES: Record<string, string[]> = {
+  'Anarchist':     ['Bureaucratic', 'Legalistic'],
+  'Bureaucratic':  ['Anarchist', 'Libertarian'],
+  'Caste system':  ['Egalitarian'],
+  'Collectivist':  ['Individualist'],
+  'Cosmopolitan':  ['Isolationist', 'Rustic'],
+  'Deceptive':     ['Honest', 'Honorable'],
+  'Degenerate':    ['Honorable', 'Proud'],
+  'Devoted':       ['Indifferent'],
+  'Egalitarian':   ['Elitist', 'Caste system'],
+  'Elitist':       ['Egalitarian'],
+  'Fatalistic':    ['Idealistic'],
+  'Fearful':       ['Heroic'],
+  'Generous':      ['Ruthless'],
+  'Gregarious':    ['Paranoid'],
+  'Heroic':        ['Fearful'],
+  'Honest':        ['Deceptive', 'Scheming'],
+  'Honorable':     ['Ruthless', 'Deceptive', 'Degenerate'],
+  'Hospitable':    ['Hostile'],
+  'Hostile':       ['Hospitable', 'Pacifist'],
+  'Idealistic':    ['Fatalistic'],
+  'Indifferent':   ['Devoted'],
+  'Individualist': ['Collectivist'],
+  'Isolationist':  ['Cosmopolitan'],
+  'Legalistic':    ['Libertarian', 'Anarchist'],
+  'Libertarian':   ['Legalistic', 'Bureaucratic'],
+  'Militarist':    ['Pacifist'],
+  'Pacifist':      ['Militarist', 'Hostile'],
+  'Paranoid':      ['Gregarious'],
+  'Progressive':   ['Rustic'],
+  'Proud':         ['Degenerate'],
+  'Rustic':        ['Cosmopolitan', 'Progressive'],
+  'Ruthless':      ['Honorable', 'Generous'],
+  'Scheming':      ['Honest'],
+};
+
+export const POWER_CULTURE_CONFLICTS: Record<PowerSource, string[]> = {
+  'Kratocracy':  ['Pacifist', 'Egalitarian', 'Legalistic'],
+  'Democracy':   ['Anarchist'],
+  'Aristocracy': ['Egalitarian'],
+  'Meritocracy': ['Caste system'],
+  'Ideocracy':   ['Anarchist', 'Libertarian'],
+};
+
+export function generateCultureTraits(count: number = 1, exclude: string[] = []): string[] {
   const traits: string[] = [];
-  
+
   for (let i = 0; i < count; i++) {
-    const roll1 = Math.floor(Math.random() * 6);
-    const roll2 = Math.floor(Math.random() * 6);
-    const roll3 = Math.floor(Math.random() * 6);
-    
-    const row = roll1 + roll2; // 0-10, clamp to 0-5
-    const col = roll3;
-    
-    const trait = CULTURE_TRAITS[Math.min(5, row)]?.[col];
-    if (trait && !traits.includes(trait)) {
-      traits.push(trait);
+    let trait: string | undefined;
+    let attempts = 0;
+    while (attempts < 20) {
+      const roll1 = Math.floor(Math.random() * 6);
+      const roll2 = Math.floor(Math.random() * 6);
+      const roll3 = Math.floor(Math.random() * 6);
+      const row = roll1 + roll2; // 0-10, clamp to 0-5
+      const col = roll3;
+      const candidate = CULTURE_TRAITS[Math.min(5, row)]?.[col];
+      const opposesExisting = candidate ? traits.some(t =>
+        CULTURE_OPPOSITES[t]?.includes(candidate) ||
+        CULTURE_OPPOSITES[candidate]?.includes(t)
+      ) : false;
+      if (candidate && !traits.includes(candidate) && !exclude.includes(candidate) && !opposesExisting) {
+        trait = candidate;
+        break;
+      }
+      attempts++;
     }
+    if (trait) traits.push(trait);
   }
-  
+
   return traits;
 }
 

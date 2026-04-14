@@ -156,13 +156,22 @@ Entry: `generateStarSystem(options?)` in `src/lib/generator.ts`
    ├── Intensity roll (2D6) → level + habitability
    ├── Biochem roll (2D6) → resources + habitability (KEY: Abundant=+3, Inexhaustible=+5)
    ├── Tech Level roll (2D6) → TL 7-16
-   └── calculateTotalHabitability() — NOW includes TL modifier (TL-7, clamped 0-9)
+   └── calculateTotalHabitability() — includes TL modifier (TL-7, clamped 0-9) for DISPLAY
+       NOTE: Population uses separate TLmod lookup table — see generateInhabitants()
 
 5. generateInhabitants(mainWorld, populated)
-   ├── Population: 10^habitability × 2D6 (or MVT/GVT table if Hab≤0)
+   ├── envHab = habitability − tlDisplayMod (strip TL-7 component for population formula)
+   ├── Population: 10^(envHab + TLmod) × 2D6; TLmod from TL_POP_MOD lookup table
+   │   └── TLmod: TL7→+5, TL8/9→+6 (plateau), TL10→+7 … TL16→+13
+   │   └── Fork: if (envHab + TLmod) ≤ 0 → MVT/GVT habitat table instead
    ├── Wealth, Power Structure, Development, Source of Power (2D6 tables)
    ├── Governance DM = f(Development, Wealth)
-   ├── Starport class = f(Hab, TL, Wealth, Development)
+   ├── Starport (PSS v1.1 — QA-019):
+   │   ├── annualTrade = population × GDP/day[TL] × 365 × tradeFraction[Dev] × wealthMult[Wealth]
+   │   ├── PSS = floor(log10(annualTrade)) − 10 → rawClass
+   │   ├── tlCap: TL 7–9→C max, TL 10–11→B max, TL 12+→A
+   │   ├── finalClass = min(rawClass, tlCap)
+   │   └── weeklyActivity = (annualTrade ÷ 364) × 3D6
    └── Travel Zone = f(Hazard, Intensity)
 
 6. generatePlanetarySystem(star, zones)
@@ -197,7 +206,7 @@ Components:
 - Hazard type: -1.5 to 0
 - Hazard intensity: -2.0 to 0
 - **Biochem resources: -5 to +5** ← Was broken (Abundant returned 0, now +3)
-- **Tech Level: 0 to +9** ← Was missing (TL-7, clamped)
+- **Tech Level: 0 to +9** ← For displayed habitability only (TL-7, clamped). Population uses a separate TLmod lookup table in generateInhabitants().
 
 Debug: In DEV mode, logs component breakdown to console.
 
@@ -318,7 +327,10 @@ Generate a G5 star with Average atmo/temp, no hazard, Abundant biochem, TL 14:
 
 1. **Mass units**: PlanetaryBody.mass is in Earth masses (EM). For Hill sphere calc, convert: `mSolar = m / 333000`
 
-2. **Habitability vs Population**: Population uses `10^habitability`, so Hab=0 gives tiny populations. This is correct — Hab≤0 worlds use MVT/GVT table instead.
+2. **Habitability vs Population vs Starport**: Three separate TL scalings:
+   - **Displayed habitability**: uses `TL−7` (clamped 0–9) — for world descriptors only
+   - **Population**: uses `TL_POP_MOD` lookup table (TL7→+5 … TL16→+13). `envHab` = habitability minus TL display mod. MVT/GVT fires when `envHab + TLmod ≤ 0`.
+   - **Starport**: uses GDP/person/day[TL] for economic scale, `getTLCapClass(TL)` as capability ceiling. No Hab or TL-7 involved. See QA-019.
 
 3. **Stellar class modifiers**: REF-007 v1.1 changed these:
    - F: Adv+2 (was +1)

@@ -133,5 +133,5 @@ function getTraitCount(roll: number): number {
 ## Notes
 
 - Duplicate traits should be rerolled
-- Traits can be contradictory (e.g., Pacifist + Militarist) - this indicates cultural tension
+- Opposing traits (as defined by the BRC document's opposing pairs) should also be rerolled
 - GMs should interpret traits in context of the world's other characteristics

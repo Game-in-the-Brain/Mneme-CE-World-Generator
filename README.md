@@ -365,6 +365,7 @@ Compatible with the **Cepheus Engine** SRD and Traveller-family games.
 |-------------|------|
 | [DeepSeek](https://deepseek.ai) | AI code generation and technical assistance |
 | [Kimi](https://kimi.ai) | AI development assistance and code review |
+| **Neil Lucock** | Rules feedback and bug reports (gravity/size physics validation, power/culture contradiction filtering) |
 
 ---
 

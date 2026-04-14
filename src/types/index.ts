@@ -93,7 +93,12 @@ export interface MainWorld {
 
 export interface Starport {
   class: StarportClass;
-  output: number;
+  pss: number;              // Port Size Score (GDP-derived, pre-cap)
+  rawClass: StarportClass;  // Class from PSS before TL capability cap
+  tlCap: StarportClass;     // TL capability ceiling
+  annualTrade: number;      // Annual port trade volume (Credits/year)
+  weeklyBase: number;       // annualTrade ÷ 364
+  weeklyActivity: number;   // weeklyBase × 3D6 (this week's actual throughput)
   hasNavalBase: boolean;
   hasScoutBase: boolean;
   hasPirateBase: boolean;

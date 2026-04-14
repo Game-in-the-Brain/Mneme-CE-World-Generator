@@ -438,7 +438,7 @@ This ensures habitats are appropriately scaled to the largest available mass in 
 - Biochemical resources modifier
 - Tech Level modifier (TL 7-16 → TLMod = TL − 7, range +0 to +9)
 
-> **⚠️ TBD:** Confirm whether TL modifier max should be +9 (formula TL−7) or +10. Resolve before M3 implementation.
+> **Note:** The displayed habitability score (EnvHab + TL−7) is used for world descriptors only. Population uses a **separate TLmod productivity table** (see Section 7.2). Starport uses **GDP-based PSS with TL capability cap** (see Section 7.8) — neither population nor starport uses the displayed TL−7 modifier directly.
 
 ### 6.10 Main World Position
 
@@ -496,13 +496,52 @@ See [REF-013: Technology Level Reference](./references/REF-013-tech-level.md) fo
 
 | Function | Inputs | Output |
 |----------|--------|--------|
-| `calculatePopulation(habitability, roll)` | Habitability, 2D6 | Population number |
+| `calculatePopulation(envHab, techLevel, roll)` | EnvHab (without TL), Tech Level, 2D6 | Population number |
 
 **Formula:**
-- Base Population = 10^Habitability
-- Final Population = Base Population × 2D6 roll
+```
+Pop = 10^(EnvHab + TLmod) × 2D6
+effectiveHab = max(0, EnvHab + TLmod)
+```
 
-> **Note:** If Habitability is negative, 10^Habitability yields a fraction < 1. Clamp before the exponent: `effectiveHabitability = max(0, habitability)`. A result that would produce < 1 person means the world is uninhabited (population = 0). Confirm behaviour before M3.
+- **EnvHab** = Gravity + Atmosphere + Temperature + Hazard + Hazard Intensity + Biochemical Resources (habitability components without the TL modifier)
+- **TLmod** = from the productivity lookup table below
+- **Clamp:** `effectiveHab = max(0, EnvHab + TLmod)`. If effectiveHab ≤ 0, use MVT/GVT table (see 7.2.1).
+
+**TLmod Lookup Table (Productivity-Derived):**
+
+| TL | TLmod | Productivity Regime |
+|----|-------|---------------------|
+| 7  | +5    | Demographic Expansion — pre-automation, subsistence ~14% |
+| 8  | +6    | HC Constraint Peak — M=1×, TFR suppressed |
+| 9  | +6    | Demographic Plateau — M=3.16×, same cap as TL 8 |
+| 10 | +7    | Automation Relief — M=10×, ectogenesis, cis-lunar |
+| 11 | +8    | Expansion — M=31.6×, inner solar system |
+| 12 | +9    | Full Solar System — M=100×, Jovian independent |
+| 13 | +10   | Outer System — M=316×, full system developed |
+| 14 | +11   | Interstellar — M=1,000×, multi-system totals |
+| 15 | +12   | Interstellar Colonisation — M=3,162×, 100B+ outside Sol |
+| 16 | +13   | Megastructures — M=10,000×, self-directing expansion |
+
+> **Fallback (TL outside table):** `TLmod = max(5, TL − 3)`
+
+> **Design Note — TL 8/9 Plateau:** TL 9 shares TLmod +6 with TL 8. At TL 8–9 (2000–2050 CE) human capital costs (education, childcare, housing, training) consume population growth capacity the same way subsistence farming did at lower TLs — robots do not reduce this cost because **time** is the scarce input. The plateau breaks at TL 10: ectogenesis removes the time bottleneck, cis-lunar space opens new living capacity, and cooperative AI childcare allows TFR recovery.
+
+> **Starport note:** Population and starport use **different TL scaling**. Population uses the productivity TLmod lookup table (total carrying capacity). Starport uses GDP-derived PSS with TL capability cap — TL sets the ceiling on what can be built, GDP/population sets the economic scale. See Section 7.8.
+
+#### 7.2.1 MVT/GVT Table (Hab ≤ 0)
+
+If `effectiveHab = max(0, EnvHab + TLmod)` resolves to 0 (i.e. the raw sum is ≤ 0), use the MVT/GVT habitat table instead of the standard formula:
+
+| Roll | Habitat Type | Population Range |
+|------|-------------|------------------|
+| 2 | Frontier Outpost | 10–100 |
+| 3–4 | Research Station | 100–1,000 |
+| 5–6 | Mining Habitat | 1,000–10,000 |
+| 7–8 | Industrial Habitat | 10,000–100,000 |
+| 9–10 | Colonial Habitat | 100,000–1,000,000 |
+| 11 | City Habitat | 1,000,000–10,000,000 |
+| 12 | Megastructure | 10,000,000–100,000,000 |
 
 ### 7.3 Wealth
 
@@ -582,27 +621,90 @@ Calculated from Development × Wealth combination table:
 | Well Developed | -5 | +1 | +7 | +13 |
 | Very Developed | -4 | +2 | +8 | +14 |
 
-### 7.8 Starport
+### 7.8 Starport (PSS v1.1)
 
 | Function | Inputs | Output |
 |----------|--------|--------|
-| `calculateStarport(habitability, tl, wealth, development)` | Multiple | Class + Output |
+| `calculateStarport(population, tl, wealth, development, weeklyRoll)` | Multiple | Class + PSS + Weekly Activity |
 
-**Port Value Score (PVS):**
+Two independent steps — economic scale and capability ceiling.
+
+#### Step 1 — Port Size Score (PSS)
+
 ```
-PVS = (Habitability/4) + (TL-7) + WealthMod + DevelopmentMod
+GDP/year = Population × GDP/person/day × 365
+Annual Port Trade = GDP/year × Trade Fraction × Wealth Multiplier
+PSS = floor( log10(Annual Port Trade) ) − 10
 ```
 
-| PVS | Starport | Features |
-|-----|----------|----------|
-| <4 | X | None, damage risk |
-| 4-5 | E | Prepared area |
-| 6-7 | D | Specialized area, Scout on 8+ |
-| 8-9 | C | Scout on 7+ |
-| 10-11 | B | Naval on 8+, Pirate on 12+, Scout on 6+ |
-| ≥12 | A | Naval on 8+, Pirate on 12+, Scout on 5+ |
+**GDP/person/day by TL** (2030 anchor: $1 = 1 Cr):
 
-**Starport Output:** 10^PVS Credits/week
+| TL | GDP/person/day | TL | GDP/person/day |
+|----|---------------|----|---------------|
+| 7 | 205 Cr | 12 | 210,000 Cr |
+| 8 | 552 Cr | 13 | 1,500,000 Cr |
+| 9 | 1,486 Cr | 14 | 11,000,000 Cr |
+| 10 | 4,000 Cr | 15 | 80,000,000 Cr |
+| 11 | 29,000 Cr | 16 | 578,000,000 Cr |
+
+**Trade Fraction by Development:**
+
+| Development | Trade Fraction |
+|-------------|---------------|
+| UnderDeveloped | 5% |
+| Developing | 10% |
+| Mature | 15% |
+| Developed | 20% |
+| Well Developed | 25% |
+| Very Developed | 30% |
+
+**Wealth Trade Multiplier:**
+
+| Wealth | Multiplier |
+|--------|-----------|
+| Average | ×1.0 |
+| Better-off | ×1.2 |
+| Prosperous | ×1.5 |
+| Affluent | ×2.0 |
+
+**PSS to Raw Class:**
+
+| PSS | Raw Class |
+|-----|-----------|
+| <4 | X |
+| 4–5 | E |
+| 6–7 | D |
+| 8–9 | C |
+| 10–11 | B |
+| ≥12 | A |
+
+#### Step 2 — TL Capability Cap
+
+TL sets what the port can physically build or service:
+
+| TL | Max Class | Capability |
+|----|----------|------------|
+| <4 | X | No facilities |
+| 4–5 | E | Frontier landing area only |
+| 6–7 | D | Basic constructed area, no maintenance |
+| 8–9 | C | Reasonable repairs, unrefined fuel |
+| 10–11 | B | Non-starship construction, refined fuel, annual maintenance |
+| 12+ | **A** | **Starship construction**, refined fuel, annual maintenance |
+
+```
+Final Class = min(PSS-derived class, TL capability cap)
+```
+
+#### Step 3 — Weekly Port Activity (×3D6)
+
+```
+Weekly Base     = Annual Port Trade ÷ 364
+Weekly Activity = Weekly Base × 3D6
+```
+
+3D6 (range 3–18, median 10–11) reflects week-to-week variation. The ÷364 divisor means average annual throughput ≈ 1.43× calculated trade — the transit multiplier (goods counted on arrival and departure, like real ports).
+
+**Base class thresholds for Naval/Scout/Pirate bases are unchanged.**
 
 ### 7.9 Travel Zone
 
@@ -700,11 +802,56 @@ interface TravelZoneResult {
 
 | Function | Roll | Output |
 |----------|------|--------|
-| `generateCultureTraits(count)` | 3D6 per trait | Cultural traits |
+| `generateCultureTraits(count, exclude?)` | 3D6 per trait | Cultural traits |
 
 Roll 3D6: First two = row (D66), last = column (1-6)
 
 See [REF-006: Culture Table](./references/REF-006-culture-table.md) for full 36×6 table.
+
+**Reroll Rules:**
+1. **Duplicate trait:** Reroll until a non-duplicate trait is obtained.
+2. **Opposing trait:** The second (and subsequent) trait cannot be contradictory to any already-selected trait. Opposing pairs are defined as:
+   - Anarchist ↔ Bureaucratic, Legalistic
+   - Bureaucratic ↔ Anarchist, Libertarian
+   - Caste system ↔ Egalitarian
+   - Collectivist ↔ Individualist
+   - Cosmopolitan ↔ Isolationist, Rustic
+   - Deceptive ↔ Honest, Honorable
+   - Degenerate ↔ Honorable, Proud
+   - Devoted ↔ Indifferent
+   - Egalitarian ↔ Elitist, Caste system
+   - Elitist ↔ Egalitarian
+   - Fatalistic ↔ Idealistic
+   - Fearful ↔ Heroic
+   - Generous ↔ Ruthless
+   - Gregarious ↔ Paranoid
+   - Heroic ↔ Fearful
+   - Honest ↔ Deceptive, Scheming
+   - Honorable ↔ Ruthless, Deceptive, Degenerate
+   - Hospitable ↔ Hostile
+   - Hostile ↔ Hospitable, Pacifist
+   - Idealistic ↔ Fatalistic
+   - Indifferent ↔ Devoted
+   - Individualist ↔ Collectivist
+   - Isolationist ↔ Cosmopolitan
+   - Legalistic ↔ Libertarian, Anarchist
+   - Libertarian ↔ Legalistic, Bureaucratic
+   - Militarist ↔ Pacifist
+   - Pacifist ↔ Militarist, Hostile
+   - Paranoid ↔ Gregarious
+   - Progressive ↔ Rustic
+   - Proud ↔ Degenerate
+   - Rustic ↔ Cosmopolitan, Progressive
+   - Ruthless ↔ Honorable, Generous
+   - Scheming ↔ Honest
+3. **Power/Culture Conflict:** A culture trait cannot contradict the world's Source of Power (§7.6). The following combinations are excluded:
+   - **Kratocracy** excludes: Pacifist, Egalitarian, Legalistic
+   - **Democracy** excludes: Anarchist
+   - **Aristocracy** excludes: Egalitarian
+   - **Meritocracy** excludes: Caste system
+   - **Ideocracy** excludes: Anarchist, Libertarian
+
+All invalid rolls are rerolled up to 20 attempts per trait slot.
 
 ---
 
@@ -1244,3 +1391,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.3 | 2026-04-10 | Logo + GitHub link added (QA-002); title corrected to "Mneme CE World Generator" (QA-001); Phone theme spec added (QA-005); Hot Jupiter migration rule added (8.4a, QA-011); Hill Sphere minimum separation documented (QA-006); Adv/Dis planet roll bug fixed (QA-007); Physical properties added to PlanetaryBody interface (QA-009); Ice Worlds label fixed (QA-008); single-page tab nav specified (QA-010); number formatting spec added (QA-004); CSV export format specified (QA-ADD-002); REF-010-planet-densities.md and REF-012-csv-export-format.md created; QA.md created and linked throughout |
 | 1.4 | 2026-04-10 | REF-007 v1.1 house rule applied (G=baseline, K=Dis+2, M=Dis+4); REF-013 tech level reference created; Section 7.1 expanded with full MTL table, CE TL, era names, key technologies; REF-013 added to reference index |
 | 1.5 | 2026-04-11 | FR-028: Generator options persistence — added section 10.3 specifying localStorage key `mneme_generator_options` for starClass, starGrade, mainWorldType, populated |
+| 1.6 | 2026-04-14 | Added culture trait reroll rule to section 7.10; updated REF-006 culture table notes |

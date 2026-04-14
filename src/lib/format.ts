@@ -53,9 +53,36 @@ export function formatLuminosity(value: number): string {
   return value.toExponential(2);
 }
 
+/** Format a large credit value with scale abbreviations (K/M/B/T/Qa/Qi/Sx). */
+export function formatCreditScale(value: number): string {
+  if (!isFinite(value) || value === 0) return '0 Cr';
+  const abs = Math.abs(value);
+  const tiers: [number, string][] = [
+    [1e21, 'Sx'], [1e18, 'Qi'], [1e15, 'Qa'], [1e12, 'T'],
+    [1e9, 'B'], [1e6, 'M'], [1e3, 'K'],
+  ];
+  for (const [threshold, suffix] of tiers) {
+    if (abs >= threshold) {
+      const scaled = value / threshold;
+      const formatted = scaled >= 100
+        ? Math.round(scaled).toLocaleString('en-US')
+        : parseFloat(scaled.toPrecision(3)).toString();
+      return `${formatted} ${suffix} Cr`;
+    }
+  }
+  return `${new Intl.NumberFormat('en-US').format(Math.round(value))} Cr`;
+}
+
 /**
- * Format a Credits/week value with commas and Cr/week unit.
+ * Format a Credits/week value with scale abbreviations and /week unit.
  */
 export function formatCredits(value: number): string {
-  return `${new Intl.NumberFormat('en-US').format(Math.round(value))} Cr/week`;
+  return `${formatCreditScale(value)}/week`;
+}
+
+/**
+ * Format an annual trade volume with scale abbreviations and /year unit.
+ */
+export function formatAnnualTrade(value: number): string {
+  return `${formatCreditScale(value)}/year`;
 }

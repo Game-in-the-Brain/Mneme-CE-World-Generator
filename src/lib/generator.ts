@@ -15,10 +15,10 @@ import {
   getLesserEarthType, getDwarfGravity, getTerrestrialGravity,
   getAtmosphere, getTemperatureModifier, getTemperature,
   getHazard, getHazardIntensity, getBiochemicalResources,
-  getTechLevel, calculatePopulation, calculateTotalHabitability,
+  getTechLevel, calculatePopulation, getPopTLMod, calculateTotalHabitability,
   getWealth, getPowerStructure, getDevelopment, getSourceOfPower,
   getGovernanceDM, calculateStarport, rollForBase, determineTravelZone,
-  generateCultureTraits, getBodyCount, getGasWorldClass, calculateWorldPosition,
+  generateCultureTraits, POWER_CULTURE_CONFLICTS, getBodyCount, getGasWorldClass, calculateWorldPosition,
   getWorldTypeRoll, getHabitatSize
 } from './worldData';
 import { calculatePhysicalProperties } from './physicalProperties';
@@ -302,7 +302,7 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
       development: 'UnderDeveloped',
       sourceOfPower: 'Kratocracy',
       governance: -9,
-      starport: { class: 'X', output: 0, hasNavalBase: false, hasScoutBase: false, hasPirateBase: false },
+      starport: { class: 'X', pss: 0, rawClass: 'X', tlCap: 'X', annualTrade: 0, weeklyBase: 0, weeklyActivity: 0, hasNavalBase: false, hasScoutBase: false, hasPirateBase: false },
       travelZone: 'Green',
       cultureTraits: [],
     };
@@ -311,19 +311,26 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
   // Use Tech Level from MainWorld (QA-009 fix) — TL affects habitability
   const techLevel = mainWorld.techLevel;
 
-  // Population fork: natural surface population vs artificial habitat (QA — Hab ≤ 0)
+  // EnvHab = habitability without TL display modifier (needed for new population formula)
+  const tlDisplayMod = mainWorld.habitabilityComponents?.techLevel ?? Math.max(0, Math.min(9, techLevel - 7));
+  const envHab = mainWorld.habitability - tlDisplayMod;
+
+  // Population fork: new formula uses envHab + TLmod lookup table
+  // Fork fires when (envHab + TLmod) ≤ 0 — extremely hostile worlds use artificial habitats
   let population: number;
   let habitatType: string | undefined;
 
-  if (mainWorld.habitability <= 0) {
-    // Hab ≤ 0: inhabitants live in an artificial habitat, not on the surface
+  const effectiveHab = envHab + getPopTLMod(techLevel);
+
+  if (effectiveHab <= 0) {
+    // Extremely hostile world: inhabitants live in an artificial habitat, not on the surface
     const habitatRoll = roll2D6().value;
     const habitatResult = getHabitatSize(habitatRoll);
     population = habitatResult.population;
     habitatType = habitatResult.type;
   } else {
     const popRoll = roll2D6().value;
-    population = calculatePopulation(mainWorld.habitability, popRoll);
+    population = calculatePopulation(envHab, techLevel, popRoll);
   }
 
   const wealthRoll = roll2D6().value;
@@ -340,10 +347,16 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
 
   const governance = getGovernanceDM(devResult.level, wealth);
 
-  const starportResult = calculateStarport(mainWorld.habitability, techLevel, wealth, devResult.level);
+  const weeklyRoll = roll3D6().value;
+  const starportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll);
   const starport = {
     class: starportResult.class,
-    output: starportResult.output,
+    pss: starportResult.pss,
+    rawClass: starportResult.rawClass,
+    tlCap: starportResult.tlCap,
+    annualTrade: starportResult.annualTrade,
+    weeklyBase: starportResult.weeklyBase,
+    weeklyActivity: starportResult.weeklyActivity,
     hasNavalBase: rollForBase(starportResult.class, 'naval'),
     hasScoutBase: rollForBase(starportResult.class, 'scout'),
     hasPirateBase: rollForBase(starportResult.class, 'pirate'),
@@ -351,7 +364,8 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
 
   const zoneResult = determineTravelZone(mainWorld.hazard, mainWorld.hazardIntensity);
 
-  const cultureTraits = generateCultureTraits(2);
+  const cultureExclude = POWER_CULTURE_CONFLICTS[sourceOfPower] ?? [];
+  const cultureTraits = generateCultureTraits(2, cultureExclude);
 
   return {
     populated: true,

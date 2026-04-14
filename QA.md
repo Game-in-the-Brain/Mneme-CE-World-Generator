@@ -187,6 +187,7 @@ Update QA-021 and QA-022 status to ✅ Fixed in QA.md. Add version 1.12 to Docum
 | [QA-020](#qa-020) | Engine — Culture Generation | Culture traits should reroll opposing or duplicate results | 🟠 Medium | 📋 Open |
 | [QA-021](#qa-021) | Engine — Inhabitants | Source of Power and Culture traits can generate contradictory combinations | 🔴 High | 📋 Open |
 | [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | 📋 Open |
+| [QA-023](#qa-023) | Engine — World Physics | Replace gravity tables with density tables + mass-derived gravity | 🟠 Medium | 📋 **Proposed — awaiting approval** |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
 
 ---
@@ -706,15 +707,123 @@ CSV export format needed a formal specification.
 **Title:** Culture traits should reroll opposing or duplicate results  
 **Area:** Engine — Culture Generation  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Open  
+**Status:** 📋 **Spec complete — implementation pending**  
 **Date Opened:** 2026-04-14  
-**File(s):** `src/lib/worldData.ts`, `references/REF-006-culture-table.md`
+**File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`
 
 **Description:**  
-Currently, culture trait generation allows opposing traits (e.g., Pacifist and Militarist) and duplicate traits. According to the BRC document, opposing and same culture results cannot be results and should trigger a reroll of the second result.
+Currently, culture trait generation allows opposing traits (e.g., Pacifist and Militarist) and duplicate traits. When rolling a sequential second culture trait, the second result cannot repeat the first nor be contradictory to it.
 
 **Expected Behaviour:**  
-When generating multiple culture traits, if a newly rolled trait is either identical to an existing trait or is an opposing trait (as defined by the BRC document's opposing pairs), that trait should be rerolled until a non-duplicate, non-opposing trait is obtained.
+When generating multiple culture traits, if a newly rolled trait is either identical to an existing trait or is an opposing trait, that trait should be rerolled (up to 20 attempts per slot) until a valid non-duplicate, non-opposing trait is obtained.
+
+**Opposing Pairs — Culture Trait Conflicts**
+
+The following pairs are considered logically contradictory within the 36-trait culture table:
+
+| Trait | Opposes |
+|-------|---------|
+| Anarchist | Bureaucratic, Legalistic |
+| Bureaucratic | Anarchist, Libertarian |
+| Caste system | Egalitarian |
+| Collectivist | Individualist |
+| Cosmopolitan | Isolationist, Rustic |
+| Deceptive | Honest, Honorable |
+| Degenerate | Honorable, Proud |
+| Devoted | Indifferent |
+| Egalitarian | Elitist, Caste system |
+| Elitist | Egalitarian |
+| Fatalistic | Idealistic |
+| Fearful | Heroic |
+| Generous | Ruthless |
+| Gregarious | Paranoid |
+| Heroic | Fearful |
+| Honest | Deceptive, Scheming |
+| Honorable | Ruthless, Deceptive, Degenerate |
+| Hospitable | Hostile |
+| Hostile | Hospitable, Pacifist |
+| Idealistic | Fatalistic |
+| Indifferent | Devoted |
+| Individualist | Collectivist |
+| Isolationist | Cosmopolitan |
+| Legalistic | Libertarian, Anarchist |
+| Libertarian | Legalistic, Bureaucratic |
+| Militarist | Pacifist |
+| Pacifist | Militarist, Hostile |
+| Paranoid | Gregarious |
+| Progressive | Rustic |
+| Proud | Degenerate |
+| Rustic | Cosmopolitan, Progressive |
+| Ruthless | Honorable, Generous |
+| Scheming | Honest |
+
+**Implementation Spec:**
+
+```typescript
+// In src/lib/worldData.ts
+export const CULTURE_OPPOSITES: Record<string, string[]> = {
+  'Anarchist':     ['Bureaucratic', 'Legalistic'],
+  'Bureaucratic':  ['Anarchist', 'Libertarian'],
+  'Caste system':  ['Egalitarian'],
+  'Collectivist':  ['Individualist'],
+  'Cosmopolitan':  ['Isolationist', 'Rustic'],
+  'Deceptive':     ['Honest', 'Honorable'],
+  'Degenerate':    ['Honorable', 'Proud'],
+  'Devoted':       ['Indifferent'],
+  'Egalitarian':   ['Elitist', 'Caste system'],
+  'Elitist':       ['Egalitarian'],
+  'Fatalistic':    ['Idealistic'],
+  'Fearful':       ['Heroic'],
+  'Generous':      ['Ruthless'],
+  'Gregarious':    ['Paranoid'],
+  'Heroic':        ['Fearful'],
+  'Honest':        ['Deceptive', 'Scheming'],
+  'Honorable':     ['Ruthless', 'Deceptive', 'Degenerate'],
+  'Hospitable':    ['Hostile'],
+  'Hostile':       ['Hospitable', 'Pacifist'],
+  'Idealistic':    ['Fatalistic'],
+  'Indifferent':   ['Devoted'],
+  'Individualist': ['Collectivist'],
+  'Isolationist':  ['Cosmopolitan'],
+  'Legalistic':    ['Libertarian', 'Anarchist'],
+  'Libertarian':   ['Legalistic', 'Bureaucratic'],
+  'Militarist':    ['Pacifist'],
+  'Pacifist':      ['Militarist', 'Hostile'],
+  'Paranoid':      ['Gregarious'],
+  'Progressive':   ['Rustic'],
+  'Proud':         ['Degenerate'],
+  'Rustic':        ['Cosmopolitan', 'Progressive'],
+  'Ruthless':      ['Honorable', 'Generous'],
+  'Scheming':      ['Honest'],
+};
+
+export function generateCultureTraits(count: number = 1, exclude: string[] = []): string[] {
+  const traits: string[] = [];
+  for (let i = 0; i < count; i++) {
+    let trait: string | undefined;
+    let attempts = 0;
+    while (attempts < 20) {
+      const roll1 = Math.floor(Math.random() * 6);
+      const roll2 = Math.floor(Math.random() * 6);
+      const roll3 = Math.floor(Math.random() * 6);
+      const row = roll1 + roll2;
+      const col = roll3;
+      const candidate = CULTURE_TRAITS[Math.min(5, row)]?.[col];
+      const opposesExisting = traits.some(t =>
+        CULTURE_OPPOSITES[t]?.includes(candidate) ||
+        CULTURE_OPPOSITES[candidate]?.includes(t)
+      );
+      if (candidate && !traits.includes(candidate) && !exclude.includes(candidate) && !opposesExisting) {
+        trait = candidate;
+        break;
+      }
+      attempts++;
+    }
+    if (trait) traits.push(trait);
+  }
+  return traits;
+}
+```
 
 ---
 
@@ -725,10 +834,11 @@ When generating multiple culture traits, if a newly rolled trait is either ident
 **Title:** Source of Power and Culture traits can generate contradictory combinations  
 **Area:** Engine — Inhabitants  
 **Priority:** 🔴 High  
-**Status:** 📋 Open  
+**Status:** ✅ Fixed  
 **Date Opened:** 2026-04-14  
+**Date Fixed:** 2026-04-14  
 **Reported by:** Neil Lucock  
-**File(s):** `src/lib/worldData.ts` (`getSourceOfPower`, `generateCultureTraits`), `src/lib/generator.ts`
+**File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`
 
 **Description:**  
 The inhabitants generator rolls Source of Power and Culture traits independently. This produces world descriptions that are logically self-contradictory. Neil Lucock reported the following example:
@@ -755,30 +865,34 @@ A society cannot simultaneously be governed by the rule of force and culturally 
 | **Ideocracy** | Libertarian | Mandatory ideological conformity contradicts personal freedom as supreme value |
 
 **Expected Behaviour:**  
-When generating culture traits for a world, any trait that is incompatible with the world's Source of Power should be rerolled (up to N attempts to avoid infinite loops). This is an extension of the same reroll mechanism being specified in QA-020 for opposing trait pairs.
+When generating culture traits for a world, any trait that is incompatible with the world's Source of Power should be rerolled (up to 20 attempts to avoid infinite loops). This is implemented together with QA-020 using the same `exclude` array mechanism.
 
-**Suggested Implementation:**  
+**Implementation Spec:**  
 
 ```typescript
-// In generator.ts, after rolling powerSource and before generateCultureTraits():
-const POWER_CULTURE_CONFLICTS: Record<PowerSource, string[]> = {
+```typescript
+// In src/lib/worldData.ts
+export const POWER_CULTURE_CONFLICTS: Record<PowerSource, string[]> = {
   'Kratocracy':  ['Pacifist', 'Egalitarian', 'Legalistic'],
   'Democracy':   ['Anarchist'],
   'Aristocracy': ['Egalitarian'],
   'Meritocracy': ['Caste system'],
   'Ideocracy':   ['Anarchist', 'Libertarian'],
 };
+```
 
-// Pass the conflict list into generateCultureTraits() as an exclusion set
-function generateCultureTraits(count: number, exclude: string[] = []): string[] {
-  // ... existing logic ...
-  // When a rolled trait matches exclude[], reroll (max 20 attempts per trait)
-}
+```typescript
+// In src/lib/generator.ts
+import { generateCultureTraits, POWER_CULTURE_CONFLICTS } from './worldData';
+
+// ...
+const cultureExclude = POWER_CULTURE_CONFLICTS[powerSource] ?? [];
+const cultureTraits = generateCultureTraits(traitCount, cultureExclude);
 ```
 
 **Notes:**  
-- This should be implemented together with QA-020 (opposing/duplicate trait reroll) — both use the same reroll mechanism.
-- A trait excluded by Source of Power conflict should be treated identically to an opposing-pair reroll — not recorded, attempt again.
+- Implemented together with QA-020 (opposing/duplicate trait reroll) — both use the same reroll mechanism.
+- A trait excluded by Source of Power conflict is treated identically to an opposing-pair reroll: not recorded, attempt again.
 - Some pairings (e.g., Kratocracy + Honest, Aristocracy + Degenerate) are thematically tense but not logically impossible — do not exclude them.
 
 ---
@@ -890,6 +1004,255 @@ Most generated worlds have negative EnvHab contributions (hostile atmosphere, ex
 The PSS formula is working correctly. E and X are the expected outcome for frontier and hostile worlds, which make up the majority of generated systems. C/B/A class ports require high population (hundreds of millions to billions), high TL (12+), and favourable wealth/development — a combination rare in natural random generation but achievable on the most developed worlds.
 
 **No fix required.** Document this in the user guide as expected game behaviour: most frontier worlds have E/X ports; only developed core worlds reach C+.
+
+---
+
+### QA-023
+
+**Title:** Replace Gravity Tables with Density Tables — derive gravity from Mass + Density  
+**Area:** Engine — World Physics  
+**Priority:** 🟠 Medium  
+**Status:** 📋 **Proposed — awaiting approval**  
+**Date Proposed:** 2026-04-14  
+**File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`, `src/types/index.ts`, `src/components/SystemViewer.tsx`, `260409-v02 Mneme-CE-World-Generator-FRD.md`, `260410-Update.md`
+
+---
+
+**Problem Statement**
+
+QA-022 identified that main-world `size` and `gravity` are rolled independently, producing physically impossible worlds (e.g., 342 km diameter at 0.18 G requires a density of ~37 g/cm³, denser than osmium).
+
+A second, deeper issue was discovered during investigation: the current implementation assigns `size` as **kilometres** (Dwarf: 100–599 km, Terrestrial: 2000–4999 km), but [REF-004: World Type & Size Tables](./references/REF-004-world-type-tables.md) defines `size` as **mass** (Dwarf: 0.1–7.0 LM, Terrestrial: 0.1–7.0 EM, Habitat: 1 MVT–100 GVT). The code never implemented the REF-004 mass tables, which means main worlds currently have no mass value at all — yet planetary bodies do.
+
+Because there is no mass, gravity cannot be derived from physics. Instead, gravity is pulled from arbitrary 2D6 tables that ignore size entirely, which is the root cause of QA-022.
+
+**Proposed Solution**
+
+Replace the independent gravity-roll mechanic with a **density-based physics pipeline** that mirrors how planetary bodies already work (`calculatePhysicalProperties()`):
+
+1. **Roll mass** using the REF-004 tables (size = mass in LM or EM).
+2. **Roll density** using new 2D6 tables tailored to world type.
+3. **Derive radius, diameter, surface gravity, and escape velocity** from mass + density via standard planetary physics.
+4. **Map derived gravity back to habitability** using the existing gravity-habitability bands.
+
+This makes main worlds internally consistent with the rest of the planetary system and eliminates all physically impossible combinations.
+
+---
+
+**Step 1 — Implement REF-004 Mass Tables for Main World Size**
+
+Add mass-generation functions in `src/lib/worldData.ts`:
+
+```typescript
+export function getHabitatMass(roll: number): number {
+  // Returns mass in billion tons (GVT) for physics consistency
+  const table: Record<number, number> = {
+    2: 0.001,   // 1 MVT  = 1 Mt = 0.001 Gt
+    3: 0.003,
+    4: 0.01,
+    5: 0.03,
+    6: 0.1,
+    7: 0.3,
+    8: 1.0,     // 1 GVT
+    9: 3.0,
+    10: 10.0,
+    11: 30.0,
+    12: 100.0,
+  };
+  return table[roll] || table[7];
+}
+
+export function getDwarfMass(roll: number): number {
+  // Returns mass in Earth Masses (LM → EM conversion: 1 LM = 0.0123 EM)
+  const lmTable: Record<number, number> = {
+    2: 0.1, 3: 0.2, 4: 0.3, 5: 0.5, 6: 0.7,
+    7: 1.0, 8: 1.5, 9: 2.0, 10: 3.0, 11: 5.0, 12: 7.0,
+  };
+  const lm = lmTable[roll] || lmTable[7];
+  return lm * 0.0123; // convert LM to EM
+}
+
+export function getTerrestrialMass(roll: number): number {
+  // Returns mass in Earth Masses
+  const table: Record<number, number> = {
+    2: 0.1, 3: 0.2, 4: 0.3, 5: 0.5, 6: 0.7,
+    7: 1.0, 8: 1.5, 9: 2.0, 10: 3.0, 11: 5.0, 12: 7.0,
+  };
+  return table[roll] || table[7];
+}
+```
+
+**Step 2 — Add Density Tables (replacing Gravity Tables)**
+
+Replace `getDwarfGravity()` and `getTerrestrialGravity()` with density rolls. Habitability modifiers are preserved and mapped from the *resulting* gravity, not the density itself.
+
+```typescript
+export function getDwarfDensity(roll: number): { density: number; habitability: number } {
+  const table: Record<number, { density: number; habitability: number }> = {
+    2:  { density: 1.5, habitability: -2.5 }, // Carbonaceous / icy
+    3:  { density: 1.8, habitability: -2.0 },
+    4:  { density: 2.1, habitability: -1.5 },
+    5:  { density: 2.4, habitability: -1.0 },
+    6:  { density: 2.7, habitability: -0.5 },
+    7:  { density: 3.0, habitability: -0.5 }, // Silicaceous
+    8:  { density: 3.2, habitability: -0.5 },
+    9:  { density: 3.4, habitability: -0.5 },
+    10: { density: 3.5, habitability: 0 },    // Metallic-rich
+    11: { density: 3.5, habitability: 0 },
+    12: { density: 3.5, habitability: 0 },
+  };
+  return table[roll] || table[7];
+}
+
+export function getTerrestrialDensity(roll: number): { density: number; habitability: number } {
+  const table: Record<number, { density: number; habitability: number }> = {
+    2:  { density: 6.5, habitability: -2.5 }, // Super-Earth iron core
+    3:  { density: 5.5, habitability: -2.0 },
+    4:  { density: 5.0, habitability: -1.5 },
+    5:  { density: 4.8, habitability: -1.0 },
+    6:  { density: 4.5, habitability: -0.5 },
+    7:  { density: 4.0, habitability: -0.5 }, // Rocky baseline
+    8:  { density: 4.2, habitability: -0.5 },
+    9:  { density: 4.4, habitability: -0.5 },
+    10: { density: 4.6, habitability: 0 },
+    11: { density: 4.8, habitability: 0 },
+    12: { density: 5.0, habitability: 0 },
+  };
+  return table[roll] || table[7];
+}
+```
+
+*Note:* The `habitability` values above are the **gravity-derived** habitability modifiers, preserved from the old gravity tables so that overall habitability distributions remain unchanged.
+
+**Step 3 — Derive Physical Properties in `generator.ts`**
+
+In `generateMainWorld()`, replace the current size-in-km and gravity-roll blocks with:
+
+```typescript
+// Roll mass from REF-004 tables
+let massEM: number;
+if (worldType === 'Dwarf') {
+  massEM = getDwarfMass(roll2D6().value);
+} else if (worldType === 'Terrestrial') {
+  massEM = getTerrestrialMass(roll2D6().value);
+} else {
+  // Habitat: keep current sizing or optionally roll on Habitat mass table
+  const habitatMassGt = getHabitatMass(roll2D6().value);
+  // Convert Gt to EM for physics (1 EM ≈ 5.972e15 Gt)
+  massEM = habitatMassGt / 5.972e15;
+}
+
+// Roll density + get habitability modifier
+const densityRoll = roll2D6().value;
+let densityGcm3: number;
+let gravityHabitability: number;
+
+if (worldType === 'Dwarf') {
+  const result = getDwarfDensity(densityRoll);
+  densityGcm3 = result.density;
+  gravityHabitability = result.habitability;
+} else {
+  const result = getTerrestrialDensity(densityRoll);
+  densityGcm3 = result.density;
+  gravityHabitability = result.habitability;
+}
+
+// Calculate physical properties from mass + density
+const phys = calculatePhysicalPropertiesFromDensity(massEM, densityGcm3);
+const { radiusKm, diameterKm, surfaceGravityG, escapeVelocityMs } = phys;
+```
+
+*Helper function (can live in `physicalProperties.ts`):*
+
+```typescript
+export function calculatePhysicalPropertiesFromDensity(
+  massEM: number,
+  densityGcm3: number
+): PhysicalProperties {
+  const densityKgM3 = densityGcm3 * 1000;
+  const massKg = massEM * 5.972e24;
+  const volumeM3 = massKg / densityKgM3;
+  const radiusM = Math.cbrt((3 * volumeM3) / (4 * Math.PI));
+  const radiusKm = radiusM / 1000;
+  const surfaceGravityMs2 = (6.674e-11 * massKg) / (radiusM * radiusM);
+  const surfaceGravityG = surfaceGravityMs2 / 9.81;
+  const escapeVelocityMs = Math.sqrt(2 * 6.674e-11 * massKg / radiusM);
+
+  return {
+    densityGcm3: Math.round(densityGcm3 * 100) / 100,
+    radiusKm: Math.round(radiusKm),
+    diameterKm: Math.round(radiusKm * 2),
+    surfaceGravityG: Math.round(surfaceGravityG * 1000) / 1000,
+    escapeVelocityMs: Math.round(escapeVelocityMs),
+  };
+}
+```
+
+**Step 4 — Update `MainWorld` Type**
+
+In `src/types/index.ts`, add `mass` and `densityGcm3` to `MainWorld` so the data model matches planetary bodies:
+
+```typescript
+export interface MainWorld {
+  type: WorldType;
+  size: number;          // Keep for backward compat — now stores diameter (km)
+  mass: number;          // NEW: in Earth Masses
+  densityGcm3: number;   // NEW: g/cm³
+  lesserEarthType?: LesserEarthType;
+  gravity: number;
+  radius: number;
+  escapeVelocity: number;
+  // ... rest unchanged
+}
+```
+
+**Step 5 — Update UI (`SystemViewer.tsx`)**
+
+Display the new `mass` and `densityGcm3` fields in the World overview and expandable body details, matching the format already used for planetary bodies.
+
+---
+
+**Why This Fixes QA-022**
+
+With mass and density coupled through physics, gravity is no longer an independent variable:
+
+| Example | Old (impossible) | New (derived) |
+|---------|-----------------|---------------|
+| 0.1 EM, 1.5 g/cm³ | gravity = 0.18 G (rolled) | gravity = **0.015 G** (derived) |
+| 1.0 EM, 4.0 g/cm³ | gravity = 0.30 G (rolled) | gravity = **1.00 G** (derived) |
+| 7.0 EM, 6.5 g/cm³ | gravity = 3.00 G (rolled) | gravity = **2.45 G** (derived) |
+
+Every combination is physically valid because gravity is an *output* of mass and density, not an input.
+
+---
+
+**Impact on Game Balance**
+
+- **Habitability distributions remain identical** — the same 2D6 roll that previously produced a gravity modifier now produces a density modifier, and the mapped habitability values are preserved.
+- **Size ranges shift slightly** — because mass is now in EM/LM and radius derives from density, a 1.0 EM silicate world will naturally be ~6,371 km (Earth-sized), whereas the old code randomly assigned 2000–5000 km. This is arguably *more* correct.
+- **Dwarf planets** will range from ~200 km (0.1 LM carbonaceous) to ~1,400 km (7.0 LM metallic), matching real-world objects like Ceres (~940 km, 2.16 LM).
+- **Terrestrial planets** will range from ~3,000 km (0.1 EM, high density) to ~14,000 km (7.0 EM, low density), which spans Mercury through super-Earths.
+
+---
+
+**Migration / Documentation Plan**
+
+| Step | File | Change |
+|------|------|--------|
+| 1 | `QA.md` (this doc) | Add QA-023, mark as approved |
+| 2 | `260409-v02 Mneme-CE-World-Generator-FRD.md` | Update §6.1 (size = mass), §6.3 (density tables replace gravity tables), add density table reference |
+| 3 | `260410-Update.md` | Add section: "11. Density-Derived Gravity for Main Worlds" documenting the rules change from gravity tables to density+physics |
+| 4 | `src/lib/worldData.ts` | Add mass tables and density tables; remove old gravity tables |
+| 5 | `src/lib/physicalProperties.ts` | Add `calculatePhysicalPropertiesFromDensity()` |
+| 6 | `src/lib/generator.ts` | Replace independent size+gravity rolls with mass+density physics |
+| 7 | `src/types/index.ts` | Add `mass` and `densityGcm3` to `MainWorld` |
+| 8 | `src/components/SystemViewer.tsx` | Display mass and density |
+
+---
+
+**Next Action Required**
+
+Awaiting user approval of this proposal. Once approved, the above implementation steps will be executed and the FRD/Update documents will be updated accordingly.
 
 ---
 
