@@ -12,6 +12,155 @@
 
 ---
 
+## ★ HANDOFF INSTRUCTIONS FOR KIMI (and all AI models) ★
+
+If you are an AI model picking up this project, **read this block first**.
+
+### Project
+Mneme CE World Generator — React 19 + TypeScript 5.8 + Vite PWA that generates complete star systems for the Cepheus Engine tabletop RPG.  
+Working directory: `/home/justin/opencode260220/Mneme-CE-World-Generator`  
+Build command: `npm run build` (runs `tsc && vite build` — must pass with zero TypeScript errors).
+
+### Your Two Open Tasks (priority order)
+
+#### Task 1 — QA-021 🔴 High: Source of Power / Culture trait contradiction filtering
+
+**File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`
+
+**Problem:** Kratocracy (rule by force) + Pacifist culture, and 6 other pairs, are logically contradictory. The generator currently allows all combinations.
+
+**Step 1 — Add the conflict map to `src/lib/worldData.ts`** (after the `SOURCE_OF_POWER_DESCRIPTIONS` block, around line 606):
+
+```typescript
+export const POWER_CULTURE_CONFLICTS: Record<PowerSource, string[]> = {
+  'Kratocracy':  ['Pacifist', 'Egalitarian', 'Legalistic'],
+  'Democracy':   ['Anarchist'],
+  'Aristocracy': ['Egalitarian'],
+  'Meritocracy': ['Caste system'],
+  'Ideocracy':   ['Anarchist', 'Libertarian'],
+};
+```
+
+**Step 2 — Update `generateCultureTraits()` in `src/lib/worldData.ts`** to accept an `exclude: string[]` parameter:
+
+```typescript
+export function generateCultureTraits(count: number = 1, exclude: string[] = []): string[] {
+  const traits: string[] = [];
+  for (let i = 0; i < count; i++) {
+    let trait: string | undefined;
+    let attempts = 0;
+    while (attempts < 20) {
+      const roll1 = Math.floor(Math.random() * 6);
+      const roll2 = Math.floor(Math.random() * 6);
+      const roll3 = Math.floor(Math.random() * 6);
+      const row = roll1 + roll2;
+      const col = roll3;
+      const candidate = CULTURE_TRAITS[Math.min(5, row)]?.[col];
+      if (candidate && !traits.includes(candidate) && !exclude.includes(candidate)) {
+        trait = candidate;
+        break;
+      }
+      attempts++;
+    }
+    if (trait) traits.push(trait);
+  }
+  return traits;
+}
+```
+
+This also fixes QA-020 (duplicate trait reroll) — `!traits.includes(candidate)` is already in the check.
+
+**Step 3 — Update `src/lib/generator.ts`** where culture traits are generated. Find the call to `generateCultureTraits` and pass the conflict list:
+
+```typescript
+// Import at top of file (already imported generateCultureTraits — add POWER_CULTURE_CONFLICTS)
+import { ..., POWER_CULTURE_CONFLICTS } from './worldData';
+
+// When generating traits:
+const cultureExclude = POWER_CULTURE_CONFLICTS[powerSource] ?? [];
+const cultureTraits = generateCultureTraits(traitCount, cultureExclude);
+```
+
+**Verify:** Enable debug mode, generate 50 worlds. Confirm no Kratocracy+Pacifist, Kratocracy+Egalitarian, Democracy+Anarchist, or Aristocracy+Egalitarian combinations appear. Update QA-021 with results, mark ✅ Fixed.
+
+---
+
+#### Task 2 — QA-022 🟠 Medium: Main world gravity must not exceed physical limits for its size
+
+**File(s):** `src/lib/generator.ts` (main world generation, around line 208)
+
+**Problem:** Main world `size` (diameter in km) and `gravity` are rolled independently. This produced a user-reported 342 km rock at 0.18 G, which would require a density of 37 g/cm³ — denser than any known element (osmium max: 22.6 g/cm³).
+
+**Step 1 — Add a density validation helper in `src/lib/generator.ts`** (or `physicalProperties.ts`):
+
+```typescript
+/** Compute the density (g/cm³) implied by a surface gravity and diameter. */
+function gravityImpliesDensity(gravityG: number, diameterKm: number): number {
+  const r = (diameterKm / 2) * 1000; // radius in metres
+  const g = gravityG * 9.81;         // m/s²
+  // From: g = G × (4/3)πr × density_kg_m3
+  // density_kg_m3 = g / (G × (4/3) × π × r)
+  return g / (6.674e-11 * (4 / 3) * Math.PI * r) / 1000; // convert to g/cm³
+}
+```
+
+**Step 2 — After the gravity roll, validate and reroll if needed:**
+
+```typescript
+const DENSITY_LIMITS = {
+  Dwarf:       { min: 1.5, max: 22.6 },
+  Terrestrial: { min: 4.0, max: 22.6 },
+};
+
+// After rolling gravity and computing `size`:
+const bodyTypeLimits = worldType === 'Dwarf' ? DENSITY_LIMITS.Dwarf : DENSITY_LIMITS.Terrestrial;
+let attempts = 0;
+while (attempts < 10) {
+  const impliedDensity = gravityImpliesDensity(gravity, size);
+  if (impliedDensity >= bodyTypeLimits.min && impliedDensity <= bodyTypeLimits.max) break;
+  // Reroll gravity
+  const reroll = roll2D6().value;
+  const result = worldType === 'Dwarf' ? getDwarfGravity(reroll) : getTerrestrialGravity(reroll);
+  gravity = result.gravity;
+  gravityHabitability = result.habitability;
+  attempts++;
+}
+// After max attempts, gravity stands as-is (edge case — very small/large worlds)
+```
+
+**Verify:** Generate 200 worlds. For every Dwarf main world, check that `gravityImpliesDensity(gravity, size)` is between 1.5 and 22.6 g/cm³. Log any remaining violations. Update QA-022 with results, mark ✅ Fixed.
+
+---
+
+### After Both Tasks
+
+```bash
+cd /home/justin/opencode260220/Mneme-CE-World-Generator
+npm run build    # must pass with zero errors
+git add src/lib/worldData.ts src/lib/generator.ts QA.md
+git commit -m "fix(engine): QA-021 power/culture conflict filter + QA-022 gravity/size physics validation (Neil Lucock)"
+git push origin main
+```
+
+Update QA-021 and QA-022 status to ✅ Fixed in QA.md. Add version 1.12 to Document History.
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/worldData.ts` | All generation tables — gravity, culture, starport, government |
+| `src/lib/generator.ts` | World generation pipeline — calls all table functions |
+| `src/lib/physicalProperties.ts` | `calculatePhysicalProperties(massEM, bodyType)` — mass+density → radius+gravity |
+| `src/types/index.ts` | TypeScript types including `PowerSource`, `StarportClass` |
+| `QA.md` | This file — full bug specs with implementation detail |
+
+### What NOT to change
+- The PSS starport formula (QA-019, ✅ Fixed) — E/X on frontier worlds is correct behaviour, not a bug (see QA-INV-001)
+- The Half Dice mechanic for M-class stars (QA-015, ✅ Fixed)
+- The TL capability cap on starport class
+
+---
+
 ## Index
 
 | # | Area | Title | Priority | Status |
