@@ -1483,3 +1483,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.7 | 2026-04-14 | FR-029: Added Weekly Activity Roll Button spec to Section 7.8; QA-020/021 marked fixed |
 | 1.8 | 2026-04-14 | FR-030: Added Ships in the Area spec (Section 7.10); updated ship reference files with `monthly_operating_cost_cr` |
 | 1.9 | 2026-04-14 | FR-030 Step 3: Added `traffic_pool` field to all 35 ships in `mneme_ship_reference.json`; added `traffic_pool_map` header object; FRD Step 3 updated to specify `traffic_pool` as the filter field — implementation must not re-derive pool membership from `category` |
+| 2.0 | 2026-04-14 | Open items audit: FR-028/QA-018, FR-029, FR-030, QA-022 confirmed open and implementation-ready; QA-023 proposed/pending approval; all specs verified complete against reference data |

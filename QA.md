@@ -21,76 +21,101 @@ Mneme CE World Generator — React 19 + TypeScript 5.8 + Vite PWA that generates
 Working directory: `/home/justin/opencode260220/Mneme-CE-World-Generator`  
 Build command: `npm run build` (runs `tsc && vite build` — must pass with zero TypeScript errors).
 
-### Your Two Open Tasks (priority order)
+### Completed Since Last Handoff
+- ✅ **QA-020** — Culture trait opposing/duplicate reroll (commit `0ceacc7c`)
+- ✅ **QA-021** — Source of Power / Culture conflict filter (commit `0ceacc7c`)
+- ✅ **Ship reference** — `traffic_pool` field added to all 35 ships in `mneme_ship_reference.json` (commit `8816a48e`)
 
-> **Note:** QA-020 and QA-021 were fixed in commit `0ceacc7c`.
+### Open Tasks — Implement in This Order
 
-#### Task 1 — QA-022 🟠 Medium: Main world gravity must not exceed physical limits for its size
+---
 
-**File(s):** `src/lib/generator.ts` (main world generation, around line 208)
+#### Task A — QA-022 🟠 Medium: Gravity/size physics validation
+**File:** `src/lib/generator.ts` around line 208  
+**Spec:** See [QA-022](#qa-022) below for full detail.
 
-**Problem:** Main world `size` (diameter in km) and `gravity` are rolled independently. This produced a user-reported 342 km rock at 0.18 G, which would require a density of 37 g/cm³ — denser than any known element (osmium max: 22.6 g/cm³).
-
-**Step 1 — Add a density validation helper in `src/lib/generator.ts`** (or `physicalProperties.ts`):
-
+Add `gravityImpliesDensity()` helper and a reroll loop after the gravity roll:
 ```typescript
-/** Compute the density (g/cm³) implied by a surface gravity and diameter. */
 function gravityImpliesDensity(gravityG: number, diameterKm: number): number {
-  const r = (diameterKm / 2) * 1000; // radius in metres
-  const g = gravityG * 9.81;         // m/s²
-  // From: g = G × (4/3)πr × density_kg_m3
-  // density_kg_m3 = g / (G × (4/3) × π × r)
-  return g / (6.674e-11 * (4 / 3) * Math.PI * r) / 1000; // convert to g/cm³
+  const r = (diameterKm / 2) * 1000;
+  return (gravityG * 9.81) / (6.674e-11 * (4 / 3) * Math.PI * r) / 1000; // g/cm³
 }
-```
 
-**Step 2 — After the gravity roll, validate and reroll if needed:**
-
-```typescript
-const DENSITY_LIMITS = {
-  Dwarf:       { min: 1.5, max: 22.6 },
-  Terrestrial: { min: 4.0, max: 22.6 },
-};
-
-// After rolling gravity and computing `size`:
-const bodyTypeLimits = worldType === 'Dwarf' ? DENSITY_LIMITS.Dwarf : DENSITY_LIMITS.Terrestrial;
+const DENSITY_LIMITS = { Dwarf: { min: 1.5, max: 22.6 }, Terrestrial: { min: 4.0, max: 22.6 } };
+const limits = worldType === 'Dwarf' ? DENSITY_LIMITS.Dwarf : DENSITY_LIMITS.Terrestrial;
 let attempts = 0;
 while (attempts < 10) {
-  const impliedDensity = gravityImpliesDensity(gravity, size);
-  if (impliedDensity >= bodyTypeLimits.min && impliedDensity <= bodyTypeLimits.max) break;
-  // Reroll gravity
+  if (gravityImpliesDensity(gravity, size) >= limits.min &&
+      gravityImpliesDensity(gravity, size) <= limits.max) break;
   const reroll = roll2D6().value;
   const result = worldType === 'Dwarf' ? getDwarfGravity(reroll) : getTerrestrialGravity(reroll);
   gravity = result.gravity;
   gravityHabitability = result.habitability;
   attempts++;
 }
-// After max attempts, gravity stands as-is (edge case — very small/large worlds)
 ```
-
-**Verify:** Generate 200 worlds. For every Dwarf main world, check that `gravityImpliesDensity(gravity, size)` is between 1.5 and 22.6 g/cm³. Log any remaining violations. Update QA-022 with results, mark ✅ Fixed.
-
----
-
-#### Task 2 — QA-023 🟠 Medium: Replace gravity tables with density tables + mass-derived gravity
-
-**File(s):** `src/lib/generator.ts`, `src/lib/worldData.ts`
-
-**Status:** 📋 **Proposed — awaiting approval**
-
-See [QA-023](#qa-023) for the full spec. Do **not** implement without explicit user approval.
+Mark QA-022 ✅ Fixed. Commit: `fix(engine): QA-022 gravity/size physics validation`
 
 ---
 
-### After Completing Open Tasks
+#### Task B — QA-018/FR-028 🟠 Medium: Generator options persistence
+**File:** `src/components/GeneratorDashboard.tsx`  
+**Spec:** See [QA-018](#qa-018) below and FRD §10.3.
+
+On any option change, write to localStorage:
+```typescript
+localStorage.setItem('mneme_generator_options', JSON.stringify({ starClass, starGrade, mainWorldType, populated }));
+```
+On mount, read and validate (unknown strings → `'random'`, non-boolean `populated` → `true`).  
+Mark QA-018 ✅ Fixed. Commit: `fix(ui): QA-018 persist generator options across navigation`
+
+---
+
+#### Task C — FR-029 📋 Open: Weekly Activity Roll button
+**File:** `src/components/SystemViewer.tsx` (Starport card section)  
+**Spec:** FRD §7.8 Step 4.
+
+Add a **Roll 3D6** button next to the Weekly Base value in the Starport card. On click:
+1. Roll 3D6, display individual die results (e.g. `[4, 2, 6] = 12`)
+2. Compute `weeklyActivity = weeklyBase × total`
+3. Display result
+4. Store the rolled value in saved system state (persist on reload)
+
+Mark FR-029 as implemented in FRD. Commit: `feat(ui): FR-029 weekly activity re-roll button in starport card`
+
+---
+
+#### Task D — FR-030 📋 Open: Ships in the Area generator
+**File:** New function in `src/lib/generator.ts` + UI in `src/components/SystemViewer.tsx`  
+**Spec:** FRD §7.10 — read it in full before implementing. Ship data: `mneme_ship_reference.json`.
+
+**Summary of algorithm:**
+1. `shipsBudget = weeklyActivity × (roll1D6 × 0.10)`
+2. Roll 1D6 → distribution table (FRD §7.10 Step 2) → split into 3 pool budgets
+3. For each pool (`"Small Craft Pool"`, `"Civilian Pool"`, `"Warship Pool"`):
+   - Filter ships by `ship.traffic_pool === poolName`
+   - Find `minCost = Math.min(...pool.map(s => s.monthly_operating_cost_cr))`
+   - While `poolBudget >= minCost`: pick random affordable ship, subtract cost, roll 1D6 for location
+4. Group results by location (`"In Orbit"`, `"In System"`, `"Docked at Starport"`)
+5. UI: "Generate Ships in the Area" button in Starport card; display grouped list
+6. **Do NOT persist in JSON/Dexie** — transient, regenerate on button click
+
+Mark FR-030 as implemented in FRD. Commit: `feat(engine): FR-030 ships in the area generator`
+
+---
+
+### Do NOT Implement (awaiting approval)
+- **QA-023** — Replace gravity tables with mass-derived gravity. Full spec in [QA-023](#qa-023). Requires explicit user approval before touching.
+
+### After ALL Tasks
 
 ```bash
 cd /home/justin/opencode260220/Mneme-CE-World-Generator
-npm run build    # must pass with zero errors
-git add -A
-git commit -m "fix(engine): <describe fix>"
+npm run build   # must pass with zero TypeScript errors
 git push origin main
 ```
+
+Update Document History in QA.md (version 1.13) and FRD Document History.
 
 ### Key Files
 
@@ -98,14 +123,18 @@ git push origin main
 |------|---------|
 | `src/lib/worldData.ts` | All generation tables — gravity, culture, starport, government |
 | `src/lib/generator.ts` | World generation pipeline — calls all table functions |
-| `src/lib/physicalProperties.ts` | `calculatePhysicalProperties(massEM, bodyType)` — mass+density → radius+gravity |
-| `src/types/index.ts` | TypeScript types including `PowerSource`, `StarportClass` |
-| `QA.md` | This file — full bug specs with implementation detail |
+| `src/lib/physicalProperties.ts` | `calculatePhysicalProperties(massEM, bodyType)` |
+| `src/components/SystemViewer.tsx` | Main display — Starport card, Inhabitants panel |
+| `src/components/GeneratorDashboard.tsx` | Generator options UI |
+| `src/types/index.ts` | TypeScript types |
+| `mneme_ship_reference.json` | 35 ships with `traffic_pool` + `monthly_operating_cost_cr` |
+| `260409-v02 Mneme-CE-World-Generator-FRD.md` | Full feature spec |
 
 ### What NOT to change
-- The PSS starport formula (QA-019, ✅ Fixed) — E/X on frontier worlds is correct behaviour, not a bug (see QA-INV-001)
-- The Half Dice mechanic for M-class stars (QA-015, ✅ Fixed)
-- The TL capability cap on starport class
+- PSS starport formula (QA-019 ✅) — E/X on frontier worlds is correct (see QA-INV-001)
+- Half Dice mechanic for M-class stars (QA-015 ✅)
+- TL capability cap on starport class
+- `POWER_CULTURE_CONFLICTS` or `CULTURE_OPPOSITES` tables (QA-020/021 ✅)
 
 ---
 
@@ -1222,3 +1251,4 @@ Awaiting user approval of this proposal. Once approved, the above implementation
 | 1.10 | 2026-04-14 | Added QA-020: Culture traits reroll rule for opposing/duplicate results |
 | 1.11 | 2026-04-14 | Added QA-021: Source of Power / Culture trait contradictions (Neil Lucock); QA-022: Main world gravity/size inconsistency (Neil Lucock); QA-INV-001: E/X port dominance investigation — no bug |
 | 1.12 | 2026-04-14 | QA-020: Culture trait opposing/duplicate reroll implemented; QA-021: Power/culture conflict filter implemented (Neil Lucock) |
+| 1.13 | 2026-04-14 | Handoff block updated — 4 open tasks clarified for Kimi (QA-022, QA-018/FR-028, FR-029, FR-030); QA-023 flagged awaiting approval; ship traffic_pool field confirmed in JSON |
