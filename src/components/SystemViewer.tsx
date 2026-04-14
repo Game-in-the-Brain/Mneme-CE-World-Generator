@@ -2,7 +2,6 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult, ShipLocation } from '../types';
 import { exportToDocx } from '../lib/exportDocx';
 import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
-// @ts-ignore - lucide-react types
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
 import {
   CULTURE_TRAIT_DESCRIPTIONS,
@@ -35,12 +34,18 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 // QA-010: Single-page anchor tabs — each section is always rendered;
 // tab buttons scroll to the corresponding section.
 export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV, onGlossary }: SystemViewerProps) {
+  const overviewRef = useRef<HTMLDivElement | null>(null);
+  const starRef = useRef<HTMLDivElement | null>(null);
+  const worldRef = useRef<HTMLDivElement | null>(null);
+  const inhabitantsRef = useRef<HTMLDivElement | null>(null);
+  const systemRef = useRef<HTMLDivElement | null>(null);
+
   const sectionRefs: Record<TabId, React.RefObject<HTMLDivElement | null>> = {
-    overview:    useRef<HTMLDivElement | null>(null),
-    star:        useRef<HTMLDivElement | null>(null),
-    world:       useRef<HTMLDivElement | null>(null),
-    inhabitants: useRef<HTMLDivElement | null>(null),
-    system:      useRef<HTMLDivElement | null>(null),
+    overview: overviewRef,
+    star: starRef,
+    world: worldRef,
+    inhabitants: inhabitantsRef,
+    system: systemRef,
   };
 
   function scrollTo(id: TabId) {
@@ -127,6 +132,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
       </div>
 
       {/* All sections rendered inline — scrollable single page (QA-010) */}
+      {/* eslint-disable-next-line react-hooks/refs */}
       <section ref={sectionRefs.overview} id="overview" className="scroll-mt-20">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Sparkles style={{ color: 'var(--accent-red)' }} size={20} />
@@ -135,6 +141,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         <OverviewTab system={system} />
       </section>
 
+      {/* eslint-disable-next-line react-hooks/refs */}
       <section ref={sectionRefs.star} id="star" className="scroll-mt-20">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Sun style={{ color: 'var(--accent-red)' }} size={20} />
@@ -143,6 +150,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         <StarTab system={system} />
       </section>
 
+      {/* eslint-disable-next-line react-hooks/refs */}
       <section ref={sectionRefs.world} id="world" className="scroll-mt-20">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Globe style={{ color: 'var(--accent-red)' }} size={20} />
@@ -151,6 +159,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         <WorldTab world={system.mainWorld} />
       </section>
 
+      {/* eslint-disable-next-line react-hooks/refs */}
       <section ref={sectionRefs.inhabitants} id="inhabitants" className="scroll-mt-20">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Users style={{ color: 'var(--accent-red)' }} size={20} />
@@ -159,6 +168,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         <InhabitantsTab inhabitants={system.inhabitants} system={system} onUpdateSystem={onUpdateSystem} shipsResult={shipsResult} setShipsResult={setShipsResult} />
       </section>
 
+      {/* eslint-disable-next-line react-hooks/refs */}
       <section ref={sectionRefs.system} id="planetary-system" className="scroll-mt-20">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Building style={{ color: 'var(--accent-red)' }} size={20} />
@@ -404,6 +414,8 @@ function WorldTab({ world }: { world: MainWorld }) {
         <div className="space-y-2">
           <DataRow label="Type"            value={world.type} />
           <DataRow label="Size"            value={`${formatNumber(world.size)} km`} />
+          <DataRow label="Mass"            value={`${formatNumber(world.massEM)} ${world.type === 'Dwarf' ? 'LM' : 'EM'}`} />
+          <DataRow label="Density"         value={`${world.densityGcm3} g/cm³`} />
           <DataRow label="Gravity"         value={`${world.gravity} G`} />
           <DataRow label="Radius"          value={`${formatNumber(world.radius)} km`} />
           <DataRow label="Escape Velocity" value={`${formatNumber(world.escapeVelocity)} km/s`} />
@@ -898,7 +910,7 @@ function PlanetarySystemTab({
     type:        'terrestrial' as const,  // Main world is always terrestrial type for body purposes
     typeLabel:   system.mainWorld.type,
     isMainWorld: true,
-    mass:        system.mainWorld.size,   // size (km) used as stand-in — shown separately
+    mass:        system.mainWorld.massEM,   // mass in Earth Masses (LM for Dwarf, EM for Terrestrial)
     zone:        system.mainWorld.zone,
     distanceAU:  system.mainWorld.distanceAU,
     // physics from main world
@@ -906,7 +918,7 @@ function PlanetarySystemTab({
     diameterKm:  system.mainWorld.radius * 2,
     surfaceGravityG: system.mainWorld.gravity,
     escapeVelocityMs: system.mainWorld.escapeVelocity * 1000, // km/s → m/s
-    densityGcm3: undefined,
+    densityGcm3: system.mainWorld.densityGcm3,
     gasClass:    undefined,
     lesserEarthType: system.mainWorld.lesserEarthType,
     // extras

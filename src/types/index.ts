@@ -52,12 +52,16 @@ export interface ZoneBoundaries {
 
 export interface MainWorld {
   type: WorldType;
-  size: number;
+  size: number;                // diameter in km (derived from mass + density)
   lesserEarthType?: LesserEarthType;
   
-  gravity: number;
-  radius: number;
-  escapeVelocity: number;
+  // QA-023: Mass + Density physics pipeline
+  massEM: number;              // mass in Earth Masses
+  densityGcm3: number;         // density in g/cm³
+  
+  gravity: number;             // derived from mass + density
+  radius: number;              // derived from mass + density
+  escapeVelocity: number;      // derived from mass + density
   
   atmosphere: AtmosphereType;
   atmosphereTL: number;

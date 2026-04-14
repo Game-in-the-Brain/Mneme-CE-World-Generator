@@ -12,7 +12,8 @@ import {
   STAR_COLORS
 } from './stellarData';
 import {
-  getLesserEarthType, getDwarfGravity, getTerrestrialGravity,
+  getLesserEarthType, getDwarfMass, getTerrestrialMass, getHabitatMass,
+  getDwarfDensity, getTerrestrialDensity, dwarfGravityToHab, terrestrialGravityToHab,
   getAtmosphere, getTemperatureModifier, getTemperature,
   getHazard, getHazardIntensity, getBiochemicalResources,
   getTechLevel, calculatePopulation, getPopTLMod, calculateTotalHabitability,
@@ -163,88 +164,87 @@ function generateCompanionStars(primaryStar: Star): Star[] {
 // Main World Generation
 // =====================
 
-/** Compute the density (g/cm³) implied by a surface gravity and diameter. */
-function gravityImpliesDensity(gravityG: number, diameterKm: number): number {
-  const r = (diameterKm / 2) * 1000; // radius in metres
-  const g = gravityG * 9.81;         // m/s²
-  // From: g = G × (4/3)πr × density_kg_m3
-  // density_kg_m3 = g / (G × (4/3) × π × r)
-  return g / (6.674e-11 * (4 / 3) * Math.PI * r) / 1000; // convert to g/cm³
-}
 
-const DENSITY_LIMITS = {
-  Dwarf:       { min: 1.5, max: 22.6 },
-  Terrestrial: { min: 4.0, max: 22.6 },
-};
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateMainWorld(
   primaryStar: Star,
   _zones: ZoneBoundaries,
   forcedType: WorldType | 'random' = 'random',
-  largestBodyMass: number = 1.0
+  _largestBodyMass: number = 1.0
 ): MainWorld {
   let worldType: WorldType;
+  // eslint-disable-next-line prefer-const
   let size: number;
   let lesserEarthType: LesserEarthType | undefined;
+  let massEM: number;
+  let densityGcm3: number;
+  // eslint-disable-next-line prefer-const
+  let gravity: number;
+  let gravityHabitability: number;
+
+  // Constants for physics calculations
+  const G = 6.674e-11;       // gravitational constant m³ kg⁻¹ s⁻²
+  const EM_TO_KG = 5.972e24; // 1 Earth Mass in kg
+  const PI = Math.PI;
 
   if (forcedType !== 'random') {
     worldType = forcedType;
-    if (worldType === 'Dwarf') {
-      size = Math.floor(Math.random() * 500) + 100;
-      lesserEarthType = getLesserEarthType(roll2D6().value).type;
-    } else if (worldType === 'Terrestrial') {
-      size = Math.floor(Math.random() * 3000) + 2000;
-    } else {
-      // Habitat: size based on largest body mass in system (radius = mass^0.33 × Earth radius)
-      const earthRadius = 6371;
-      const radiusFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2 variation
-      size = Math.round(Math.pow(largestBodyMass, 0.33) * earthRadius * radiusFactor);
-    }
   } else {
     const { dice, keep } = getWorldTypeRoll(primaryStar.class);
     const typeRoll = rollKeep(dice, 6, keep, 'highest', 0).value;
     if (typeRoll <= 7) {
       worldType = 'Dwarf';
-      size = Math.floor(Math.random() * 500) + 100;
-      lesserEarthType = getLesserEarthType(roll2D6().value).type;
     } else if (typeRoll <= 10) {
       worldType = 'Terrestrial';
-      size = Math.floor(Math.random() * 3000) + 2000;
     } else {
       worldType = 'Habitat';
-      // Habitat: size based on largest body mass in system (radius = mass^0.33 × Earth radius)
-      const earthRadius = 6371;
-      const radiusFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2 variation
-      size = Math.round(Math.pow(largestBodyMass, 0.33) * earthRadius * radiusFactor);
     }
   }
 
-  const gravityRoll = roll2D6().value;
-  let gravity: number;
-  let gravityHabitability: number;
-
+  // Roll mass and density based on world type
   if (worldType === 'Dwarf') {
-    const result = getDwarfGravity(gravityRoll);
-    gravity = result.gravity;
-    gravityHabitability = result.habitability;
+    massEM = getDwarfMass(roll2D6().value);
+    densityGcm3 = getDwarfDensity(roll2D6().value);
+    lesserEarthType = getLesserEarthType(roll2D6().value).type;
+  } else if (worldType === 'Terrestrial') {
+    massEM = getTerrestrialMass(roll2D6().value);
+    densityGcm3 = getTerrestrialDensity(roll2D6().value);
   } else {
-    const result = getTerrestrialGravity(gravityRoll);
-    gravity = result.gravity;
-    gravityHabitability = result.habitability;
+    // Habitat: use habitat mass table and assume low density (0.1 g/cm³ for artificial structures)
+    massEM = getHabitatMass(roll2D6().value) / 5.972e12; // Convert Gt to EM (1 Gt = 1e12 kg, 1 EM = 5.972e24 kg)
+    densityGcm3 = 0.1;
   }
 
-  // QA-022: Validate density and reroll if physically impossible
-  const bodyTypeLimits = worldType === 'Dwarf' ? DENSITY_LIMITS.Dwarf : DENSITY_LIMITS.Terrestrial;
-  let attempts = 0;
-  while (attempts < 10) {
-    const impliedDensity = gravityImpliesDensity(gravity, size);
-    if (impliedDensity >= bodyTypeLimits.min && impliedDensity <= bodyTypeLimits.max) break;
-    const reroll = roll2D6().value;
-    const result = worldType === 'Dwarf' ? getDwarfGravity(reroll) : getTerrestrialGravity(reroll);
-    gravity = result.gravity;
-    gravityHabitability = result.habitability;
-    attempts++;
+  // Calculate physical properties from mass + density (all world types)
+  const densityKgM3 = densityGcm3 * 1000;
+  const massKg = massEM * EM_TO_KG;
+  const volumeM3 = massKg / densityKgM3;
+  const radiusM = Math.cbrt((3 * volumeM3) / (4 * PI));
+  const radiusKm = radiusM / 1000;
+  const diameterKm = 2 * radiusKm;
+  const surfaceGravityMs2 = (G * massKg) / (radiusM * radiusM);
+  const surfaceGravityG = surfaceGravityMs2 / 9.81;
+  const escapeVelocityMs = Math.sqrt(2 * G * massKg / radiusM);
+  const escapeVelocityKmS = escapeVelocityMs / 1000;
+  
+  size = Math.round(diameterKm);
+  gravity = Math.round(surfaceGravityG * 1000) / 1000;
+  // Store radius and escape velocity for return object
+  const radius = radiusKm;
+  const escapeVelocity = Math.round(escapeVelocityKmS * 100) / 100; // km/s, 2 decimal places
+
+  // Calculate gravity habitability using threshold functions
+  if (worldType === 'Dwarf') {
+    gravityHabitability = dwarfGravityToHab(gravity);
+  } else if (worldType === 'Terrestrial') {
+    gravityHabitability = terrestrialGravityToHab(gravity);
+  } else {
+    // Habitat: negligible gravity penalty
+    gravityHabitability = 0;
   }
+
+
 
   const atmoRoll = roll2D6().value;
   const atmoResult = getAtmosphere(atmoRoll);
@@ -295,9 +295,12 @@ function generateMainWorld(
     type: worldType,
     size,
     lesserEarthType,
+    // QA-023: Mass + Density physics pipeline
+    massEM,
+    densityGcm3,
     gravity,
-    radius: Math.round(size * 0.5 * 100) / 100,  // radius = diameter / 2
-    escapeVelocity: Math.round(Math.sqrt(0.0196 * gravity * size * 0.5) * 100) / 100,  // v = sqrt(2 * g * r) in km/s, where 0.0196 = 2*9.8/1000
+    radius,
+    escapeVelocity,
     atmosphere: atmoResult.type,
     atmosphereTL: atmoResult.tl,
     temperature: tempResult.type,
@@ -588,11 +591,11 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
   const stellarClass = primaryStar.class;
   const starMass = primaryStar.mass;
 
-  let disks: PlanetaryBody[] = [];
-  let dwarfs: PlanetaryBody[] = [];
-  let terrestrials: PlanetaryBody[] = [];
-  let ices: PlanetaryBody[] = [];
-  let gases: PlanetaryBody[] = [];
+  const disks: PlanetaryBody[] = [];
+  const dwarfs: PlanetaryBody[] = [];
+  const terrestrials: PlanetaryBody[] = [];
+  const ices: PlanetaryBody[] = [];
+  const gases: PlanetaryBody[] = [];
 
   // Generate bodies, passing stellarClass for Adv/Dis modifiers (QA-007)
   const diskCount = getBodyCount('disk', stellarClass);
@@ -666,6 +669,7 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function generateBody(type: BodyType, primaryStar: Star, _zones: ZoneBoundaries): PlanetaryBody {
   const id = uuidv4();
   const sqrtL = Math.sqrt(primaryStar.luminosity);

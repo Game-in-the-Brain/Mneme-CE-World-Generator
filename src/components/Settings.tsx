@@ -2,7 +2,6 @@ import { useRef, useState, useEffect } from 'react';
 import type { StarSystem } from '../types';
 import { Upload, Download, Trash2, FileJson, Info, Search, Eye, ChevronLeft, ChevronRight, Database, Bug } from 'lucide-react';
 import { APP_VERSION, APP_COMMIT, APP_DATE } from '../lib/version';
-// @ts-ignore - lucide-react types
 
 interface SettingsProps {
   systems: StarSystem[];
@@ -48,7 +47,7 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (error) {
+    } catch (_error) {
       setImportStatus('Import failed. Please check the file format.');
     }
 

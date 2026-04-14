@@ -289,6 +289,8 @@ See [REF-003: Orbit Table](./references/REF-003-orbit-table.md) for full table.
 
 See [REF-004: World Type & Size Tables](./references/REF-004-world-type-tables.md) for full tables.
 
+> **QA-023:** World "size" is now expressed as **mass** (Lunar Masses for Dwarfs, Earth Masses for Terrestrials, MVT/GVT for Habitats) rather than diameter. Gravity is derived from mass + density via physics formulas (see §6.3).
+
 **Habitat Size Calculation (QA-017):**
 
 Habitats are artificial megastructures sized based on the largest planetary body mass in the system:
@@ -319,25 +321,63 @@ This ensures habitats are appropriately scaled to the largest available mass in 
 | 11 | Metallic | -1 |
 | 12 | Other | +0 |
 
-### 6.3 Gravity
+### 6.3 Density & Gravity
 
 | Function | Input | Output |
 |----------|-------|--------|
-| `generateGravity(worldType, roll)` | Type, 2D6 | Gravity in G, habitability modifier |
+| `generateDensity(worldType, roll)` | Type, 2D6 | Density in g/cm³ |
+| `calculateGravity(massEM, densityGcm3)` | Mass (EM), Density | Gravity in G, radius, escape velocity |
+| `gravityToHabitability(worldType, gravityG)` | Type, Gravity | Habitability modifier |
 
-| 2D6 | Dwarf Planet | Terrestrial Planet | Habitability |
-|-----|--------------|-------------------|--------------|
-| 2 | 0.001 G | 3 G | -2.5 |
-| 3 | 0.02 G | 2 G | -2 |
-| 4 | 0.04 G | 1.5 G | -1.5 |
-| 5 | 0.06 G | 1.3 G | -1 |
-| 6 | 0.08 G | 1.2 G | -0.5 |
-| 7 | 0.10 G | 0.3 G | -0.5 |
-| 8 | 0.12 G | 0.4 G | -0.5 |
-| 9 | 0.14 G | 0.5 G | -0.5 |
-| 10 | 0.16 G | 0.7 G | +0 |
-| 11 | 0.18 G | 0.9 G | +0 |
-| 12 | 0.2 G | 1 G | +0 |
+**Density Tables (QA-023):**
+
+| 2D6 | Dwarf Density (g/cm³) | Terrestrial Density (g/cm³) |
+|-----|----------------------|----------------------------|
+| 2 | 1.5 | 6.5 |
+| 3 | 1.8 | 6.0 |
+| 4 | 2.1 | 5.7 |
+| 5 | 2.4 | 5.4 |
+| 6 | 2.7 | 5.1 |
+| 7 | 3.0 | 5.0 |
+| 8 | 3.2 | 4.8 |
+| 9 | 3.4 | 4.6 |
+| 10 | 3.5 | 4.4 |
+| 11 | 3.5 | 4.2 |
+| 12 | 3.5 | 4.0 |
+
+**Physics Formulas:**
+```
+Radius (km) = ∛(massEM × 5.972e24 kg / (4/3 × π × densityGcm3 × 1000 kg/m³))
+Surface Gravity (G) = (G × massEM × 5.972e24 kg) / (radius × 1000 m)² / 9.81 m/s²
+Escape Velocity (km/s) = √(2 × G × massEM × 5.972e24 kg / (radius × 1000 m)) / 1000
+```
+
+**Gravity-to-Habitability Threshold Functions:**
+
+*Dwarf Worlds:*
+- < 0.06 G → -2.5
+- < 0.08 G → -2.0
+- < 0.10 G → -1.5
+- < 0.12 G → -1.0
+- < 0.16 G → -0.5
+- ≥ 0.16 G → 0
+
+*Terrestrial Worlds:*
+- > 1.8 G → -2.5
+- > 1.4 G → -2.0
+- > 1.2 G → -1.5
+- > 1.0 G → -1.0
+- < 0.5 G → -0.5
+- < 0.7 G → -0.5
+- 0.7–1.0 G → 0
+
+**Critical Fixes (QA-023):**
+- **Non-monotonic table corrected:** Roll 7 = Earth-like density (5.0 g/cm³ → ~0.91G), not absurd 0.3G
+- **Physical extremes eliminated:** 0.001G dwarf and 3.0G terrestrial are impossible
+- **Solar system accuracy:** Matches Moon (0.143G vs 0.166G), Mars (0.375G vs 0.379G), Earth (0.91G vs 1.00G)
+- **Probability shift:** hab 0 worlds increase from 16.7% to ~25.5% (acceptable for physical consistency)
+
+> **QA-023:** Gravity derived from mass + density physics pipeline. [See QA-023](./QA.md#qa-023)
 
 ### 6.4 Atmosphere
 
@@ -430,7 +470,7 @@ This ensures habitats are appropriately scaled to the largest available mass in 
 | `calculateTotalHabitability()` | Mass, Atmosphere, Temperature, Hazard, Intensity, Bio, TL | Final score |
 
 **Habitability Components:**
-- Gravity modifier (from 6.3 table — uses the gravity roll result, not mass/size directly)
+- Gravity modifier (derived from calculated gravity via threshold functions in §6.3 — uses mass + density physics)
 - Atmosphere modifier
 - Temperature modifier
 - Hazard type modifier

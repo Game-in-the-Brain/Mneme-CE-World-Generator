@@ -20,7 +20,7 @@ function getGitVersion() {
       commitDate,
       fullVersion: `1.3.${commitCount}-${commitHash}`
     }
-  } catch (e) {
+  } catch (_e) {
     // Fallback if git fails
     return {
       version: '1.3.0',

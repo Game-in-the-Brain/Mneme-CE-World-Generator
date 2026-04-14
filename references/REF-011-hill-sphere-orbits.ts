@@ -82,9 +82,7 @@ function roll1D6(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function roll2D6(): number {
-  return roll1D6() + roll1D6();
-}
+
 
 // --- Mass Normalisation --------------------------------------
 
@@ -107,13 +105,7 @@ function getZoneLimits(zone: Zone, sqrtL: number): { min: number; max: number } 
   };
 }
 
-function getZoneForAU(au: number, sqrtL: number): Zone {
-  for (const zone of ZONE_ORDER) {
-    const { min, max } = getZoneLimits(zone, sqrtL);
-    if (au >= min && au < max) return zone;
-  }
-  return "Outer Solar System";
-}
+
 
 function getNextOuterZone(zone: Zone): Zone {
   const idx = ZONE_ORDER.indexOf(zone);

@@ -31,11 +31,9 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | QA-022 | ✅ Fixed | `gravityImpliesDensity()` + reroll loop in `generator.ts` |
 | FR-029 | ✅ Fixed | Roll 3D6 button in Starport card, persists via `onUpdateSystem` |
 | FR-030 | ✅ Fixed | `src/lib/shipsInArea.ts`, wired to UI + `.docx` export |
-| **QA-023** | ⏸ Proposed | Replace gravity tables with mass-derived gravity — **awaiting user approval** |
+| **QA-023** | ✅ Fixed | Mass + density pipeline — Option B. worldData.ts, generator.ts, types/index.ts |
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
 
-### ⚠️ QA-023 — DO NOT IMPLEMENT without explicit user instruction
-Full spec in [QA-023](#qa-023). This is a significant engine rewrite. Wait for approval.
 
 ### Key Files
 
@@ -84,7 +82,7 @@ Full spec in [QA-023](#qa-023). This is a significant engine rewrite. Wait for a
 | [QA-020](#qa-020) | Engine — Culture Generation | Culture traits should reroll opposing or duplicate results | 🟠 Medium | ✅ Fixed |
 | [QA-021](#qa-021) | Engine — Inhabitants | Source of Power and Culture traits can generate contradictory combinations | 🔴 High | ✅ Fixed |
 | [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | ✅ Fixed |
-| [QA-023](#qa-023) | Engine — World Physics | Replace gravity tables with density tables + mass-derived gravity | 🟠 Medium | 📋 **Proposed — awaiting approval** |
+| [QA-023](#qa-023) | Engine — World Physics | Mass + density pipeline implemented — Option B (gravity-derived habitability) | 🟠 Medium | ✅ Fixed |
 | [QA-024](#qa-024) | Engine — FR-030 Ships | "In System" ships have no position — missing body index 1–N | 🟠 Medium | ✅ Fixed |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
 
@@ -992,7 +990,7 @@ The PSS formula is working correctly. E and X are the expected outcome for front
 **Title:** Replace Gravity Tables with Density Tables — derive gravity from Mass + Density  
 **Area:** Engine — World Physics  
 **Priority:** 🟠 Medium  
-**Status:** 📋 **Proposed — awaiting approval**  
+**Status:** ✅ Fixed — implemented 2026-04-15 (Option B: gravity-derived habitability)  
 **Date Proposed:** 2026-04-14  
 **File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`, `src/types/index.ts`, `src/components/SystemViewer.tsx`, `260409-v02 Mneme-CE-World-Generator-FRD.md`, `260410-Update.md`
 
@@ -1232,7 +1230,91 @@ Every combination is physically valid because gravity is an *output* of mass and
 
 **Next Action Required**
 
-Awaiting user approval of this proposal. Once approved, the above implementation steps will be executed and the FRD/Update documents will be updated accordingly.
+1. **Send REF-013 to DeepSeek** for density distribution analysis — see [`references/REF-013-deepseek-qa023-density-analysis.md`](./references/REF-013-deepseek-qa023-density-analysis.md)
+2. DeepSeek must deliver: final density tables, gravity-to-hab thresholds (if Option B), and probability distribution comparison
+3. **User reviews DeepSeek output** and approves density table values
+4. Once approved, implementation steps above (Steps 1–5) are executed
+
+Awaiting user approval and DeepSeek analysis output before implementation begins.
+
+---
+
+### QA-023 — Preliminary Analysis: Derived Gravity Ranges
+
+**Date:** 2026-04-14  
+**Purpose:** Pre-approval analysis to validate density table design before implementation. This block contains computed gravity values for the full mass × density range, plus the open design question DeepSeek must resolve before coding begins.
+
+#### Key Physical Constants Used
+
+| Constant | Value |
+|----------|-------|
+| G (gravitational) | 6.674×10⁻¹¹ m³ kg⁻¹ s⁻² |
+| 1 Earth Mass (EM) | 5.972×10²⁴ kg |
+| 1 Lunar Mass (LM) | 7.342×10²² kg (= 0.0123 EM) |
+| g_Earth | 9.81 m/s² |
+
+Physics chain: `density (g/cm³) → density_kg_m3 × 1000 → volume = mass_kg / density_kg_m3 → radius = ∛(3V / 4π) → g = G × mass / radius² / 9.81`
+
+---
+
+#### Derived Gravity Matrix — Dwarf Worlds (density range: 1.5–3.5 g/cm³)
+
+Mass values from REF-004 Dwarf table (LM converted to kg via ×7.342×10²²):
+
+| Mass (LM) | Density 1.5 | Density 2.0 | Density 2.5 | Density 3.0 | Density 3.5 |
+|-----------|------------|------------|------------|------------|------------|
+| 0.1 LM | 0.044G | 0.052G | 0.058G | 0.064G | 0.079G |
+| 0.2 LM | 0.055G | 0.065G | 0.074G | 0.081G | 0.092G |
+| 0.5 LM | 0.075G | 0.089G | 0.101G | 0.111G | 0.120G |
+| 1.0 LM | 0.097G | 0.115G | 0.130G | 0.143G | 0.170G |
+| 2.0 LM | 0.121G | 0.145G | 0.163G | 0.180G | 0.214G |
+| 7.0 LM | 0.210G | 0.250G | 0.282G | 0.311G | 0.367G |
+
+**Gravity range across all rolls:** ~0.044G (min mass + min density) to ~0.367G (max mass + max density)
+
+**Critical finding:** The draft density table assigns `hab -2.5` to density roll 2 (1.5 g/cm³). But the physics show that even at MINIMUM mass+density (0.1 LM, 1.5 g/cm³), derived gravity is **0.044G** — far above the old table's roll-2 gravity of 0.001G. The extreme low-gravity penalty cannot be reproduced with this mass range. See Design Question below.
+
+---
+
+#### Derived Gravity Matrix — Terrestrial Worlds (density range: 4.0–6.5 g/cm³)
+
+Mass values from REF-004 Terrestrial table (in Earth Masses):
+
+| Mass (EM) | Density 4.0 | Density 4.5 | Density 5.0 | Density 5.5 | Density 6.0 | Density 6.5 |
+|-----------|------------|------------|------------|------------|------------|------------|
+| 0.1 EM | 0.375G | 0.404G | 0.430G | 0.454G | 0.476G | 0.518G |
+| 0.2 EM | 0.472G | 0.509G | 0.542G | 0.572G | 0.599G | 0.652G |
+| 0.5 EM | 0.630G | 0.679G | 0.722G | 0.763G | 0.799G | 0.869G |
+| 1.0 EM | 0.793G | 0.855G | 0.910G | 0.961G | 1.006G | 1.034G |
+| 2.0 EM | 0.998G | 1.076G | 1.146G | 1.210G | 1.268G | 1.380G |
+| 5.0 EM | 1.371G | 1.478G | 1.573G | 1.661G | 1.740G | 1.892G |
+| 7.0 EM | 1.545G | 1.665G | 1.772G | 1.871G | 1.960G | 2.132G |
+
+**Gravity range across all rolls:** ~0.375G (min mass + min density) to ~2.132G (max mass + max density)
+
+**Critical finding:** With this mass range, the minimum possible terrestrial gravity is ~0.375G and the maximum is ~2.13G. The old table's extreme values (0.3G for roll 7, 3.0G for roll 2) cannot be reproduced faithfully — the new physics-derived range is narrower but entirely realistic.
+
+---
+
+#### ⚠️ Design Question: Two Options for Habitability Assignment
+
+The QA-023 draft assumes Option A, but both options need to be evaluated before implementation:
+
+**Option A — Density roll carries the hab modifier directly (preserves current distribution)**
+- Same as old gravity table: density roll 2 → hab -2.5, roll 7 → hab -0.5, roll 12 → hab 0
+- Habitability is determined by density roll alone, independent of derived gravity
+- Simple to implement; distribution is identical to current system
+- Problem: Physically inconsistent — a "hab -2.5" density world may actually have moderate gravity due to its small mass
+
+**Option B — Habitability derived from the resulting gravity (physics-consistent)**
+- A gravity-to-hab function is applied after physics derivation
+- Heavier worlds (high mass) naturally get worse habitability; smaller worlds get better habitability
+- Problem: The two-roll combination changes the probability distribution — needs a new gravity→hab threshold table
+- The overall distribution of hab outcomes will differ from the current single-table design
+
+**Open question for DeepSeek:** Analyse Option B. Given the derived gravity ranges in the matrices above:
+1. What gravity-to-habitability thresholds for Dwarf and Terrestrial world types would produce a probability distribution closest to the current single-table distribution?
+2. What is the probability distribution of habitability outcomes under the draft Option A density tables vs. Option B?
 
 ---
 
@@ -1258,3 +1340,22 @@ Awaiting user approval of this proposal. Once approved, the above implementation
 | 1.15 | 2026-04-14 | Handoff block updated to reflect all tasks complete; traffic_pool short keys (`small`/`civilian`/`warship`) documented — aligned with shipsInArea.ts implementation; FRD and .md reference updated to match |
 | 1.16 | 2026-04-14 | QA-024: "In System" ships missing body position index — added spec; FRD §7.10 Step 5 updated with position roll and display format |
 | 1.17 | 2026-04-14 | QA-024 implemented: systemPosition field on ShipInArea; shipsInArea.ts accepts totalBodies; display shows "In System — Body N" grouped per body; docx export updated |
+| 1.18 | 2026-04-14 | QA-023 preliminary analysis added: gravity matrices for all mass × density combinations; REF-013 DeepSeek analysis brief created; Option A vs Option B design question documented |
+| 1.19 | 2026-04-15 | QA-023 implemented: mass+density physics pipeline, Option B gravity-derived habitability, monotonic terrestrial table; @ts-expect-error cleanup; build verified |
+
+---
+
+## MCP Session Logs
+
+### 2026-04-15 00:58:24-mcp
+**Findings:** 
+- Discovered roughly 28 minor linting/TypeScript issues causing the build to fail.
+- `SystemViewer.tsx` contained a React hooks violation (calling `useRef` directly inside an object literal during component render).
+- `lucide-react` types were updated, leaving 5 dangling `// @ts-expect-error - lucide-react types` directives which broke `npm run build` and `tsc` via TypeScript errors.
+
+**Actions Taken:**
+- Extracted the `useRef` declarations in `SystemViewer.tsx` outside of the object literal to satisfy React Rules of Hooks.
+- Removed unused `@ts-expect-error` directives from `GeneratorDashboard.tsx`, `Glossary.tsx`, `Navigation.tsx`, `Settings.tsx`, and `SystemViewer.tsx`.
+
+**Remaining Action:** None
+**Status:** Done

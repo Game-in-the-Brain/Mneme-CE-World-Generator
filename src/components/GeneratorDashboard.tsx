@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType } from '../types';
 import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
-// @ts-ignore - lucide-react types
 
 // Import generator for batch export
 import { generateStarSystem } from '../lib/generator';

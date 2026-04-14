@@ -1,0 +1,62 @@
+
+> mneme-ce-world-generator-temp@0.0.0 lint
+> eslint .
+
+
+/home/justin/opencode260220/Mneme-CE-World-Generator/src/components/Settings.tsx
+  51:14  error  '_error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/justin/opencode260220/Mneme-CE-World-Generator/src/components/SystemViewer.tsx
+  130:8   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/refs')
+  157:21  error    Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/home/justin/opencode260220/Mneme-CE-World-Generator/src/components/SystemViewer.tsx:157:21
+  155 |       </section>
+  156 |
+> 157 |       <section ref={sectionRefs.inhabitants} id="inhabitants" className="scroll-mt-20">
+      |                     ^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  158 |         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+  159 |           <Users style={{ color: 'var(--accent-red)' }} size={20} />
+  160 |           Inhabitants     react-hooks/refs
+  165:21  error    Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/home/justin/opencode260220/Mneme-CE-World-Generator/src/components/SystemViewer.tsx:165:21
+  163 |       </section>
+  164 |
+> 165 |       <section ref={sectionRefs.system} id="planetary-system" className="scroll-mt-20">
+      |                     ^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  166 |         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+  167 |           <Building style={{ color: 'var(--accent-red)' }} size={20} />
+  168 |           Planetary System  react-hooks/refs
+
+/home/justin/opencode260220/Mneme-CE-World-Generator/src/lib/exportDocx.ts
+  347:55   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  348:55   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  349:55   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  349:101  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/justin/opencode260220/Mneme-CE-World-Generator/src/lib/generator.ts
+  173:3   error  '_largestBodyMass' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  228:3   error  'size' is never reassigned. Use 'const' instead          prefer-const
+  229:3   error  'gravity' is never reassigned. Use 'const' instead       prefer-const
+  591:7   error  'disks' is never reassigned. Use 'const' instead         prefer-const
+  592:7   error  'dwarfs' is never reassigned. Use 'const' instead        prefer-const
+  593:7   error  'terrestrials' is never reassigned. Use 'const' instead  prefer-const
+  594:7   error  'ices' is never reassigned. Use 'const' instead          prefer-const
+  595:7   error  'gases' is never reassigned. Use 'const' instead         prefer-const
+  669:58  error  '_zones' is defined but never used                       @typescript-eslint/no-unused-vars
+
+/home/justin/opencode260220/Mneme-CE-World-Generator/src/lib/worldData.ts
+  925:7  error  Unexpected lexical declaration in case block  no-case-declarations
+  926:7  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/home/justin/opencode260220/Mneme-CE-World-Generator/vite.config.ts
+  23:12  error  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 20 problems (19 errors, 1 warning)
+  5 errors and 1 warning potentially fixable with the `--fix` option.
+

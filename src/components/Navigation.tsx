@@ -1,7 +1,6 @@
 import type { ViewMode } from '../types';
 import { Home, Settings, Sun, Moon, Smartphone, BookOpen } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
-// @ts-ignore - lucide-react types
 
 export type Theme = 'dark' | 'day' | 'phone';
 

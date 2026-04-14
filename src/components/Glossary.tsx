@@ -1,5 +1,4 @@
 import { BookOpen } from 'lucide-react';
-// @ts-ignore - lucide-react types
 
 export function Glossary() {
   return (

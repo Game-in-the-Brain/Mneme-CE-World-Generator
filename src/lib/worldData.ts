@@ -28,9 +28,10 @@ export function getLesserEarthType(roll: number): { type: LesserEarthType; modif
 }
 
 // =====================
-// Gravity Table
+// Gravity Table (DEPRECATED — QA-023)
 // =====================
 
+/*
 export function getDwarfGravity(roll: number): { gravity: number; habitability: number } {
   const table: Record<number, { gravity: number; habitability: number }> = {
     2: { gravity: 0.001, habitability: -2.5 },
@@ -63,6 +64,109 @@ export function getTerrestrialGravity(roll: number): { gravity: number; habitabi
     12: { gravity: 1.0, habitability: 0 },
   };
   return table[roll] || table[7];
+}
+*/
+
+// =====================
+// Mass Tables (REF-004) — QA-023
+// =====================
+
+export function getDwarfMass(roll: number): number {
+  // Returns mass in Earth Masses (converted from Lunar Masses)
+  const lmTable: Record<number, number> = {
+    2: 0.1, 3: 0.2, 4: 0.3, 5: 0.5, 6: 0.7,
+    7: 1.0, 8: 1.5, 9: 2.0, 10: 3.0, 11: 5.0, 12: 7.0,
+  };
+  const lm = lmTable[roll] || lmTable[7];
+  return lm * 0.0123; // convert Lunar Masses to Earth Masses
+}
+
+export function getTerrestrialMass(roll: number): number {
+  // Returns mass in Earth Masses
+  const table: Record<number, number> = {
+    2: 0.1, 3: 0.2, 4: 0.3, 5: 0.5, 6: 0.7,
+    7: 1.0, 8: 1.5, 9: 2.0, 10: 3.0, 11: 5.0, 12: 7.0,
+  };
+  return table[roll] || table[7];
+}
+
+export function getHabitatMass(roll: number): number {
+  // Returns mass in Giga‑Tons (GVT) for physics consistency
+  const table: Record<number, number> = {
+    2: 0.001,   // 1 MVT = 1 Mt = 0.001 Gt
+    3: 0.003,
+    4: 0.01,
+    5: 0.03,
+    6: 0.1,
+    7: 0.3,
+    8: 1.0,     // 1 GVT
+    9: 3.0,
+    10: 10.0,
+    11: 30.0,
+    12: 100.0,
+  };
+  return table[roll] || table[7];
+}
+
+// =====================
+// Density Tables — QA-023 (Option B)
+// =====================
+
+export function getDwarfDensity(roll: number): number {
+  const table: Record<number, number> = {
+    2: 1.5,   // Carbonaceous/icy — lowest density
+    3: 1.8,
+    4: 2.1,
+    5: 2.4,
+    6: 2.7,
+    7: 3.0,   // Silicaceous baseline (most common)
+    8: 3.2,
+    9: 3.4,
+    10: 3.5,  // Metallic-rich
+    11: 3.5,
+    12: 3.5,
+  };
+  return table[roll] || table[7];
+}
+
+export function getTerrestrialDensity(roll: number): number {
+  const table: Record<number, number> = {
+    2: 6.5,   // Iron-core super-dense (high gravity)
+    3: 6.0,
+    4: 5.7,
+    5: 5.4,
+    6: 5.1,
+    7: 5.0,   // Earth-like density (5.0 g/cm³)
+    8: 4.8,
+    9: 4.6,
+    10: 4.4,  // Low-density silicate
+    11: 4.2,
+    12: 4.0,  // Lowest density (lower gravity)
+  };
+  return table[roll] || table[7];
+}
+
+// =====================
+// Gravity-to-Habitability Threshold Functions — QA-023 (Option B)
+// =====================
+
+export function dwarfGravityToHab(gravityG: number): number {
+  if (gravityG < 0.06) return -2.5;   // Extremely low gravity
+  if (gravityG < 0.08) return -2.0;   // Very low gravity
+  if (gravityG < 0.10) return -1.5;   // Low gravity
+  if (gravityG < 0.12) return -1.0;   // Moderately low gravity
+  if (gravityG < 0.16) return -0.5;   // Slightly low gravity
+  return 0;                           // Adequate gravity (≥0.16G)
+}
+
+export function terrestrialGravityToHab(gravityG: number): number {
+  if (gravityG > 1.8) return -2.5;    // Crushing gravity
+  if (gravityG > 1.4) return -2.0;    // Very high gravity
+  if (gravityG > 1.2) return -1.5;    // High gravity
+  if (gravityG > 1.0) return -1.0;    // Moderately high gravity
+  if (gravityG < 0.5) return -0.5;    // Too low gravity
+  if (gravityG < 0.7) return -0.5;    // Low gravity
+  return 0;                           // Optimal (0.7–1.0G)
 }
 
 // =====================
@@ -817,7 +921,7 @@ export function calculateWorldPosition(
     case 'Cold':
       distance = sqrtL * ((0.61 * roll) + 1.2);
       break;
-    case 'Outer':
+    case 'Outer': {
       const outerRoll = Math.floor(Math.random() * 6) + 1;
       let multiplier = 1;
       if (outerRoll === 6) {
@@ -832,6 +936,7 @@ export function calculateWorldPosition(
       }
       distance = sqrtL * (Math.pow(outerRoll, 2) + 4.85) * multiplier;
       break;
+    }
   }
   
   return { zone: baseZone, distanceAU: Math.round(distance * 100) / 100 };

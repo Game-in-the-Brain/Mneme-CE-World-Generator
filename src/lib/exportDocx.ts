@@ -344,9 +344,9 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
     physSections.push(line('Surface Gravity', `${body.surfaceGravityG} G`));
     physSections.push(line('Escape Velocity', `${formatNumber(body.escapeVelocityMs!)} m/s`));
     if (body.isMainWorld) {
-      physSections.push(line('Atmosphere',   (body as any).atmosphere ?? '—'));
-      physSections.push(line('Temperature',  (body as any).temperature ?? '—'));
-      physSections.push(line('Habitability', (body as any).habitability !== undefined ? `${(body as any).habitability}` : '—'));
+      physSections.push(line('Atmosphere',   body.atmosphere ?? '—'));
+      physSections.push(line('Temperature',  body.temperature ?? '—'));
+      physSections.push(line('Habitability', body.habitability !== undefined ? `${body.habitability}` : '—'));
     }
     if (ann?.notes) physSections.push(line('Notes', ann.notes));
   });
