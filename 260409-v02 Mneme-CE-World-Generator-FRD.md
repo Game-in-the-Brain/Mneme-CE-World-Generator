@@ -873,15 +873,24 @@ For each generated ship, roll 1D6:
 
 | 1D6 | Location |
 |-----|----------|
-| 1–2 | **In Orbit** |
-| 3–4 | **In System** (patrolling, transiting, or at a Lagrange point) |
+| 1–2 | **In Orbit** (around the main world) |
+| 3–4 | **In System** — roll additional position (see below) |
 | 5–6 | **Docked at Starport** |
+
+**In System position roll:**  
+Ships with result 3–4 are somewhere else in the system, not at the main world. Roll 1 to *N* (where *N* = total number of bodies in the planetary system: sum of all disks + dwarfs + terrestrials + ices + gas worlds). The result is the body index the ship is near.
+
+- If the system has zero bodies, treat the ship as **In Orbit** instead.
+- Body index is 1-based (body 1 = first body in the system list as generated).
+- Display as: **"In System — Body *N*"** (e.g. "In System — Body 3").
+
+> **Rationale:** "In System" without a position is meaningless to a GM. A body index tells them exactly which world the ship is near — useful for encounter placement, trade route context, or piracy scenarios.
 
 #### Step 6 — UI / Export Rules
 
 - Provide a **"Generate Ships in the Area"** button in the Starport card (next to the Weekly Activity roll button).
-- Display results grouped by location, showing ship name, count, and aggregated monthly operating cost.
-- Include the generated ship list in the `.docx` system export.
+- Display results grouped by location. For "In System" ships, show the body index (e.g. "In System — Body 3").
+- Include the generated ship list in the `.docx` system export with body index shown.
 - **Do not** persist the ship list in the JSON backup or Dexie database; regenerate on demand when the user clicks the button.
 
 ---
@@ -1485,3 +1494,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.9 | 2026-04-14 | FR-030 Step 3: Added `traffic_pool` field to all 35 ships in `mneme_ship_reference.json`; added `traffic_pool_map` header object; FRD Step 3 updated to specify `traffic_pool` as the filter field — implementation must not re-derive pool membership from `category` |
 | 2.0 | 2026-04-14 | Open items audit: FR-028/QA-018, FR-029, FR-030, QA-022 confirmed open and implementation-ready; QA-023 proposed/pending approval; all specs verified complete against reference data |
 | 2.1 | 2026-04-14 | FR-030 Step 3: traffic_pool values corrected to short lowercase keys (`"small"`, `"civilian"`, `"warship"`) to match shipsInArea.ts implementation |
+| 2.2 | 2026-04-14 | FR-030 Step 5: "In System" ships now roll a body index 1–N (total planetary bodies); display as "In System — Body N"; zero-body fallback to Orbit; see QA-024 |

@@ -31,14 +31,18 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | QA-022 | ✅ Fixed | `gravityImpliesDensity()` + reroll loop in `generator.ts` |
 | FR-029 | ✅ Fixed | Roll 3D6 button in Starport card, persists via `onUpdateSystem` |
 | FR-030 | ✅ Fixed | `src/lib/shipsInArea.ts`, wired to UI + `.docx` export |
+| **QA-024** | 📋 Open | "In System" ships need body index 1–N — see [QA-024](#qa-024) for full spec |
 | **QA-023** | ⏸ Proposed | Replace gravity tables with mass-derived gravity — **awaiting user approval** |
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
 
+### Open Task — QA-024
+
+Implement `systemPosition` on "In System" ships — see [QA-024](#qa-024) for the full step-by-step implementation spec (types → shipsInArea.ts → call site → display → docx export).
+
+Commit: `fix(engine): QA-024 In System ships get body index 1-N`
+
 ### ⚠️ QA-023 — DO NOT IMPLEMENT without explicit user instruction
 Full spec in [QA-023](#qa-023). This is a significant engine rewrite. Wait for approval.
-
-### If User Approves QA-023
-See the full 8-step implementation plan in [QA-023](#qa-023) below.
 
 ### Key Files
 
@@ -88,6 +92,7 @@ See the full 8-step implementation plan in [QA-023](#qa-023) below.
 | [QA-021](#qa-021) | Engine — Inhabitants | Source of Power and Culture traits can generate contradictory combinations | 🔴 High | ✅ Fixed |
 | [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | ✅ Fixed |
 | [QA-023](#qa-023) | Engine — World Physics | Replace gravity tables with density tables + mass-derived gravity | 🟠 Medium | 📋 **Proposed — awaiting approval** |
+| [QA-024](#qa-024) | Engine — FR-030 Ships | "In System" ships have no position — missing body index 1–N | 🟠 Medium | 📋 Open |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
 
 ---
@@ -863,6 +868,85 @@ If `density > 22.6 g/cm³` (osmium) or `density < 0.5 g/cm³` (below ice), rerol
 
 ---
 
+### QA-024
+
+**Title:** "In System" ships have no position — missing body index 1–N  
+**Area:** Engine — FR-030 Ships in the Area  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Open  
+**Date Opened:** 2026-04-14  
+**File(s):** `src/lib/shipsInArea.ts`, `src/types/index.ts`, `src/components/SystemViewer.tsx`, `src/lib/exportDocx.ts`
+
+**Description:**  
+Ships generated with location `"System"` (In System, 1D6 roll 3–4) currently have no further positional detail. A GM looking at the result sees "In System" with no indication of *where* in the system the ship is. This is not useful for encounter placement or scenario context.
+
+**Expected Behaviour:**  
+Ships with location `"System"` should additionally have a `systemPosition: number` — a random body index from 1 to *N*, where *N* is the total number of bodies in the planetary system (sum of all circumstellar disks + dwarf planets + terrestrial worlds + ice worlds + gas worlds from `system.planetarySystem`).
+
+Display as **"In System — Body *N*"** (e.g. "In System — Body 3").
+
+If the system has zero planetary bodies, treat the ship as `"Orbit"` instead.
+
+**Root Cause:**  
+`generateShipsInTheArea(weeklyTradeValue)` currently only receives `weeklyTradeValue`. It has no access to the planetary system body count. The function signature needs to accept `totalBodies: number` so it can roll the position.
+
+**Implementation:**
+
+**Step 1 — Update `src/types/index.ts`:**
+```typescript
+export interface ShipInArea {
+  name: string;
+  dt: number;
+  monthlyOperatingCost: number;
+  location: ShipLocation;
+  systemPosition?: number;   // ← add: body index 1–N, only set when location === 'System'
+  trafficPool: 'small' | 'civilian' | 'warship';
+}
+```
+
+**Step 2 — Update `src/lib/shipsInArea.ts`:**
+```typescript
+// Change function signature:
+export function generateShipsInTheArea(weeklyTradeValue: number, totalBodies: number): ShipsInAreaResult
+
+// In rollLocation(), pass totalBodies and return position:
+function rollLocationWithPosition(totalBodies: number): { location: ShipLocation; systemPosition?: number } {
+  const r = rollD6();
+  if (r <= 2) return { location: 'Orbit' };
+  if (r <= 4) {
+    if (totalBodies === 0) return { location: 'Orbit' };
+    const pos = Math.ceil(Math.random() * totalBodies);
+    return { location: 'System', systemPosition: pos };
+  }
+  return { location: 'Docked' };
+}
+```
+
+Then use `rollLocationWithPosition(totalBodies)` instead of `rollLocation()` when pushing each ship to results.
+
+**Step 3 — Update call site in `src/components/SystemViewer.tsx`:**
+```typescript
+// Calculate totalBodies from system.planetarySystem:
+const totalBodies =
+  (system.planetarySystem?.circumstellarDisks?.length ?? 0) +
+  (system.planetarySystem?.dwarfPlanets?.length ?? 0) +
+  (system.planetarySystem?.terrestrialWorlds?.length ?? 0) +
+  (system.planetarySystem?.iceWorlds?.length ?? 0) +
+  (system.planetarySystem?.gasWorlds?.length ?? 0);
+
+const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity, totalBodies);
+```
+
+**Step 4 — Update display in `SystemViewer.tsx`:**  
+For each ship with `location === 'System'`, show `"In System — Body ${ship.systemPosition}"` instead of just `"In System"`.
+
+**Step 5 — Update `src/lib/exportDocx.ts`:**  
+Include body index in the `.docx` export line for "In System" ships.
+
+**Verify:** Generate several systems. Confirm all "In System" ships show a body number between 1 and the total planetary body count. Confirm zero-body systems fall back to "In Orbit". Mark QA-024 ✅ Fixed.
+
+---
+
 ### QA-INV-001
 
 **Title:** Investigation — E/X port dominance: is the PSS formula excluding higher-class ports?  
@@ -1179,3 +1263,4 @@ Awaiting user approval of this proposal. Once approved, the above implementation
 | 1.13 | 2026-04-14 | Handoff block updated — 4 open tasks clarified for Kimi (QA-022, QA-018/FR-028, FR-029, FR-030); QA-023 flagged awaiting approval; ship traffic_pool field confirmed in JSON |
 | 1.14 | 2026-04-14 | QA-022: gravity/size physics validation implemented; QA-018: generator options persistence verified fixed; FR-029: Weekly 3D6 roll button implemented; FR-030: Ships in the Area generator implemented |
 | 1.15 | 2026-04-14 | Handoff block updated to reflect all tasks complete; traffic_pool short keys (`small`/`civilian`/`warship`) documented — aligned with shipsInArea.ts implementation; FRD and .md reference updated to match |
+| 1.16 | 2026-04-14 | QA-024: "In System" ships missing body position index — added spec; FRD §7.10 Step 5 updated with position roll and display format |
