@@ -809,7 +809,80 @@ interface TravelZoneResult {
 }
 ```
 
-### 7.10 Culture Table (D66 × D6)
+### 7.10 Ships in the Area (FR-030) *(📋 Open)*
+
+A dynamic ship-traffic generator tied to the Starport's **Weekly Trade Value**. This section is intended for GM convenience and appears in the `.docx` export, but it is **excluded from JSON backup** because it represents fluctuating week-to-week traffic.
+
+#### Step 1 — Ships Budget
+
+```
+Ships Budget = Weekly Trade Value × (1D6 × 10%)
+```
+
+Roll 1D6 and multiply by 10%. The result (10%–60%) is the portion of the week's trade value currently represented by ship operating costs in and around the starport.
+
+#### Step 2 — Category Distribution
+
+Roll 1D6 to divide the Ships Budget among three pools. Small Craft and Civilian ships should generally outnumber Warships.
+
+| 1D6 | Small Craft | Civilian | Warship |
+|-----|-------------|----------|---------|
+| 1 | 33% | 33% | 33% |
+| 2 | 50% | 40% | 10% |
+| 3 | 40% | 50% | 10% |
+| 4 | 60% | 30% | 10% |
+| 5 | 45% | 45% | 10% |
+| 6 | 50% | 30% | 20% |
+
+#### Step 3 — Ship Pools
+
+Ships are drawn from `mneme_ship_reference.json` (`/mneme_ship_reference.md`).
+
+| Pool | Categories | DT Rule |
+|------|------------|---------|
+| **Small Craft** | `Small Craft`, `Fighter` | ≤ 100 DT |
+| **Civilian** | `Merchant`, `Passenger`, `Specialized`, `Support` | Any |
+| **Warship** | `Military` | Any |
+
+**Monthly Operating Cost:** Use `monthly_operating_cost_cr` from the JSON reference. This value is set equal to `supplies_cr` (resupply / life-support / minor maintenance cost) for each hull.
+
+#### Step 4 — Generation Loop
+
+For each pool (Small Craft → Civilian → Warship):
+
+1. Set `Pool Budget = Ships Budget × distribution %`.
+2. Identify the cheapest ship in the pool (`min monthly_operating_cost_cr`).
+3. While `Pool Budget >= cheapest ship cost`:
+   - Roll a random ship from the pool.
+   - If the ship's monthly operating cost ≤ remaining `Pool Budget`:
+     - Subtract cost from `Pool Budget`.
+     - Roll 1D6 for location (see Step 5).
+     - Add ship to the results list.
+   - Otherwise, skip and continue (or stop if no ship in the pool is affordable).
+4. If `Pool Budget` falls below the cheapest ship in that pool, stop rolling for that category.
+
+> **Note:** The total generated value will be *near* but not necessarily exactly equal to the pool budget, because the final remainder may be smaller than the cheapest available hull.
+
+#### Step 5 — Location Roll
+
+For each generated ship, roll 1D6:
+
+| 1D6 | Location |
+|-----|----------|
+| 1–2 | **In Orbit** |
+| 3–4 | **In System** (patrolling, transiting, or at a Lagrange point) |
+| 5–6 | **Docked at Starport** |
+
+#### Step 6 — UI / Export Rules
+
+- Provide a **"Generate Ships in the Area"** button in the Starport card (next to the Weekly Activity roll button).
+- Display results grouped by location, showing ship name, count, and aggregated monthly operating cost.
+- Include the generated ship list in the `.docx` system export.
+- **Do not** persist the ship list in the JSON backup or Dexie database; regenerate on demand when the user clicks the button.
+
+---
+
+### 7.11 Culture Table (D66 × D6)
 
 | Function | Roll | Output |
 |----------|------|--------|
@@ -1404,3 +1477,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.5 | 2026-04-11 | FR-028: Generator options persistence — added section 10.3 specifying localStorage key `mneme_generator_options` for starClass, starGrade, mainWorldType, populated |
 | 1.6 | 2026-04-14 | Added culture trait reroll rule to section 7.10; updated REF-006 culture table notes |
 | 1.7 | 2026-04-14 | FR-029: Added Weekly Activity Roll Button spec to Section 7.8; QA-020/021 marked fixed |
+| 1.8 | 2026-04-14 | FR-030: Added Ships in the Area spec (Section 7.10); updated ship reference files with `monthly_operating_cost_cr` |
