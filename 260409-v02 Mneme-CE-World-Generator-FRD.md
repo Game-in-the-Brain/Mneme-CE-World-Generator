@@ -704,6 +704,17 @@ Weekly Activity = Weekly Base × 3D6
 
 3D6 (range 3–18, median 10–11) reflects week-to-week variation. The ÷364 divisor means average annual throughput ≈ 1.43× calculated trade — the transit multiplier (goods counted on arrival and departure, like real ports).
 
+#### Step 4 — Weekly Activity Roll Button (FR-029) *(📋 Open)*
+
+In the Starport UI card, provide a **Roll 3D6** button next to the Weekly Base value. When clicked:
+
+1. Roll 3D6 and display the individual die results.
+2. Calculate `Weekly Activity = Weekly Base × 3D6 result`.
+3. Display the final Weekly Activity value alongside the roll.
+4. Store the rolled result in the saved system state so it persists on reload.
+
+> **Rationale:** Weekly activity is meant to vary per week of in-game time. A manual roll button lets the GM randomise traffic on demand without regenerating the entire world.
+
 **Base class thresholds for Naval/Scout/Pirate bases are unchanged.**
 
 ### 7.9 Travel Zone
@@ -1392,3 +1403,4 @@ The following reference documents contain detailed tables and implementation not
 | 1.4 | 2026-04-10 | REF-007 v1.1 house rule applied (G=baseline, K=Dis+2, M=Dis+4); REF-013 tech level reference created; Section 7.1 expanded with full MTL table, CE TL, era names, key technologies; REF-013 added to reference index |
 | 1.5 | 2026-04-11 | FR-028: Generator options persistence — added section 10.3 specifying localStorage key `mneme_generator_options` for starClass, starGrade, mainWorldType, populated |
 | 1.6 | 2026-04-14 | Added culture trait reroll rule to section 7.10; updated REF-006 culture table notes |
+| 1.7 | 2026-04-14 | FR-029: Added Weekly Activity Roll Button spec to Section 7.8; QA-020/021 marked fixed |

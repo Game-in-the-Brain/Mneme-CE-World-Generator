@@ -23,69 +23,9 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 
 ### Your Two Open Tasks (priority order)
 
-#### Task 1 — QA-021 🔴 High: Source of Power / Culture trait contradiction filtering
+> **Note:** QA-020 and QA-021 were fixed in commit `0ceacc7c`.
 
-**File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`
-
-**Problem:** Kratocracy (rule by force) + Pacifist culture, and 6 other pairs, are logically contradictory. The generator currently allows all combinations.
-
-**Step 1 — Add the conflict map to `src/lib/worldData.ts`** (after the `SOURCE_OF_POWER_DESCRIPTIONS` block, around line 606):
-
-```typescript
-export const POWER_CULTURE_CONFLICTS: Record<PowerSource, string[]> = {
-  'Kratocracy':  ['Pacifist', 'Egalitarian', 'Legalistic'],
-  'Democracy':   ['Anarchist'],
-  'Aristocracy': ['Egalitarian'],
-  'Meritocracy': ['Caste system'],
-  'Ideocracy':   ['Anarchist', 'Libertarian'],
-};
-```
-
-**Step 2 — Update `generateCultureTraits()` in `src/lib/worldData.ts`** to accept an `exclude: string[]` parameter:
-
-```typescript
-export function generateCultureTraits(count: number = 1, exclude: string[] = []): string[] {
-  const traits: string[] = [];
-  for (let i = 0; i < count; i++) {
-    let trait: string | undefined;
-    let attempts = 0;
-    while (attempts < 20) {
-      const roll1 = Math.floor(Math.random() * 6);
-      const roll2 = Math.floor(Math.random() * 6);
-      const roll3 = Math.floor(Math.random() * 6);
-      const row = roll1 + roll2;
-      const col = roll3;
-      const candidate = CULTURE_TRAITS[Math.min(5, row)]?.[col];
-      if (candidate && !traits.includes(candidate) && !exclude.includes(candidate)) {
-        trait = candidate;
-        break;
-      }
-      attempts++;
-    }
-    if (trait) traits.push(trait);
-  }
-  return traits;
-}
-```
-
-This also fixes QA-020 (duplicate trait reroll) — `!traits.includes(candidate)` is already in the check.
-
-**Step 3 — Update `src/lib/generator.ts`** where culture traits are generated. Find the call to `generateCultureTraits` and pass the conflict list:
-
-```typescript
-// Import at top of file (already imported generateCultureTraits — add POWER_CULTURE_CONFLICTS)
-import { ..., POWER_CULTURE_CONFLICTS } from './worldData';
-
-// When generating traits:
-const cultureExclude = POWER_CULTURE_CONFLICTS[powerSource] ?? [];
-const cultureTraits = generateCultureTraits(traitCount, cultureExclude);
-```
-
-**Verify:** Enable debug mode, generate 50 worlds. Confirm no Kratocracy+Pacifist, Kratocracy+Egalitarian, Democracy+Anarchist, or Aristocracy+Egalitarian combinations appear. Update QA-021 with results, mark ✅ Fixed.
-
----
-
-#### Task 2 — QA-022 🟠 Medium: Main world gravity must not exceed physical limits for its size
+#### Task 1 — QA-022 🟠 Medium: Main world gravity must not exceed physical limits for its size
 
 **File(s):** `src/lib/generator.ts` (main world generation, around line 208)
 
@@ -132,17 +72,25 @@ while (attempts < 10) {
 
 ---
 
-### After Both Tasks
+#### Task 2 — QA-023 🟠 Medium: Replace gravity tables with density tables + mass-derived gravity
+
+**File(s):** `src/lib/generator.ts`, `src/lib/worldData.ts`
+
+**Status:** 📋 **Proposed — awaiting approval**
+
+See [QA-023](#qa-023) for the full spec. Do **not** implement without explicit user approval.
+
+---
+
+### After Completing Open Tasks
 
 ```bash
 cd /home/justin/opencode260220/Mneme-CE-World-Generator
 npm run build    # must pass with zero errors
-git add src/lib/worldData.ts src/lib/generator.ts QA.md
-git commit -m "fix(engine): QA-021 power/culture conflict filter + QA-022 gravity/size physics validation (Neil Lucock)"
+git add -A
+git commit -m "fix(engine): <describe fix>"
 git push origin main
 ```
-
-Update QA-021 and QA-022 status to ✅ Fixed in QA.md. Add version 1.12 to Document History.
 
 ### Key Files
 
@@ -184,8 +132,8 @@ Update QA-021 and QA-022 status to ✅ Fixed in QA.md. Add version 1.12 to Docum
 | [QA-017](#qa-017) | Engine | Habitats sized by largest body mass in system | 🟡 Low | ✅ Fixed |
 | [QA-018](#qa-018) | UI | Generator options reset on every navigation — last-used settings not preserved | 🟠 Medium | 📋 Open |
 | [QA-019](#qa-019) | Engine | Starport PSS v1.1 — replace PVS formula with GDP-based PSS + TL capability cap | 🔴 High | ✅ Fixed |
-| [QA-020](#qa-020) | Engine — Culture Generation | Culture traits should reroll opposing or duplicate results | 🟠 Medium | 📋 Open |
-| [QA-021](#qa-021) | Engine — Inhabitants | Source of Power and Culture traits can generate contradictory combinations | 🔴 High | 📋 Open |
+| [QA-020](#qa-020) | Engine — Culture Generation | Culture traits should reroll opposing or duplicate results | 🟠 Medium | ✅ Fixed |
+| [QA-021](#qa-021) | Engine — Inhabitants | Source of Power and Culture traits can generate contradictory combinations | 🔴 High | ✅ Fixed |
 | [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | 📋 Open |
 | [QA-023](#qa-023) | Engine — World Physics | Replace gravity tables with density tables + mass-derived gravity | 🟠 Medium | 📋 **Proposed — awaiting approval** |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
@@ -707,8 +655,9 @@ CSV export format needed a formal specification.
 **Title:** Culture traits should reroll opposing or duplicate results  
 **Area:** Engine — Culture Generation  
 **Priority:** 🟠 Medium  
-**Status:** 📋 **Spec complete — implementation pending**  
+**Status:** ✅ Fixed  
 **Date Opened:** 2026-04-14  
+**Date Fixed:** 2026-04-14  
 **File(s):** `src/lib/worldData.ts`, `src/lib/generator.ts`
 
 **Description:**  
@@ -1272,3 +1221,4 @@ Awaiting user approval of this proposal. Once approved, the above implementation
 | 1.9 | 2026-04-13 | QA-019: Starport PSS v1.1 — GDP-based Port Size Score + TL capability cap + 3D6 weekly activity; population formula updated to TLmod lookup table |
 | 1.10 | 2026-04-14 | Added QA-020: Culture traits reroll rule for opposing/duplicate results |
 | 1.11 | 2026-04-14 | Added QA-021: Source of Power / Culture trait contradictions (Neil Lucock); QA-022: Main world gravity/size inconsistency (Neil Lucock); QA-INV-001: E/X port dominance investigation — no bug |
+| 1.12 | 2026-04-14 | QA-020: Culture trait opposing/duplicate reroll implemented; QA-021: Power/culture conflict filter implemented (Neil Lucock) |
