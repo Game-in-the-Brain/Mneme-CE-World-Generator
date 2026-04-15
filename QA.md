@@ -96,6 +96,8 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | [QA-031](#qa-031) | UI — Stars | Star color displayed as raw hex — needs human-readable name | 🟠 Medium | 🔴 Open |
 | [QA-032](#qa-032) | Engine — World Physics | 427 km world showing 0.18G — floor density may still be off post QA-023 | 🟠 Medium | 🔴 Open |
 | [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | 📋 Proposed |
+| [QA-035](#qa-035) | UI — 2D Map | Main world missing from 2D map — buildSceneGraph never adds it (only marks) | 🔴 High | 🔴 Open |
+| [QA-036](#qa-036) | UI — Planetary System Tab | Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one | 🟠 Medium | 🔴 Open |
 | [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | 📋 Proposed |
 
 ---
@@ -1780,6 +1782,7 @@ Justin: "the loops just generates thousands until it hits the targets — it's t
 | 1.19 | 2026-04-15 | QA-023 implemented: mass+density physics pipeline, Option B gravity-derived habitability, monotonic terrestrial table; @ts-expect-error cleanup; build verified |
 | 1.20 | 2026-04-15 | FR-031 Phase 0 scaffolded: 2D map monorepo entry point, Vite multi-page config, Canvas RAF skeleton, procedural starfield PRNG, dataAdapter for INTRAS Level 1; build verified |
 | 1.21 | 2026-04-15 | Added QA-027–QA-032 (Neil Lucock feedback: income display, wealth contradiction, anarchy dominance, X-port ship count, star hex color, small-world gravity floor); FR-032 (income redesign) and FR-033 (goal-loop generation) proposed by Justin; QA-025/026 added to index table |
+| 1.23 | 2026-04-15 | QA-035: main world missing from 2D map (dataAdapter fallback never adds); QA-036: total body count and ships totalBodies exclude main world |
 | 1.22 | 2026-04-15 | FR-031 Phases 2–5 completed: camera interactions, animation hardening, starfield polish, disk point-field rendering, label/off-screen culling; QA-033 added for Map button URL resolution spec review |
 
 ---
