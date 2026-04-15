@@ -37,7 +37,9 @@ export function initRenderer(state: AppState): () => void {
   (state as unknown as Record<string, () => void>).initCamera = initCamera;
 
   function loop(now: number) {
-    const dt = (now - state.lastFrameTime) / 1000;
+    // Cap dt to prevent huge jumps when the tab regains focus after being backgrounded
+    const rawDt = (now - state.lastFrameTime) / 1000;
+    const dt = Math.min(rawDt, 0.1);
     state.lastFrameTime = now;
 
     if (state.isPlaying) {

@@ -1420,6 +1420,7 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 | Phase 0 | Foundation — Vite entry point, blank canvas, RAF loop | ✅ Complete |
 | Phase 1 | The Path — Base64 query-string payload, View System Map button, dataAdapter, static circle render | ✅ Complete |
 | Phase 2 | Orbits & Camera — logarithmic scale, orbit rings, zoom, pan, touch gestures, reset view | ✅ Complete |
+| Phase 3 | Animation & Time Controls — RAF angle updates, play/pause/reverse, dt cap, date display pulse | ✅ Complete |
 | Phase 2 | Orbits & Camera — logarithmic scale, zoom, pan, touch gestures | 📋 Pending |
 | Phase 3 | Animation & Time — play/pause, speed, reverse, day stepping | 📋 Pending |
 | Phase 4 | Procedural Starfield — seeded PRNG background, seed UI | 📋 Pending |
@@ -1455,6 +1456,14 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 - Orbit rings draw correctly under camera transforms
 - Logarithmic distance scaling keeps inner and outer bodies visible simultaneously
 
+**Phase 3 Completion Details:**
+- Orbital angles advance from `simDayOffset` in the RAF loop using Kepler's 3rd Law periods
+- Reverse playback flips the time direction multiplier
+- `dt` is capped at 0.1s to prevent background-tab time jumps
+- Step buttons (+1d, -7d, etc.) automatically pause playback before stepping
+- Date display uses direct timestamp math (reliable for large positive/negative offsets)
+- Date display shows a blue pulse glow when the simulation is running
+
 **MVP Design Constraints:**
 - Everything is a circle (stars, planets, disks)
 - Default epoch: `2300-01-01` CE
@@ -1463,7 +1472,6 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 - No rings, no moons (INTRAS Level 2), no true barycentres in MVP
 
 **Open Tasks:**
-- Phase 3: Confirm time controls smoothly advance orbital angles at all speeds
 - Phase 4: Starfield resize regeneration and optional nebula clouds
 - Phase 5: Mobile performance hardening, label culling, disk point-field rendering
 - Phase 6: Long-term 3D option once Solar-System-3D matures

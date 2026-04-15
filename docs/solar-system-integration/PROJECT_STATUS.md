@@ -109,6 +109,13 @@ We deliberately left behind every architectural limitation of the original:
 - "Reset View" button and double-tap restore default fit
 - Camera uses persistent state (no longer auto-fitted every frame)
 
+### Phase 3 — Animation Hardening ✅
+- Orbital angles advance correctly from `simDayOffset` in the RAF loop
+- Reverse playback orbits planets backward
+- Step buttons pause playback, then jump exactly 1 or 7 days
+- `dt` capped at 0.1s to prevent background-tab jumps
+- Date display shows blue pulse glow while playing; uses robust timestamp math for large offsets
+
 ### Documentation Preserved ✅
 - Created `solar-system-2d/docs/repoAnalysis.md` — contextualised AI-first analysis of the original Lovely repo
 - Created `solar-system-2d/docs/HowthisWorks.md` — human-centric architecture guide for the MWG port

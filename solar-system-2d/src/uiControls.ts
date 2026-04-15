@@ -20,12 +20,14 @@ export function initUIControls(state: AppState, onResetView?: () => void): void 
 
   function updateDateDisplay() {
     if (!dateDisplay) return;
-    const date = new Date(state.epochDate.getTime());
-    date.setUTCDate(date.getUTCDate() + Math.floor(state.simDayOffset));
+    const msPerDay = 86400000;
+    const totalMs = state.epochDate.getTime() + state.simDayOffset * msPerDay;
+    const date = new Date(totalMs);
     const y = date.getUTCFullYear();
     const m = String(date.getUTCMonth() + 1).padStart(2, '0');
     const d = String(date.getUTCDate()).padStart(2, '0');
     dateDisplay.textContent = `${y}-${m}-${d}`;
+    dateDisplay.classList.toggle('playing', state.isPlaying);
   }
 
   function updatePlayPause() {
@@ -73,6 +75,8 @@ export function initUIControls(state: AppState, onResetView?: () => void): void 
   if (btnStepMinus7) {
     btnStepMinus7.addEventListener('click', () => {
       state.simDayOffset -= 7;
+      state.isPlaying = false;
+      updatePlayPause();
       updateDateDisplay();
     });
   }
@@ -80,6 +84,8 @@ export function initUIControls(state: AppState, onResetView?: () => void): void 
   if (btnStepMinus1) {
     btnStepMinus1.addEventListener('click', () => {
       state.simDayOffset -= 1;
+      state.isPlaying = false;
+      updatePlayPause();
       updateDateDisplay();
     });
   }
@@ -87,6 +93,8 @@ export function initUIControls(state: AppState, onResetView?: () => void): void 
   if (btnStepPlus1) {
     btnStepPlus1.addEventListener('click', () => {
       state.simDayOffset += 1;
+      state.isPlaying = false;
+      updatePlayPause();
       updateDateDisplay();
     });
   }
@@ -94,6 +102,8 @@ export function initUIControls(state: AppState, onResetView?: () => void): void 
   if (btnStepPlus7) {
     btnStepPlus7.addEventListener('click', () => {
       state.simDayOffset += 7;
+      state.isPlaying = false;
+      updatePlayPause();
       updateDateDisplay();
     });
   }

@@ -351,14 +351,17 @@ Where `scaledRadius` comes from the logarithmic distance mapping.
 ### Phase 3 — Animation & Time Controls
 **Goal:** Planets move.
 
-- [ ] Integrate angle calculation into the `requestAnimationFrame` loop.
-- [ ] Render bodies at their animated positions.
-- [ ] Add Play/Pause button.
-- [ ] Add speed slider (0.25x → 365x).
-- [ ] Add Reverse toggle.
-- [ ] Add Step +1 / -1 / +7 / -7 Day buttons.
-- [ ] Add Reset to `2300-01-01` button.
-- [ ] Display current simulated date (`YYYY-MM-DD`).
+- [x] Integrate angle calculation into the `requestAnimationFrame` loop.
+- [x] Render bodies at their animated positions.
+- [x] Add Play/Pause button.
+- [x] Add speed slider (0.25x → 365x).
+- [x] Add Reverse toggle.
+- [x] Add Step +1 / -1 / +7 / -7 Day buttons.
+- [x] Add Reset to `2300-01-01` button.
+- [x] Display current simulated date (`YYYY-MM-DD`).
+- [x] Cap `dt` in the RAF loop to prevent background-tab time jumps.
+- [x] Add visual play-state indicator (blue pulse on date display).
+- [x] Step buttons pause playback before stepping.
 
 **Acceptance:** Press Play → planets orbit smoothly at 1 day/sec. Press Reverse → they orbit backward.
 
