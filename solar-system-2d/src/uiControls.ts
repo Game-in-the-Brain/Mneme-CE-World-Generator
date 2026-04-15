@@ -1,6 +1,6 @@
 import type { AppState } from './types';
 
-export function initUIControls(state: AppState): void {
+export function initUIControls(state: AppState, onResetView?: () => void): void {
   const btnPlay = document.getElementById('btn-play') as HTMLButtonElement | null;
   const btnPause = document.getElementById('btn-pause') as HTMLButtonElement | null;
   const btnReverse = document.getElementById('btn-reverse') as HTMLButtonElement | null;
@@ -10,6 +10,7 @@ export function initUIControls(state: AppState): void {
   const btnStepPlus1 = document.getElementById('btn-step-plus-1') as HTMLButtonElement | null;
   const btnStepPlus7 = document.getElementById('btn-step-plus-7') as HTMLButtonElement | null;
   const btnReset = document.getElementById('btn-reset') as HTMLButtonElement | null;
+  const btnResetView = document.getElementById('btn-reset-view') as HTMLButtonElement | null;
   const dateDisplay = document.getElementById('date-display') as HTMLElement | null;
   const seedDisplay = document.getElementById('seed-display') as HTMLInputElement | null;
   const btnSeedRegen = document.getElementById('btn-seed-regen') as HTMLButtonElement | null;
@@ -101,6 +102,12 @@ export function initUIControls(state: AppState): void {
     btnReset.addEventListener('click', () => {
       state.simDayOffset = 0;
       updateDateDisplay();
+    });
+  }
+
+  if (btnResetView) {
+    btnResetView.addEventListener('click', () => {
+      onResetView?.();
     });
   }
 

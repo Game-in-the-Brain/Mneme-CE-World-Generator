@@ -134,7 +134,7 @@ All bodies are filled circles with a 1px stroke.
 |----------|--------|------|--------|-------|
 | **Primary Star** | Largest circle | Spectral-class colour | White 1px | `Class+Grade` (e.g. `G2`) |
 | **Companion Star** | Medium circle | Spectral-class colour | White 1px | `Class+Grade` |
-| **Circumstellar Disk** | Dashed ring | Brown/grey `#8B7355` | Same | `Disk` |
+| **Circumstellar Disk** | Scattered point ring (backlog) | Brown/grey `#8B7355` | Same | `Disk` |
 | **Dwarf Planet** | Small circle | Grey `#9CA3AF` | Dark grey | `Dwarf` |
 | **Terrestrial World** | Small circle | Green/brown `#4ADE80` / `#A16207` | Dark green | `Terrestrial` |
 | **Ice World** | Small circle | Cyan/white `#22D3EE` | Dark cyan | `Ice` |
@@ -174,6 +174,26 @@ All bodies are filled circles with a 1px stroke.
 - **INTRAS Level 2** — no moons, no child bodies orbiting planets. Only INTRAS Level 1 (stars, disks, planets).
 - **True barycentric orbits** — companion stars are static/fixed-angle for now.
 - **Brachistochrone trajectory lines** — UI exists in backlog (FR-031).
+
+### 5.5 Disk Rendering Backlog Specification
+**Status:** Backlog — to be implemented in Phase 5+ (Polish).
+
+**Requirement:** Circumstellar disks must **not** be rendered as simple dashed rings in the final visualiser. Instead, each disk should be drawn as a **scattered high-density point field** (noise) arranged along its orbital ring.
+
+**Visual specification:**
+- Each disk consists of **300–800 tiny points** (0.5–1.5 px radius) distributed along its orbital circumference.
+- Point density is **radially constrained** to a narrow band (e.g., ±3–5% of the orbital radius) so it reads as a disk rather than a smear.
+- Angular placement is **randomly jittered** around the full 360°.
+- Opacity varies per point (20%–70%) to create texture and depth.
+- Multiple disks in the same system must be visually distinct from one another and from the background starfield. This is achieved by:
+  - Using a slightly warmer/browner colour palette than background stars (`#8B7355`, `#A0522D`, `#CD853F`)
+  - Higher point density along a narrow orbital track
+  - Larger average point size than background stars
+- Disk points are **static** (do not orbit individually) but rotate with the disk's orbital period as a whole if animated.
+
+**Rationale:** A dashed ring looks like a wireframe diagram. A scattered point ring looks like an actual debris/asteroid belt and provides the gritty, realistic aesthetic appropriate for a referee aid.
+
+**Seeding:** Disk point distributions are derived from the `starfieldSeed` + disk index so the same system always renders the same disk shape.
 
 ---
 
@@ -315,13 +335,14 @@ Where `scaledRadius` comes from the logarithmic distance mapping.
 ### Phase 2 — Orbits & Camera
 **Goal:** The map looks like a solar system diagram.
 
-- [ ] Implement `orbitMath.ts`:
+- [x] Implement `orbitMath.ts`:
   - Logarithmic distance scaling.
   - Period calculation from `distanceAU`.
-- [ ] Draw orbit rings for every body.
-- [ ] Implement `camera.ts` with pan and zoom transforms.
-- [ ] Wire mouse wheel zoom and drag pan.
-- [ ] Add touch pinch-zoom and two-finger pan.
+- [x] Draw orbit rings for every body.
+- [x] Implement `camera.ts` with pan and zoom transforms.
+- [x] Wire mouse wheel zoom and drag pan.
+- [x] Add touch pinch-zoom and two-finger pan.
+- [x] Add "Reset View" button and double-tap-to-reset.
 
 **Acceptance:** User can zoom into the inner system and pan to see outer gas giants clearly.
 

@@ -1,6 +1,6 @@
-import type { AppState, SceneBody } from './types';
+import type { AppState } from './types';
 import { generateStarfield, drawStarfield } from './starfield';
-import { worldToScreen, logScaleDistance } from './camera';
+import { worldToScreen, logScaleDistance, resetCamera } from './camera';
 
 export function resizeCanvas(state: AppState): void {
   if (!state.canvas) return;
@@ -16,16 +16,25 @@ export function resizeCanvas(state: AppState): void {
   }
 }
 
-export function initRenderer(state: AppState): void {
+export function initRenderer(state: AppState): () => void {
   let rafId = 0;
   let starfield = generateStarfield(state.starfieldSeed, state.width, state.height);
+  let cameraInitialized = false;
 
   function updateStarfield() {
     starfield = generateStarfield(state.starfieldSeed, state.width, state.height);
   }
 
+  function initCamera() {
+    if (cameraInitialized) return;
+    const maxAU = state.bodies.length > 0 ? Math.max(...state.bodies.map((b) => b.distanceAU)) : 1;
+    resetCamera(state.camera, state.width, state.height, maxAU);
+    cameraInitialized = true;
+  }
+
   // Expose update function on state so UI can trigger it
   (state as unknown as Record<string, () => void>).updateStarfield = updateStarfield;
+  (state as unknown as Record<string, () => void>).initCamera = initCamera;
 
   function loop(now: number) {
     const dt = (now - state.lastFrameTime) / 1000;
@@ -36,6 +45,7 @@ export function initRenderer(state: AppState): void {
       state.simDayOffset += dt * state.speed * direction;
     }
 
+    initCamera();
     draw(state, starfield);
     rafId = requestAnimationFrame(loop);
   }
@@ -46,6 +56,10 @@ export function initRenderer(state: AppState): void {
   window.addEventListener('beforeunload', () => {
     cancelAnimationFrame(rafId);
   });
+
+  return () => {
+    cancelAnimationFrame(rafId);
+  };
 }
 
 function draw(state: AppState, starfield: ReturnType<typeof generateStarfield>): void {
@@ -62,13 +76,6 @@ function draw(state: AppState, starfield: ReturnType<typeof generateStarfield>):
   const cx = width / 2;
   const cy = height / 2;
 
-  // Auto-fit zoom so the outermost body is visible with padding
-  const maxAU = bodies.length > 0 ? Math.max(...bodies.map((b) => b.distanceAU)) : 1;
-  const targetZoom = Math.min(width, height) / (logScaleDistance(maxAU, 80) * 2.5);
-  camera.zoom = targetZoom > 0 ? targetZoom : 1;
-  camera.x = 0;
-  camera.y = 0;
-
   // Orbits
   ctx.strokeStyle = 'rgba(255,255,255,0.12)';
   ctx.lineWidth = 1;
@@ -76,7 +83,7 @@ function draw(state: AppState, starfield: ReturnType<typeof generateStarfield>):
     if (body.distanceAU <= 0) continue;
     const r = logScaleDistance(body.distanceAU, 80) * camera.zoom;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(cx - camera.x * camera.zoom, cy - camera.y * camera.zoom, r, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -88,7 +95,7 @@ function draw(state: AppState, starfield: ReturnType<typeof generateStarfield>):
 
 function drawBody(
   ctx: CanvasRenderingContext2D,
-  body: SceneBody,
+  body: import('./types').SceneBody,
   camera: { x: number; y: number; zoom: number },
   cx: number,
   cy: number,
@@ -97,11 +104,9 @@ function drawBody(
   const period = body.periodDays;
   const angle = body.angle + (period > 0 ? (2 * Math.PI * simDayOffset) / period : 0);
   const distPx = logScaleDistance(body.distanceAU, 80) * camera.zoom;
-  const pos = worldToScreen({ x: Math.cos(angle) * body.distanceAU, y: Math.sin(angle) * body.distanceAU }, camera, cx, cy);
-  // Override position to use the logarithmic orbit ring visually
   const visualPos = {
-    x: cx + Math.cos(angle) * distPx,
-    y: cy + Math.sin(angle) * distPx,
+    x: cx + Math.cos(angle) * distPx - camera.x * camera.zoom,
+    y: cy + Math.sin(angle) * distPx - camera.y * camera.zoom,
   };
 
   ctx.save();

@@ -1419,6 +1419,7 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 |-------|------|--------|
 | Phase 0 | Foundation — Vite entry point, blank canvas, RAF loop | ✅ Complete |
 | Phase 1 | The Path — Base64 query-string payload, View System Map button, dataAdapter, static circle render | ✅ Complete |
+| Phase 2 | Orbits & Camera — logarithmic scale, orbit rings, zoom, pan, touch gestures, reset view | ✅ Complete |
 | Phase 2 | Orbits & Camera — logarithmic scale, zoom, pan, touch gestures | 📋 Pending |
 | Phase 3 | Animation & Time — play/pause, speed, reverse, day stepping | 📋 Pending |
 | Phase 4 | Procedural Starfield — seeded PRNG background, seed UI | 📋 Pending |
@@ -1447,6 +1448,13 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 - Renderer draws static circles, orbit rings, labels, and seeded starfield background
 - Main world highlighted with gold stroke and "MAIN" label
 
+**Phase 2 Completion Details:**
+- `camera.ts` supports zoom-to-point (mouse wheel centred on cursor) and pan-by-pixel
+- `input.ts` handles mouse drag, mouse wheel zoom, touch pinch-zoom, and touch pan
+- Double-tap and "Reset View" button snap camera back to default fit
+- Orbit rings draw correctly under camera transforms
+- Logarithmic distance scaling keeps inner and outer bodies visible simultaneously
+
 **MVP Design Constraints:**
 - Everything is a circle (stars, planets, disks)
 - Default epoch: `2300-01-01` CE
@@ -1455,10 +1463,10 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 - No rings, no moons (INTRAS Level 2), no true barycentres in MVP
 
 **Open Tasks:**
-- Phase 2: Add mouse wheel zoom + drag pan
-- Phase 2: Add touch pinch-zoom + two-finger pan
-- Phase 3: Wire time controls into orbital angle updates (already in RAF loop, needs testing)
-- Phase 5: Mobile performance hardening and label culling
+- Phase 3: Confirm time controls smoothly advance orbital angles at all speeds
+- Phase 4: Starfield resize regeneration and optional nebula clouds
+- Phase 5: Mobile performance hardening, label culling, disk point-field rendering
+- Phase 6: Long-term 3D option once Solar-System-3D matures
 
 ---
 

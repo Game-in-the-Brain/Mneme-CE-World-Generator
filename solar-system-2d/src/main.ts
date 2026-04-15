@@ -2,6 +2,8 @@ import type { AppState, MapPayload } from './types';
 import { initRenderer, resizeCanvas } from './renderer';
 import { initUIControls } from './uiControls';
 import { buildSceneGraph } from './dataAdapter';
+import { initInputHandlers } from './input';
+import { resetCamera } from './camera';
 
 function decodeMapPayload(search: string): MapPayload | null {
   const params = new URLSearchParams(search);
@@ -76,7 +78,16 @@ function main() {
   resizeCanvas(state);
   window.addEventListener('resize', () => resizeCanvas(state));
 
-  initUIControls(state);
+  const maxAU = state.bodies.length > 0 ? Math.max(...state.bodies.map((b) => b.distanceAU)) : 1;
+  resetCamera(state.camera, state.width, state.height, maxAU);
+
+  const resetView = () => {
+    resetCamera(state.camera, state.width, state.height, maxAU);
+    (state as unknown as Record<string, () => void>).initCamera?.();
+  };
+
+  initUIControls(state, resetView);
+  initInputHandlers(state, resetView);
   initRenderer(state);
 }
 
