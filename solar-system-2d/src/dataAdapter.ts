@@ -182,17 +182,38 @@ export function buildSceneGraph(system: StarSystem): SceneBody[] {
     });
   });
 
-  // Main world (if it hasn't matched above, add it explicitly)
+  // Main world — mark existing body or add explicitly (QA-035)
+  // mainWorld is generated independently and is never in the body arrays,
+  // so the fallback always needs to add it as a new body.
   if (system.mainWorld) {
+    const mw = system.mainWorld;
     const existing = bodies.find(
       (b) =>
-        b.distanceAU === system.mainWorld!.distanceAU &&
+        b.distanceAU === mw.distanceAU &&
         (b.type === 'terrestrial' || b.type === 'ice' || b.type === 'dwarf')
     );
     if (existing) {
       existing.isMainWorld = true;
       existing.label = '★ MAIN';
-      existing.strokeColour = '#FACC15'; // gold
+      existing.strokeColour = '#FACC15';
+    } else {
+      const type: BodyType =
+        mw.type === 'Dwarf' ? 'dwarf'
+        : mw.type === 'Ice World' ? 'ice'
+        : 'terrestrial';
+      bodies.push({
+        id: 'main-world',
+        type,
+        label: '★ MAIN',
+        distanceAU: mw.distanceAU,
+        mass: mw.massEM,
+        radiusPx: massToRadiusPx(mw.massEM, type),
+        colour: BODY_COLOURS[type].fill,
+        strokeColour: '#FACC15',
+        angle: hashToFloat(baseHash + '-main-world') * Math.PI * 2,
+        periodDays: calculatePeriodDays(mw.distanceAU),
+        isMainWorld: true,
+      });
     }
   }
 
