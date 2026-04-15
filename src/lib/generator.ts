@@ -20,7 +20,7 @@ import {
   getWealth, getPowerStructure, getDevelopment, getSourceOfPower,
   getGovernanceDM, calculateStarport, rollForBase, determineTravelZone,
   generateCultureTraits, POWER_CULTURE_CONFLICTS, getBodyCount, getGasWorldClass, calculateWorldPosition,
-  getWorldTypeRoll, getHabitatSize
+  getWorldTypeRoll, getHabitatSize, calculateDepressionPenalty
 } from './worldData';
 import { calculatePhysicalProperties } from './physicalProperties';
 
@@ -55,7 +55,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
   const mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
 
   // Generate inhabitants
-  const inhabitants = generateInhabitants(mainWorld, opts.populated);
+  const inhabitants = generateInhabitants(mainWorld, opts.populated, opts.depressionPenaltyTiming);
 
   return {
     id,
@@ -321,7 +321,11 @@ function generateMainWorld(
 // Inhabitant Generation
 // =====================
 
-function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabitants {
+function generateInhabitants(
+  mainWorld: MainWorld,
+  populated: boolean,
+  depressionPenaltyTiming: 'before-starport' | 'after-starport' = 'before-starport'
+): Inhabitants {
   if (!populated) {
     return {
       populated: false,
@@ -377,8 +381,26 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
 
   const governance = getGovernanceDM(devResult.level, wealth);
 
+  const penalty = calculateDepressionPenalty(population, devResult.level);
+  const effectiveTL = Math.max(0, techLevel - penalty);
+
   const weeklyRoll = roll3D6().value;
-  const starportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll);
+
+  // QA-026: option to apply depression penalty before or after starport calculation
+  let starportTL = techLevel;
+  if (depressionPenaltyTiming === 'before-starport') {
+    starportTL = effectiveTL;
+  }
+
+  let starportResult = calculateStarport(population, starportTL, wealth, devResult.level, weeklyRoll);
+  let foundingStarportResult = starportResult;
+
+  // If after-starport: calculate with founding TL first, then recalculate with effective TL
+  if (depressionPenaltyTiming === 'after-starport' && effectiveTL !== techLevel) {
+    foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll);
+    starportResult = calculateStarport(population, effectiveTL, wealth, devResult.level, weeklyRoll);
+  }
+
   const starport = {
     class: starportResult.class,
     pss: starportResult.pss,
@@ -390,9 +412,12 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
     hasNavalBase: rollForBase(starportResult.class, 'naval'),
     hasScoutBase: rollForBase(starportResult.class, 'scout'),
     hasPirateBase: rollForBase(starportResult.class, 'pirate'),
+    foundingClass: foundingStarportResult.class,
+    foundingPSS: foundingStarportResult.pss,
+    foundingRawClass: foundingStarportResult.rawClass,
   };
 
-  const zoneResult = determineTravelZone(mainWorld.hazard, mainWorld.hazardIntensity);
+  const zoneResult = determineTravelZone(mainWorld.hazard, mainWorld.hazardIntensity, effectiveTL);
 
   const cultureExclude = POWER_CULTURE_CONFLICTS[sourceOfPower] ?? [];
   const cultureTraits = generateCultureTraits(2, cultureExclude);
@@ -401,6 +426,8 @@ function generateInhabitants(mainWorld: MainWorld, populated: boolean): Inhabita
     populated: true,
     habitatType,
     techLevel,
+    foundingTL: techLevel,
+    effectiveTL,
     population,
     wealth,
     powerStructure,

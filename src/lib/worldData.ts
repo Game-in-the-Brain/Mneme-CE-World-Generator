@@ -576,17 +576,37 @@ export function rollForBase(starportClass: StarportClass, baseType: 'naval' | 's
 }
 
 // =====================
+// Depression Penalty (QA-026)
+// =====================
+
+export function calculateDepressionPenalty(population: number, development: DevelopmentLevel): number {
+  let penalty = 0;
+  if (population < 1_000_000) penalty += 1;
+  if (population < 100_000) penalty += 1;
+  if (population < 10_000) penalty += 1;
+  if (development === 'UnderDeveloped' || development === 'Developing') penalty += 1;
+  return penalty;
+}
+
+// =====================
 // Travel Zone
 // =====================
 
-export function determineTravelZone(hazard: HazardType, intensity: HazardIntensityType): { zone: TravelZone; reason?: string } {
+export function determineTravelZone(
+  hazard: HazardType,
+  intensity: HazardIntensityType,
+  effectiveTL?: number
+): { zone: TravelZone; reason?: string } {
   // High Biohazard or Radioactive = Automatic Amber Zone
   if (hazard === 'Radioactive' || (hazard === 'Biohazard' && intensity === 'High')) {
     return { zone: 'Amber', reason: `High ${hazard}` };
   }
-  
+
   // Otherwise roll 2D6, on 2 = Amber Zone
   const roll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+  let zone: TravelZone = 'Green';
+  let reason: string | undefined;
+
   if (roll === 2) {
     const reasons = [
       'Civil unrest',
@@ -596,10 +616,22 @@ export function determineTravelZone(hazard: HazardType, intensity: HazardIntensi
       'Trade restrictions',
       'Military activity'
     ];
-    return { zone: 'Amber', reason: reasons[Math.floor(Math.random() * reasons.length)] };
+    zone = 'Amber';
+    reason = reasons[Math.floor(Math.random() * reasons.length)];
   }
-  
-  return { zone: 'Green' };
+
+  // QA-026: low effectiveTL forces Amber/Red zones
+  if (effectiveTL !== undefined) {
+    if (effectiveTL < 9) {
+      zone = 'Red';
+      reason = 'Depressed technology base (TL < 9)';
+    } else if (effectiveTL < 10 && zone === 'Green') {
+      zone = 'Amber';
+      reason = 'Marginal technology base (TL < 10)';
+    }
+  }
+
+  return { zone, reason };
 }
 
 // =====================

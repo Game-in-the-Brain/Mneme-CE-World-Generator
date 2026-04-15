@@ -107,6 +107,10 @@ export interface Starport {
   hasNavalBase: boolean;
   hasScoutBase: boolean;
   hasPirateBase: boolean;
+  // QA-026 after-starport: founding starport metrics before depression penalty
+  foundingClass?: StarportClass;
+  foundingPSS?: number;
+  foundingRawClass?: StarportClass;
 }
 
 // FR-030: Ships in the Area
@@ -134,6 +138,8 @@ export interface Inhabitants {
   populated?: boolean;      // false = unpopulated world; undefined treated as true
   habitatType?: string;     // set when Hab ≤ 0 and populated — inhabitants live in artificial habitat
   techLevel: number;
+  foundingTL?: number;      // QA-026: original TL before depression penalty
+  effectiveTL?: number;     // QA-026: TL after depression penalty
   population: number;
   wealth: WealthLevel;
   powerStructure: PowerStructure;
@@ -218,6 +224,7 @@ export interface GeneratorOptions {
   starGrade: StellarGrade | 'random';
   mainWorldType: WorldType | 'random';
   populated: boolean;
+  depressionPenaltyTiming?: 'before-starport' | 'after-starport';
 }
 
 export type BodyAnnotations = Record<string, { name: string; notes: string }>;

@@ -239,7 +239,14 @@ function OverviewTab({ system }: { system: StarSystem }) {
           Inhabitants
         </h3>
         <div className="space-y-2">
-          <DataRow label="Tech Level"  value={`TL ${system.inhabitants.techLevel}`} />
+          <DataRow
+            label="Tech Level"
+            value={
+              system.inhabitants.effectiveTL !== undefined && system.inhabitants.effectiveTL !== system.inhabitants.techLevel
+                ? `TL ${system.inhabitants.effectiveTL} (founded at TL ${system.inhabitants.foundingTL ?? system.inhabitants.techLevel})`
+                : `TL ${system.inhabitants.techLevel}`
+            }
+          />
           <DataRow label="Population"  value={formatPopulation(system.inhabitants.population)} />
           <DataRow label="Wealth"      value={system.inhabitants.wealth} />
           <DataRow label="Government"  value={`${system.inhabitants.powerStructure} (${system.inhabitants.sourceOfPower})`} />
@@ -252,7 +259,14 @@ function OverviewTab({ system }: { system: StarSystem }) {
           Starport & Travel
         </h3>
         <div className="space-y-2">
-          <DataRow label="Starport"    value={`Class ${system.inhabitants.starport.class}`} />
+          <DataRow
+            label="Starport"
+            value={
+              system.inhabitants.starport.foundingClass && system.inhabitants.starport.foundingClass !== system.inhabitants.starport.class
+                ? `Class ${system.inhabitants.starport.class} (founded Class ${system.inhabitants.starport.foundingClass})`
+                : `Class ${system.inhabitants.starport.class}`
+            }
+          />
           <DataRow label="This week"   value={formatCredits(system.inhabitants.starport.weeklyActivity)} />
           <DataRow label="Bases"       value={[
             system.inhabitants.starport.hasNavalBase  && 'Naval',
@@ -478,7 +492,7 @@ function CultureTraitCard({ trait }: { trait: string }) {
   );
 }
 
-function TechLevelCard({ tl }: { tl: number }) {
+function TechLevelCard({ tl, foundingTL }: { tl: number; foundingTL?: number }) {
   const [expanded, setExpanded] = useState(false);
   const entry = TL_TABLE[tl];
 
@@ -486,6 +500,11 @@ function TechLevelCard({ tl }: { tl: number }) {
     return (
       <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
         <span className="font-bold text-lg" style={{ color: 'var(--accent-red)' }}>MTL {tl}</span>
+        {foundingTL !== undefined && foundingTL !== tl && (
+          <span className="ml-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            (depressed from founding TL {foundingTL})
+          </span>
+        )}
       </div>
     );
   }
@@ -507,6 +526,12 @@ function TechLevelCard({ tl }: { tl: number }) {
             CE TL {entry.ceTL}
           </span>
           <span className="text-sm font-semibold">{entry.eraName}</span>
+          {foundingTL !== undefined && foundingTL !== tl && (
+            <span className="text-xs px-2 py-0.5 rounded"
+                  style={{ backgroundColor: 'var(--warning, #ff9800)', color: '#000' }}>
+              Depressed from TL {foundingTL}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
           <span className="text-xs">{entry.ceYear}</span>
@@ -627,7 +652,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Demographics</h3>
 
-        <TechLevelCard tl={inhabitants.techLevel} />
+        <TechLevelCard tl={inhabitants.effectiveTL ?? inhabitants.techLevel} foundingTL={inhabitants.foundingTL} />
 
         {/* Population — prominent */}
         <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
@@ -711,8 +736,22 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Starport</h3>
         <div className="space-y-2">
-          <DataRow label="Class"      value={`Class ${inhabitants.starport.class}`} />
-          <DataRow label="PSS"        value={`${inhabitants.starport.pss} (raw ${inhabitants.starport.rawClass}, TL cap ${inhabitants.starport.tlCap})`} />
+          <DataRow
+            label="Class"
+            value={
+              inhabitants.starport.foundingClass && inhabitants.starport.foundingClass !== inhabitants.starport.class
+                ? `Class ${inhabitants.starport.class} (founded Class ${inhabitants.starport.foundingClass})`
+                : `Class ${inhabitants.starport.class}`
+            }
+          />
+          <DataRow
+            label="PSS"
+            value={
+              inhabitants.starport.foundingPSS !== undefined && inhabitants.starport.foundingPSS !== inhabitants.starport.pss
+                ? `${inhabitants.starport.pss} (founded ${inhabitants.starport.foundingPSS}) (raw ${inhabitants.starport.rawClass}, TL cap ${inhabitants.starport.tlCap})`
+                : `${inhabitants.starport.pss} (raw ${inhabitants.starport.rawClass}, TL cap ${inhabitants.starport.tlCap})`
+            }
+          />
           <DataRow
             label="Bases"
             value={[
