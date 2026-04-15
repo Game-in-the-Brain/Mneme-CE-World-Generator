@@ -188,7 +188,21 @@ MWG React App (Vite)
 
 ---
 
-## 7. Developer Quick Reference
+## 7. Design Clarification — Companion Star Systems
+
+**How MWG handles companion stars today:**
+- Each companion star in the `StarSystem` JSON has its own **Generate** button in the MWG UI.
+- When that button is clicked, MWG generates a new planetary system using the **companion star's stats** (its stellar class, mass, and luminosity) as the effective primary.
+- However, the resulting `StarSystem` JSON still preserves the original hierarchy: the companion star remains a child of the true primary star, and the system key (master key) reflects this parent-child relationship.
+
+**Implication for the 2D map:**
+- The 2D map currently always centres the camera on the **primary star** (`star-primary`) and renders companions at their `orbitDistance`.
+- In a future enhancement, if the map is opened from a companion-star generation context, it should be able to **re-centre on that companion star** and treat it as the system origin for planetary orbits.
+- This is a backlog item tied to true multi-star / barycentric support (Phase 6 / post-MVP).
+
+---
+
+## 8. Developer Quick Reference
 
 **Start dev server (serves both apps):**
 ```bash
