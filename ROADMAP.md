@@ -54,6 +54,11 @@ Give players and referees a visual, interactive representation of the generated 
 - Logarithmic distance scaling so inner and outer zones fit on one screen.
 - Responsive: works on phone (pinch-zoom, pan) and desktop (mouse drag, scroll zoom).
 
+### Pre-Implementation Analysis
+- [**repoAnalysis.md**](./docs/solar-system-integration/repoAnalysis.md) — AI-first structural analysis of 5 candidate open-source solar-system visualisation repositories.
+- [**HowthisWorks.md**](./docs/solar-system-integration/HowthisWorks.md) — Human-centric architecture walkthrough of the chosen 2D engine.
+- [**FRD.md**](./docs/solar-system-integration/FRD.md) — Detailed feature requirements for the MWG-connected 2D starmap fork, including platform, performance, data ingestion, and comparative scoring of all 5 candidates.
+
 ---
 
 ## 🟡 FR-032 — System Name Generator
