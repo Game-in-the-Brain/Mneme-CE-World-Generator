@@ -130,7 +130,8 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
               };
               const json = JSON.stringify(payload);
               const encoded = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
-              window.open(`${window.location.origin}${import.meta.env.BASE_URL}solar-system-2d/?system=${encoded}`, '_blank');
+              const url = new URL(`solar-system-2d/?system=${encoded}`, window.location.href);
+              window.open(url.toString(), '_blank');
             }}
             className="btn-primary flex items-center gap-2"
             title="Open 2D system map"
