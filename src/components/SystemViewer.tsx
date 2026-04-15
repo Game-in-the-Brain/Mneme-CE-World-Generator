@@ -674,7 +674,8 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
       (system.dwarfPlanets?.length ?? 0) +
       (system.terrestrialWorlds?.length ?? 0) +
       (system.iceWorlds?.length ?? 0) +
-      (system.gasWorlds?.length ?? 0);
+      (system.gasWorlds?.length ?? 0) +
+      (system.mainWorld ? 1 : 0); // QA-036: main world is independent, must be counted
     const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity, totalBodies);
     setShipsResult(result);
   }
@@ -969,7 +970,8 @@ function PlanetarySystemTab({
     system.dwarfPlanets.length +
     system.terrestrialWorlds.length +
     system.iceWorlds.length +
-    system.gasWorlds.length;
+    system.gasWorlds.length +
+    (system.mainWorld ? 1 : 0); // QA-036: main world is independent, must be counted
 
   // QA-008: Ice Worlds label (typeLabel uses "Ice Worlds" not "Ice")
   type BodyWithExtras = PlanetaryBody & { 
