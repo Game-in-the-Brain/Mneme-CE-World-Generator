@@ -56,6 +56,17 @@ export const STAR_COLORS: Record<StellarClass, string> = {
   M: '#ff8a65',
 };
 
+// QA-031: Simplified human-readable stellar spectrum names
+export const STAR_COLOR_NAMES: Record<StellarClass, string> = {
+  O: 'Blue-White',
+  B: 'Pale Blue',
+  A: 'White',
+  F: 'Yellow-White',
+  G: 'Yellow',
+  K: 'Orange',
+  M: 'Orange-Red',
+};
+
 export const STAR_DESCRIPTIONS: Record<StellarClass, string> = {
   O: 'Hottest, most massive',
   B: 'Very hot, very massive',
