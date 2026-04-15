@@ -1,6 +1,7 @@
-import type { SceneBody, BodyType } from './types';
+import type { SceneBody, BodyType, DiskPoint } from './types';
 import type { StarSystem } from '../../src/types/index';
 import { calculatePeriodDays, hashToFloat } from './orbitMath';
+import { mulberry32 } from './starfield';
 
 const SPECTRAL_COLOURS: Record<string, string> = {
   O: '#A5C8FF',
@@ -84,6 +85,7 @@ export function buildSceneGraph(system: StarSystem): SceneBody[] {
   // Circumstellar disks
   system.circumstellarDisks?.forEach((disk, idx) => {
     const angle = hashToFloat(baseHash + `-disk-${idx}`) * Math.PI * 2;
+    const diskSeed = `${baseHash}-disk-${idx}`;
     bodies.push({
       id: `disk-${idx}`,
       type: 'disk',
@@ -96,6 +98,7 @@ export function buildSceneGraph(system: StarSystem): SceneBody[] {
       angle,
       periodDays: calculatePeriodDays(disk.distanceAU),
       isMainWorld: false,
+      diskPoints: generateDiskPoints(diskSeed),
     });
   });
 
@@ -199,4 +202,21 @@ export function buildSceneGraph(system: StarSystem): SceneBody[] {
 function toRoman(n: number): string {
   const map: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V' };
   return map[n] || String(n);
+}
+
+const DISK_COLOURS = ['#8B7355', '#A0522D', '#CD853F'];
+
+function generateDiskPoints(seed: string): DiskPoint[] {
+  const rng = mulberry32(seed);
+  const count = 300 + Math.floor(rng() * 500); // 300–800 points
+  const points: DiskPoint[] = [];
+  for (let i = 0; i < count; i++) {
+    points.push({
+      angle: rng() * Math.PI * 2,
+      radiusOffset: (rng() - 0.5) * 0.08, // ±4% radial jitter (as fraction of orbit radius)
+      opacity: 0.2 + rng() * 0.5,
+      size: 0.8 + rng() * 0.9,
+    });
+  }
+  return points;
 }

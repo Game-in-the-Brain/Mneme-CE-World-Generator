@@ -384,10 +384,11 @@ Where `scaledRadius` comes from the logarithmic distance mapping.
 ### Phase 5 — Polish & Device Hardening
 **Goal:** Production-ready on phone, tablet, and desktop.
 
-- [ ] Add body labels that stay readable at all zoom levels.
-- [ ] Highlight main world with gold stroke.
-- [ ] Optimise renderer: only redraw changed frames, cull off-screen bodies.
-- [ ] Ensure 60 fps on a 3-year-old phone at 1x speed.
+- [x] Add body labels that stay readable at all zoom levels.
+- [x] Highlight main world with gold stroke.
+- [x] Optimise renderer: cull off-screen bodies; cull labels at extreme zoom levels.
+- [x] Implement disk point-field rendering (scattered high-density orbital noise).
+- [ ] Ensure 60 fps on a 3-year-old phone at 1x speed. *(Requires physical device testing)*
 - [ ] Add loading state while deserialising large systems.
 - [ ] Add "Copy Link" button that copies the full map URL.
 

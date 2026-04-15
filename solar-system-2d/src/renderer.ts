@@ -1,6 +1,6 @@
-import type { AppState } from './types';
+import type { AppState, SceneBody } from './types';
 import { generateStarfield, drawStarfield, generateNebula, drawNebula } from './starfield';
-import { worldToScreen, logScaleDistance, resetCamera } from './camera';
+import { logScaleDistance, resetCamera } from './camera';
 
 export function resizeCanvas(state: AppState): void {
   if (!state.canvas) return;
@@ -50,7 +50,7 @@ export function initRenderer(state: AppState): () => void {
     }
 
     initCamera();
-    draw(state, starfield);
+    draw(state, starfield, nebulas);
     rafId = requestAnimationFrame(loop);
   }
 
@@ -66,7 +66,11 @@ export function initRenderer(state: AppState): () => void {
   };
 }
 
-function draw(state: AppState, starfield: ReturnType<typeof generateStarfield>): void {
+function draw(
+  state: AppState,
+  starfield: ReturnType<typeof generateStarfield>,
+  nebulas: ReturnType<typeof generateNebula>
+): void {
   const { ctx, width, height, bodies, camera, simDayOffset } = state;
   if (!ctx) return;
 
@@ -96,17 +100,21 @@ function draw(state: AppState, starfield: ReturnType<typeof generateStarfield>):
 
   // Bodies
   for (const body of bodies) {
-    drawBody(ctx, body, camera, cx, cy, simDayOffset);
+    drawBody(ctx, body, camera, cx, cy, simDayOffset, width, height);
   }
 }
 
+const DISK_COLOURS = ['#8B7355', '#A0522D', '#CD853F'];
+
 function drawBody(
   ctx: CanvasRenderingContext2D,
-  body: import('./types').SceneBody,
+  body: SceneBody,
   camera: { x: number; y: number; zoom: number },
   cx: number,
   cy: number,
-  simDayOffset: number
+  simDayOffset: number,
+  width: number,
+  height: number
 ): void {
   const period = body.periodDays;
   const angle = body.angle + (period > 0 ? (2 * Math.PI * simDayOffset) / period : 0);
@@ -116,17 +124,47 @@ function drawBody(
     y: cy + Math.sin(angle) * distPx - camera.y * camera.zoom,
   };
 
+  // Simple off-screen culling for non-disk bodies (with a 20px margin)
+  if (body.type !== 'disk') {
+    const margin = 20;
+    if (
+      visualPos.x < -margin ||
+      visualPos.x > width + margin ||
+      visualPos.y < -margin ||
+      visualPos.y > height + margin
+    ) {
+      return;
+    }
+  }
+
   ctx.save();
 
   // Draw body
   if (body.type === 'disk') {
-    ctx.strokeStyle = body.strokeColour;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.arc(visualPos.x, visualPos.y, body.radiusPx, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    if (body.diskPoints && body.diskPoints.length > 0) {
+      const colour = DISK_COLOURS[body.id.length % DISK_COLOURS.length];
+      ctx.fillStyle = colour;
+      for (const pt of body.diskPoints) {
+        const ptAngle = angle + pt.angle;
+        const ptRadius = distPx + distPx * pt.radiusOffset;
+        const x = cx + Math.cos(ptAngle) * ptRadius - camera.x * camera.zoom;
+        const y = cy + Math.sin(ptAngle) * ptRadius - camera.y * camera.zoom;
+        ctx.globalAlpha = pt.opacity;
+        ctx.beginPath();
+        ctx.arc(x, y, pt.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      // Fallback to dashed ring if no points generated
+      ctx.strokeStyle = body.strokeColour;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(visualPos.x, visualPos.y, body.radiusPx, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   } else {
     ctx.fillStyle = body.colour;
     ctx.strokeStyle = body.strokeColour;
@@ -137,11 +175,19 @@ function drawBody(
     ctx.stroke();
   }
 
-  // Label
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.font = '11px system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(body.label, visualPos.x, visualPos.y + body.radiusPx + 12);
+  // Label culling: only draw labels for important bodies at very low zoom
+  const shouldDrawLabel =
+    body.isMainWorld ||
+    body.type.startsWith('star') ||
+    body.type === 'disk' ||
+    camera.zoom >= 0.35;
+
+  if (shouldDrawLabel) {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(body.label, visualPos.x, visualPos.y + body.radiusPx + 12);
+  }
 
   ctx.restore();
 }

@@ -31,6 +31,13 @@ export type BodyType =
   | 'gas-iv'
   | 'gas-v';
 
+export interface DiskPoint {
+  angle: number; // radians offset from disk's orbital angle
+  radiusOffset: number; // px offset from disk's orbital radius
+  opacity: number;
+  size: number;
+}
+
 export interface SceneBody {
   id: string;
   type: BodyType;
@@ -44,6 +51,7 @@ export interface SceneBody {
   periodDays: number;
   isMainWorld: boolean;
   orbitDelta?: number; // visual nudge if needed
+  diskPoints?: DiskPoint[];
 }
 
 export interface CameraState {

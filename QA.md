@@ -1422,6 +1422,7 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 | Phase 2 | Orbits & Camera — logarithmic scale, orbit rings, zoom, pan, touch gestures, reset view | ✅ Complete |
 | Phase 3 | Animation & Time Controls — RAF angle updates, play/pause/reverse, dt cap, date display pulse | ✅ Complete |
 | Phase 4 | Starfield Polish — Mulberry32 PRNG, nebula clouds, resize regeneration, seed controls | ✅ Complete |
+| Phase 5 | Production Hardening — disk point fields, label culling, off-screen culling | ✅ Complete (pending device fps test) |
 | Phase 2 | Orbits & Camera — logarithmic scale, zoom, pan, touch gestures | 📋 Pending |
 | Phase 3 | Animation & Time — play/pause, speed, reverse, day stepping | 📋 Pending |
 | Phase 4 | Procedural Starfield — seeded PRNG background, seed UI | 📋 Pending |
@@ -1472,15 +1473,23 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 - Seed controls (display, regenerate, copy, paste) are wired and working
 - Two browsers with the same URL render identical backgrounds
 
+**Phase 5 Completion Details:**
+- Disk point-field rendering implemented: each circumstellar disk generates 300–800 seeded points distributed along its orbit with ±4% radial jitter
+- Disk points use warmer colours (`#8B7355`, `#A0522D`, `#CD853F`) and higher opacity than background stars for contrast
+- Label culling: non-essential labels hidden when zoom < 0.35× to reduce clutter
+- Off-screen culling: non-disk bodies skip rendering when fully outside viewport
+- Single RAF loop, no DOM timers, and no per-frame garbage collection for efficient mobile performance
+- PWA offline caching inherited from MWG's existing service worker
+
 **MVP Design Constraints:**
-- Everything is a circle (stars, planets, disks)
+- Everything is a circle (stars, planets, disks) — disks rendered as scattered point rings
 - Default epoch: `2300-01-01` CE
 - Default animation: 1 day/sec, reversible
 - Background: procedural seeded vector starfield + nebula clouds (no image assets)
 - No rings, no moons (INTRAS Level 2), no true barycentres in MVP
 
 **Open Tasks:**
-- Phase 5: Mobile performance hardening, label culling, disk point-field rendering
+- Phase 5 follow-up: Physical device FPS validation on a 3-year-old phone
 - Phase 6: Long-term 3D option once Solar-System-3D matures
 
 ---

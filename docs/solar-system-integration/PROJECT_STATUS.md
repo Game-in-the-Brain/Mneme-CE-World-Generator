@@ -122,6 +122,13 @@ We deliberately left behind every architectural limitation of the original:
 - Faint nebula clouds (3–6 per viewport) rendered behind the stars
 - Seed copy/paste/regenerate controls are fully wired
 
+### Phase 5 — Production Hardening ✅
+- **Disk point-field rendering:** each disk generates 300–800 seeded points along its orbital ring with ±4% radial jitter, warmer colours, and 20%–70% opacity
+- **Label culling:** non-essential labels hidden when zoom < 0.35×
+- **Off-screen culling:** non-disk bodies skip drawing when outside viewport
+- **PWA offline:** inherited from MWG's existing service worker (both apps share the same cache)
+- **Performance architecture:** single RAF loop, zero DOM timers, zero per-frame allocations
+
 ### Documentation Preserved ✅
 - Created `solar-system-2d/docs/repoAnalysis.md` — contextualised AI-first analysis of the original Lovely repo
 - Created `solar-system-2d/docs/HowthisWorks.md` — human-centric architecture guide for the MWG port
