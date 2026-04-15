@@ -76,7 +76,10 @@ function main() {
   }
 
   resizeCanvas(state);
-  window.addEventListener('resize', () => resizeCanvas(state));
+  window.addEventListener('resize', () => {
+    resizeCanvas(state);
+    (state as unknown as Record<string, () => void>).updateStarfield?.();
+  });
 
   const maxAU = state.bodies.length > 0 ? Math.max(...state.bodies.map((b) => b.distanceAU)) : 1;
   resetCamera(state.camera, state.width, state.height, maxAU);

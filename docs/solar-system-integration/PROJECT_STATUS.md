@@ -116,6 +116,12 @@ We deliberately left behind every architectural limitation of the original:
 - `dt` capped at 0.1s to prevent background-tab jumps
 - Date display shows blue pulse glow while playing; uses robust timestamp math for large offsets
 
+### Phase 4 — Starfield Polish ✅
+- Mulberry32 PRNG generates 200–400 vector stars from the 8-character seed
+- Starfield regenerates automatically on canvas resize without changing the seed
+- Faint nebula clouds (3–6 per viewport) rendered behind the stars
+- Seed copy/paste/regenerate controls are fully wired
+
 ### Documentation Preserved ✅
 - Created `solar-system-2d/docs/repoAnalysis.md` — contextualised AI-first analysis of the original Lovely repo
 - Created `solar-system-2d/docs/HowthisWorks.md` — human-centric architecture guide for the MWG port

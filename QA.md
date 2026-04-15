@@ -1421,6 +1421,7 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 | Phase 1 | The Path — Base64 query-string payload, View System Map button, dataAdapter, static circle render | ✅ Complete |
 | Phase 2 | Orbits & Camera — logarithmic scale, orbit rings, zoom, pan, touch gestures, reset view | ✅ Complete |
 | Phase 3 | Animation & Time Controls — RAF angle updates, play/pause/reverse, dt cap, date display pulse | ✅ Complete |
+| Phase 4 | Starfield Polish — Mulberry32 PRNG, nebula clouds, resize regeneration, seed controls | ✅ Complete |
 | Phase 2 | Orbits & Camera — logarithmic scale, zoom, pan, touch gestures | 📋 Pending |
 | Phase 3 | Animation & Time — play/pause, speed, reverse, day stepping | 📋 Pending |
 | Phase 4 | Procedural Starfield — seeded PRNG background, seed UI | 📋 Pending |
@@ -1464,15 +1465,21 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 - Date display uses direct timestamp math (reliable for large positive/negative offsets)
 - Date display shows a blue pulse glow when the simulation is running
 
+**Phase 4 Completion Details:**
+- `starfield.ts` uses Mulberry32 deterministic PRNG seeded from the system payload
+- Starfield regenerates automatically on canvas resize without changing the seed
+- Optional faint nebula clouds generated behind stars (3–6 per viewport, violet/indigo/blue/pink)
+- Seed controls (display, regenerate, copy, paste) are wired and working
+- Two browsers with the same URL render identical backgrounds
+
 **MVP Design Constraints:**
 - Everything is a circle (stars, planets, disks)
 - Default epoch: `2300-01-01` CE
 - Default animation: 1 day/sec, reversible
-- Background: procedural seeded vector starfield (no image assets)
+- Background: procedural seeded vector starfield + nebula clouds (no image assets)
 - No rings, no moons (INTRAS Level 2), no true barycentres in MVP
 
 **Open Tasks:**
-- Phase 4: Starfield resize regeneration and optional nebula clouds
 - Phase 5: Mobile performance hardening, label culling, disk point-field rendering
 - Phase 6: Long-term 3D option once Solar-System-3D matures
 

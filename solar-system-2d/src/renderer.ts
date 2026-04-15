@@ -1,5 +1,5 @@
 import type { AppState } from './types';
-import { generateStarfield, drawStarfield } from './starfield';
+import { generateStarfield, drawStarfield, generateNebula, drawNebula } from './starfield';
 import { worldToScreen, logScaleDistance, resetCamera } from './camera';
 
 export function resizeCanvas(state: AppState): void {
@@ -19,10 +19,12 @@ export function resizeCanvas(state: AppState): void {
 export function initRenderer(state: AppState): () => void {
   let rafId = 0;
   let starfield = generateStarfield(state.starfieldSeed, state.width, state.height);
+  let nebulas = generateNebula(state.starfieldSeed, state.width, state.height);
   let cameraInitialized = false;
 
   function updateStarfield() {
     starfield = generateStarfield(state.starfieldSeed, state.width, state.height);
+    nebulas = generateNebula(state.starfieldSeed, state.width, state.height);
   }
 
   function initCamera() {
@@ -71,6 +73,9 @@ function draw(state: AppState, starfield: ReturnType<typeof generateStarfield>):
   // Clear background
   ctx.fillStyle = '#0a0a0f';
   ctx.fillRect(0, 0, width, height);
+
+  // Nebula (behind stars)
+  drawNebula(ctx, nebulas);
 
   // Starfield
   drawStarfield(ctx, starfield);

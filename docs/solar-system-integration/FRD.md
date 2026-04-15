@@ -370,11 +370,12 @@ Where `scaledRadius` comes from the logarithmic distance mapping.
 ### Phase 4 — Procedural Starfield
 **Goal:** The background is alive and shareable.
 
-- [ ] Implement `starfield.ts` with a seeded PRNG (Mulberry32).
-- [ ] Generate 200–400 vector stars on the background canvas layer.
-- [ ] Generate the `starfieldSeed` in MWG when the map button is pressed.
-- [ ] Add UI controls: Seed display, Regenerate, Copy, Paste.
-- [ ] Ensure starfield redraws on canvas resize without changing the seed.
+- [x] Implement `starfield.ts` with a seeded PRNG (Mulberry32).
+- [x] Generate 200–400 vector stars on the background canvas layer.
+- [x] Generate the `starfieldSeed` in MWG when the map button is pressed.
+- [x] Add UI controls: Seed display, Regenerate, Copy, Paste.
+- [x] Ensure starfield redraws on canvas resize without changing the seed.
+- [x] Add optional faint nebula clouds behind the starfield (seeded, 3–6 per viewport).
 
 **Acceptance:** Two browsers with the same URL see identical backgrounds. Pasting a different seed changes only the background.
 

@@ -30,7 +30,16 @@ export interface Star {
   colour: string;
 }
 
+export interface Nebula {
+  x: number;
+  y: number;
+  radius: number;
+  colour: string;
+  opacity: number;
+}
+
 const STAR_COLOURS = ['#ffffff', '#dbeafe', '#fef3c7'];
+const NEBULA_COLOURS = ['#4c1d95', '#312e81', '#1e3a8a', '#831843']; // violet, indigo, blue, pink
 
 /**
  * Generate a seeded starfield for a given viewport size.
@@ -51,6 +60,45 @@ export function generateStarfield(seed: string, width: number, height: number, d
   }
 
   return stars;
+}
+
+/**
+ * Generate faint nebula clouds for a given viewport size.
+ */
+export function generateNebula(seed: string, width: number, height: number): Nebula[] {
+  const rng = mulberry32(`${seed}-nebula`);
+  const count = 3 + Math.floor(rng() * 4); // 3–6 clouds
+  const nebulas: Nebula[] = [];
+
+  for (let i = 0; i < count; i++) {
+    nebulas.push({
+      x: rng() * width,
+      y: rng() * height,
+      radius: 100 + rng() * 300,
+      colour: NEBULA_COLOURS[Math.floor(rng() * NEBULA_COLOURS.length)],
+      opacity: 0.03 + rng() * 0.05,
+    });
+  }
+
+  return nebulas;
+}
+
+/**
+ * Draw nebula clouds onto the canvas.
+ */
+export function drawNebula(ctx: CanvasRenderingContext2D, nebulas: Nebula[]): void {
+  ctx.save();
+  for (const n of nebulas) {
+    const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius);
+    g.addColorStop(0, n.colour);
+    g.addColorStop(1, 'transparent');
+    ctx.globalAlpha = n.opacity;
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 /**
