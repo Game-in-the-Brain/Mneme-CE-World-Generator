@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult, ShipLocation } from '../types';
 import { exportToDocx } from '../lib/exportDocx';
-import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileJson, FileSpreadsheet, FileText, Map as MapIcon, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
 import {
   CULTURE_TRAIT_DESCRIPTIONS,
@@ -30,6 +30,15 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'inhabitants', label: 'Inhabitants',      icon: <Users size={16} /> },
   { id: 'system',      label: 'Planetary System', icon: <Building size={16} /> },
 ];
+
+function generateSeed(length = 8): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 
 // QA-010: Single-page anchor tabs — each section is always rendered;
 // tab buttons scroll to the corresponding section.
@@ -111,6 +120,23 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <button onClick={handleExportDocx} className="btn-secondary flex items-center gap-2">
             <FileText size={16} />
             DOCX
+          </button>
+          <button
+            onClick={() => {
+              const payload = {
+                starSystem: system,
+                starfieldSeed: generateSeed(),
+                epoch: { year: 2300, month: 1, day: 1 },
+              };
+              const json = JSON.stringify(payload);
+              const encoded = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
+              window.open(`${window.location.origin}${import.meta.env.BASE_URL}solar-system-2d/?system=${encoded}`, '_blank');
+            }}
+            className="btn-primary flex items-center gap-2"
+            title="Open 2D system map"
+          >
+            <MapIcon size={16} />
+            Map
           </button>
         </div>
       </div>

@@ -36,6 +36,14 @@ const gitVersion = getGitVersion()
 // https://vite.dev/config/
 export default defineConfig({
   base: '/Mneme-CE-World-Generator/',
+  build: {
+    rollupOptions: {
+      input: {
+        main: './index.html',
+        'solar-system-2d': './solar-system-2d/index.html',
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),

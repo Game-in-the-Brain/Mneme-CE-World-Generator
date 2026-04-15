@@ -33,6 +33,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | FR-030 | ✅ Fixed | `src/lib/shipsInArea.ts`, wired to UI + `.docx` export |
 | **QA-023** | ✅ Fixed | Mass + density pipeline — Option B. worldData.ts, generator.ts, types/index.ts |
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
+| **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — Phase 0 scaffold complete; Phase 1 Path & button pending |
 
 
 ### Key Files
@@ -84,6 +85,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | [QA-022](#qa-022) | Engine — World Physics | Main world gravity and size are independent rolls — can be physically impossible | 🟠 Medium | ✅ Fixed |
 | [QA-023](#qa-023) | Engine — World Physics | Mass + density pipeline implemented — Option B (gravity-derived habitability) | 🟠 Medium | ✅ Fixed |
 | [QA-024](#qa-024) | Engine — FR-030 Ships | "In System" ships have no position — missing body index 1–N | 🟠 Medium | ✅ Fixed |
+| [FR-031](#fr-031) | Feature — 2D Map | 2D Animated Planetary System Map (MWG integrated monorepo build) | 🟠 Medium | 🟡 In Progress |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
 
 ---
@@ -1396,6 +1398,70 @@ The QA-023 draft assumes Option A, but both options need to be evaluated before 
 
 ---
 
+### FR-031
+
+**Title:** 2D Animated Planetary System Map — MWG Integrated Monorepo Build  
+**Area:** Feature — Visualisation  
+**Priority:** 🟠 Medium  
+**Status:** 🟡 In Progress  
+**Date Opened:** 2026-04-15  
+**File(s):** `vite.config.ts`, `solar-system-2d/index.html`, `solar-system-2d/src/*.ts`, `src/components/SystemViewer.tsx`
+
+**Description:**  
+Deliver a one-tap visual star-system map inside MWG. When a referee generates a `StarSystem`, a "View System Map" button opens a responsive, animated 2D canvas map of that system. All visual data is derived from the already-generated MWG state. The 2D map does not generate new astronomical data; it is a pure visualiser.
+
+**Integration Model:**  
+Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT a submodule or fork. This ensures `npm run dev` serves both apps and `npm run build` emits both to `dist/`.
+
+**Phase Breakdown:**
+
+| Phase | Goal | Status |
+|-------|------|--------|
+| Phase 0 | Foundation — Vite entry point, blank canvas, RAF loop | ✅ Complete |
+| Phase 1 | The Path — Base64 query-string payload, View System Map button, dataAdapter, static circle render | ✅ Complete |
+| Phase 2 | Orbits & Camera — logarithmic scale, zoom, pan, touch gestures | 📋 Pending |
+| Phase 3 | Animation & Time — play/pause, speed, reverse, day stepping | 📋 Pending |
+| Phase 4 | Procedural Starfield — seeded PRNG background, seed UI | 📋 Pending |
+| Phase 5 | Polish — labels, main-world highlight, mobile optimisation | 📋 Pending |
+| Phase 6 | Backlog — body tooltips, Brachistochrone, retrograde orbits, rings, moons | 📋 Future |
+
+**Phase 0 Completion Details:**
+- `vite.config.ts` updated with `rollupOptions.input` for `solar-system-2d/index.html`
+- `solar-system-2d/index.html` created with full-screen canvas and control overlay
+- TypeScript scaffold created:
+  - `main.ts` — bootstrap, payload decode, canvas init
+  - `renderer.ts` — `requestAnimationFrame` loop skeleton
+  - `camera.ts` — pan/zoom transform math
+  - `orbitMath.ts` — Kepler period, angle offset, hash-to-float
+  - `starfield.ts` — Mulberry32 PRNG, procedural star generation
+  - `dataAdapter.ts` — `StarSystem` → `SceneBody` mapper (INTRAS Level 1)
+  - `uiControls.ts` — play/pause, speed, reverse, step, seed controls
+  - `types.ts` — shared types
+  - `styles.css` — space theme, glassmorphism controls
+- `npm run build` passes with zero errors; `dist/solar-system-2d/` emitted correctly
+
+**Phase 1 Completion Details:**
+- "View System Map" button added to `SystemViewer.tsx` (primary-styled, opens in new tab)
+- Unicode-safe Base64 payload encoding/decoding implemented end-to-end
+- `dataAdapter.ts` maps full `StarSystem` to typed `SceneBody` graph
+- Renderer draws static circles, orbit rings, labels, and seeded starfield background
+- Main world highlighted with gold stroke and "MAIN" label
+
+**MVP Design Constraints:**
+- Everything is a circle (stars, planets, disks)
+- Default epoch: `2300-01-01` CE
+- Default animation: 1 day/sec, reversible
+- Background: procedural seeded vector starfield (no image assets)
+- No rings, no moons (INTRAS Level 2), no true barycentres in MVP
+
+**Open Tasks:**
+- Phase 2: Add mouse wheel zoom + drag pan
+- Phase 2: Add touch pinch-zoom + two-finger pan
+- Phase 3: Wire time controls into orbital angle updates (already in RAF loop, needs testing)
+- Phase 5: Mobile performance hardening and label culling
+
+---
+
 ## Document History
 
 | Version | Date | Changes |
@@ -1420,6 +1486,7 @@ The QA-023 draft assumes Option A, but both options need to be evaluated before 
 | 1.17 | 2026-04-14 | QA-024 implemented: systemPosition field on ShipInArea; shipsInArea.ts accepts totalBodies; display shows "In System — Body N" grouped per body; docx export updated |
 | 1.18 | 2026-04-14 | QA-023 preliminary analysis added: gravity matrices for all mass × density combinations; REF-013 DeepSeek analysis brief created; Option A vs Option B design question documented |
 | 1.19 | 2026-04-15 | QA-023 implemented: mass+density physics pipeline, Option B gravity-derived habitability, monotonic terrestrial table; @ts-expect-error cleanup; build verified |
+| 1.20 | 2026-04-15 | FR-031 Phase 0 scaffolded: 2D map monorepo entry point, Vite multi-page config, Canvas RAF skeleton, procedural starfield PRNG, dataAdapter for INTRAS Level 1; build verified |
 
 ---
 
