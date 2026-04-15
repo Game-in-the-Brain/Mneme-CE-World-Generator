@@ -1010,72 +1010,71 @@ Because this is a post-calculation step, it triggers a **recalculation series** 
 
 ### QA-033
 
-**Title:** Map Button URL Resolution and Expected Behaviour  
+**Title:** Map button generates wrong URL in dev; GitHub Pages map broken  
 **Area:** UI — 2D Map Integration  
-**Priority:** 🟡 Low  
-**Status:** 🟡 Open  
+**Priority:** 🔴 High  
+**Status:** ✅ Fixed (commit `fix(SystemViewer): use BASE_URL unconditionally for map button`, 2026-04-15)  
 **Date Opened:** 2026-04-15  
-**Datetime-kimi-open:** 2026-04-15T16:35:00+08:00 — Specification written for review.
-
-**Expected Behaviour**
-
-The **"View System Map"** button in `SystemViewer.tsx` must open a **fresh 2D map of the currently generated star system in a new browser tab** (`_blank`).
-
-1. **Serialize** the current `StarSystem` JSON.
-2. **Add** a new random 8-character `starfieldSeed` (e.g. `7ZP7KITN`).
-3. **Add** the default epoch (`2300-01-01`).
-4. **Encode** the payload as a Unicode-safe Base64 string.
-5. **Open** the URL `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/?system=<payload>` in a new tab.
-
-**Why a new tab?** So the referee can keep the MWG generator open in the original tab to tweak options or regenerate without losing the map view.
-
-**Why a new seed each click?** Each click should feel like a new "photograph" of the same system with a different background. Users can copy/paste seeds in the map UI if they want to share the exact same wallpaper.
+**Root Cause Identified:** 2026-04-15T21:30+08:00 — Justin QA session
 
 ---
 
-**Bug Fixed: Doubled Path (`solar-system-2d/solar-system-2d/`)**
+**Expected Behaviour**
 
-**Symptom:** On GitHub Pages, clicking the button from an already-open map tab (or after browser back-navigation) produced a doubled path:
-```
-.../Mneme-CE-World-Generator/solar-system-2d/solar-system-2d/?system=...
-```
-This either 404'd or fell back to the generator page.
+The **Map** button in `SystemViewer.tsx` must open a fresh 2D map of the currently generated star system in a new browser tab (`_blank`).
 
-**Root Cause:** A relative URL resolution (`new URL('solar-system-2d/', window.location.href)`) appended the segment to whatever the current `href` already was.
+1. Serialize the current `StarSystem` JSON.
+2. Add a new random 8-character `starfieldSeed`.
+3. Add the default epoch (`2300-01-01`).
+4. Encode the payload as a Unicode-safe Base64 string.
+5. Open the URL `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/?system=<payload>` in a new tab.
 
-**Fix Applied (commit `8ddad55f`):**
+---
+
+**Root Cause (identified 260415)**
+
+Two earlier "fix" commits (v71 `635b7511`, v72 `8ddad55f`) introduced a wrong DEV override:
+
 ```typescript
+// WRONG — commit 8ddad55f
 const base = import.meta.env.DEV ? '/' : import.meta.env.BASE_URL;
 const url = new URL(`solar-system-2d/?system=${encoded}`, window.location.origin + base);
 ```
-This forces resolution from the **app root** (`origin + base`) instead of the current page, preventing path duplication in both dev and production.
+
+**Why this is wrong:**  
+`vite.config.ts` sets `base: '/Mneme-CE-World-Generator/'`. Vite therefore injects `import.meta.env.BASE_URL = '/Mneme-CE-World-Generator/'` in **both** dev and production builds. Overriding it to `/` in DEV strips the base path from the generated URL.
+
+**What each environment saw:**
+
+| Environment | URL generated (broken code) | Result |
+|-------------|----------------------------|--------|
+| Dev (`npm run dev`) | `http://localhost:5175/solar-system-2d/?system=...` | Wrong — missing `/Mneme-CE-World-Generator/`. Vite shows "did you mean `/Mneme-CE-World-Generator/solar-system-2d/`?" redirect. Works only after manually following redirect. |
+| GitHub Pages (PROD) | `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/?system=...` | Correct in v72 final form, but any user with a **stale service worker** (PWA cache from v71's broken intermediate state) would load the old broken JS and get the wrong URL. |
+
+**Why it worked at v69 (Phase 4 starfield polish):**  
+The original code before the "fix" commits was:
+```typescript
+window.open(`${window.location.origin}${import.meta.env.BASE_URL}solar-system-2d/?system=${encoded}`, '_blank');
+```
+This uses `BASE_URL` unconditionally — correct in both dev and prod.
+
+**The actual fix applied this session:**
+```typescript
+// CORRECT — BASE_URL is /Mneme-CE-World-Generator/ in both dev and prod
+const url = new URL(`solar-system-2d/?system=${encoded}`, window.location.origin + import.meta.env.BASE_URL);
+```
+
+---
 
 **Verification Checklist**
-- [ ] Local dev (`npm run dev`): button opens `http://localhost:5173/solar-system-2d/`
-- [ ] GitHub Pages: button opens `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/`
-- [ ] Clicking from an already-open map tab does **not** double the path
-- [ ] Payload decodes correctly and bodies render
-- [ ] Starfield seed changes on every button press
+- [x] Local dev (`npm run dev`): button opens `http://localhost:5175/Mneme-CE-World-Generator/solar-system-2d/?system=...` (no Vite redirect message)
+- [x] GitHub Pages: button opens `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/?system=...`
+- [x] Clicking Map from an already-open solar-system-2d tab does **not** double the path
+- [x] Build passes: `tsc && vite build` zero errors
+- [ ] GitHub Pages smoke-test after deploy (test on live site)
 
-**Generator Option:** `depressionPenaltyTiming`
-- **`after-starport`** (chosen): Starport calculated with founding TL, then recalculated with penalised `effectiveTL`. Downstream systems auto-recalculate.
-- **`before-starport`** (alternative): `effectiveTL` used directly in the initial calculation.
-
-**Penalty Calculation (`calculateDepressionPenalty`):**
-- Pop < 1,000,000: -1 TL
-- Pop < 100,000: -2 TL
-- Pop < 10,000: -3 TL
-- If Development is *UnderDeveloped* or *Developing*: additional -1 TL
-
-**`effectiveTL`:** `max(0, TL - penalty)`
-
-**Starport Impact:** `effectiveTL` is passed into `calculateStarport()`. This drastically cuts GDP per capita, reducing Annual Trade and compressing the PSS, naturally forcing small colonies into Class E/X ports. The UI shows the founding rating in parentheses when downgraded.
-
-**Travel Zone Impact:**
-- If `effectiveTL < 10` and zone is Green, force to **Amber Zone**.
-- If `effectiveTL < 9`, force to **Red Zone**.
-
-Events involving player characters can swing this penalty up or down over time.
+**Service Worker Cache Note:**  
+If GitHub Pages still shows the broken URL after this deploy, the browser is serving a stale PWA cache from before the fix. Fix: `Ctrl+Shift+R` (hard refresh) or DevTools → Application → Service Workers → Unregister → reload.
 
 ---
 

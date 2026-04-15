@@ -12,6 +12,7 @@ import {
   TL_TABLE,
 } from '../lib/worldData';
 import { generateShipsInTheArea } from '../lib/shipsInArea';
+import { STAR_COLOR_NAMES } from '../lib/stellarData';
 
 interface SystemViewerProps {
   system: StarSystem;
@@ -130,8 +131,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
               };
               const json = JSON.stringify(payload);
               const encoded = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
-              const base = import.meta.env.DEV ? '/' : import.meta.env.BASE_URL;
-              const url = new URL(`solar-system-2d/?system=${encoded}`, window.location.origin + base);
+              const url = new URL(`solar-system-2d/?system=${encoded}`, window.location.origin + import.meta.env.BASE_URL);
               window.open(url.toString(), '_blank');
             }}
             className="btn-primary flex items-center gap-2"
@@ -367,22 +367,30 @@ function StarTab({ system }: { system: StarSystem }) {
 }
 
 function StarDetails({ star }: { star: Star; isPrimary?: boolean }) {
+  const colorName = STAR_COLOR_NAMES[star.class];
   return (
     <div className="grid md:grid-cols-3 gap-4">
-      <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--row-hover)' }}>
-        <div className={`text-4xl font-bold mb-2 star-${star.class}`}>
-          {star.class}{star.grade}
+      {/* QA-031: Big colour circle with name and hex */}
+      <div className="p-4 rounded-lg flex flex-col items-center justify-center gap-3" style={{ backgroundColor: 'var(--row-hover)' }}>
+        <div
+          className="w-24 h-24 rounded-full border-4 shadow-lg"
+          style={{ backgroundColor: star.color, borderColor: 'var(--border-color)' }}
+          title={`${colorName} — ${star.color}`}
+        />
+        <div className="text-center">
+          <div className="text-lg font-semibold">{colorName}</div>
+          <div className="text-xs font-mono mt-0.5" style={{ color: 'var(--text-secondary)' }}>{star.color}</div>
         </div>
-        <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>Spectral Classification</div>
       </div>
       <div className="space-y-2">
         <DataRow label="Mass"       value={`${formatNumber(star.mass)} M☉`} />
         <DataRow label="Luminosity" value={`${formatLuminosity(star.luminosity)} L☉`} />
-        <DataRow label="Color"      value={star.color} />
+        <DataRow label="Temperature" value={`${formatNumber(Math.round(star.class === 'O' ? 50000 : star.class === 'B' ? 25000 : star.class === 'A' ? 10000 : star.class === 'F' ? 7000 : star.class === 'G' ? 5800 : star.class === 'K' ? 4500 : 3000))} K`} />
       </div>
       <div className="space-y-2">
         <DataRow label="Class"  value={star.class} />
         <DataRow label="Grade"  value={star.grade.toString()} />
+        <DataRow label="Spectral" value={`${star.class}${star.grade}`} />
       </div>
     </div>
   );
