@@ -87,6 +87,16 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | [QA-024](#qa-024) | Engine — FR-030 Ships | "In System" ships have no position — missing body index 1–N | 🟠 Medium | ✅ Fixed |
 | [FR-031](#fr-031) | Feature — 2D Map | 2D Animated Planetary System Map (MWG integrated monorepo build) | 🟠 Medium | 🟡 In Progress |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
+| [QA-025](#qa-025) | Engine — Inhabitants | Low Population Terminology Override | 🟡 Low | 📋 Proposed |
+| [QA-026](#qa-026) | Engine — Inhabitants | Depression Penalty for Low Population Worlds | 🟠 Medium | ✅ Fixed |
+| [QA-027](#qa-027) | UI — Economy | Income "B cr" notation ambiguous; weekly × 52 ≠ annual total shown | 🔴 High | 🔴 Open |
+| [QA-028](#qa-028) | UI — Economy | Wealth display contradicts World Development section | 🟠 Medium | 🔴 Open |
+| [QA-029](#qa-029) | Engine — Government | Anarchy government type disproportionately dominant | 🔴 High | 🔴 Open |
+| [QA-030](#qa-030) | Engine — Ships (FR-030) | Ships at X/E-class starport too numerous for port class | 🔴 High | 🔴 Open |
+| [QA-031](#qa-031) | UI — Stars | Star color displayed as raw hex — needs human-readable name | 🟠 Medium | 🔴 Open |
+| [QA-032](#qa-032) | Engine — World Physics | 427 km world showing 0.18G — floor density may still be off post QA-023 | 🟠 Medium | 🔴 Open |
+| [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | 📋 Proposed |
+| [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | 📋 Proposed |
 
 ---
 
@@ -996,6 +1006,57 @@ Because this is a post-calculation step, it triggers a **recalculation series** 
 
 **Datetime-kimi-open:** 2026-04-15T13:45:00+08:00 — All QA-026 sub-tasks approved and opened.
 
+---
+
+### QA-033
+
+**Title:** Map Button URL Resolution and Expected Behaviour  
+**Area:** UI — 2D Map Integration  
+**Priority:** 🟡 Low  
+**Status:** 🟡 Open  
+**Date Opened:** 2026-04-15  
+**Datetime-kimi-open:** 2026-04-15T16:35:00+08:00 — Specification written for review.
+
+**Expected Behaviour**
+
+The **"View System Map"** button in `SystemViewer.tsx` must open a **fresh 2D map of the currently generated star system in a new browser tab** (`_blank`).
+
+1. **Serialize** the current `StarSystem` JSON.
+2. **Add** a new random 8-character `starfieldSeed` (e.g. `7ZP7KITN`).
+3. **Add** the default epoch (`2300-01-01`).
+4. **Encode** the payload as a Unicode-safe Base64 string.
+5. **Open** the URL `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/?system=<payload>` in a new tab.
+
+**Why a new tab?** So the referee can keep the MWG generator open in the original tab to tweak options or regenerate without losing the map view.
+
+**Why a new seed each click?** Each click should feel like a new "photograph" of the same system with a different background. Users can copy/paste seeds in the map UI if they want to share the exact same wallpaper.
+
+---
+
+**Bug Fixed: Doubled Path (`solar-system-2d/solar-system-2d/`)**
+
+**Symptom:** On GitHub Pages, clicking the button from an already-open map tab (or after browser back-navigation) produced a doubled path:
+```
+.../Mneme-CE-World-Generator/solar-system-2d/solar-system-2d/?system=...
+```
+This either 404'd or fell back to the generator page.
+
+**Root Cause:** A relative URL resolution (`new URL('solar-system-2d/', window.location.href)`) appended the segment to whatever the current `href` already was.
+
+**Fix Applied (commit `8ddad55f`):**
+```typescript
+const base = import.meta.env.DEV ? '/' : import.meta.env.BASE_URL;
+const url = new URL(`solar-system-2d/?system=${encoded}`, window.location.origin + base);
+```
+This forces resolution from the **app root** (`origin + base`) instead of the current page, preventing path duplication in both dev and production.
+
+**Verification Checklist**
+- [ ] Local dev (`npm run dev`): button opens `http://localhost:5173/solar-system-2d/`
+- [ ] GitHub Pages: button opens `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/`
+- [ ] Clicking from an already-open map tab does **not** double the path
+- [ ] Payload decodes correctly and bodies render
+- [ ] Starfield seed changes on every button press
+
 **Generator Option:** `depressionPenaltyTiming`
 - **`after-starport`** (chosen): Starport calculated with founding TL, then recalculated with penalised `effectiveTL`. Downstream systems auto-recalculate.
 - **`before-starport`** (alternative): `effectiveTL` used directly in the initial calculation.
@@ -1423,10 +1484,6 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 | Phase 3 | Animation & Time Controls — RAF angle updates, play/pause/reverse, dt cap, date display pulse | ✅ Complete |
 | Phase 4 | Starfield Polish — Mulberry32 PRNG, nebula clouds, resize regeneration, seed controls | ✅ Complete |
 | Phase 5 | Production Hardening — disk point fields, label culling, off-screen culling | ✅ Complete (pending device fps test) |
-| Phase 2 | Orbits & Camera — logarithmic scale, zoom, pan, touch gestures | 📋 Pending |
-| Phase 3 | Animation & Time — play/pause, speed, reverse, day stepping | 📋 Pending |
-| Phase 4 | Procedural Starfield — seeded PRNG background, seed UI | 📋 Pending |
-| Phase 5 | Polish — labels, main-world highlight, mobile optimisation | 📋 Pending |
 | Phase 6 | Backlog — body tooltips, Brachistochrone, retrograde orbits, rings, moons | 📋 Future |
 
 **Phase 0 Completion Details:**
@@ -1494,6 +1551,210 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 
 ---
 
+### QA-027
+
+**Title:** Income display "B cr" notation ambiguous; weekly × 52 ≠ annual total shown  
+**Area:** UI — Economy  
+**Priority:** 🔴 High  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (email 2026-04-15)
+
+**Problem Statement**  
+Neil reports two interrelated issues with the income/credits display:
+
+1. **Notation ambiguity:** "1.79 B cr a week" — it is unclear whether "B" means billion. The Starport box separately shows 149 million credits/week. The relationship between these two figures is not explained.
+2. **Math inconsistency:** 1.79 B cr/week × 52 weeks = ~93 B cr/year. The annual figure shown is 54.2 B. These do not reconcile.
+3. **US vs UK billion:** "B" is ambiguous — US billion = 10⁹, UK (traditional) billion = 10¹². Neil is UK-based. This will confuse international users.
+4. **Plausibility concern:** Neil notes 400,000 people (comparable to Leicester, UK) generating 1.79 B cr/week seems implausibly high, regardless of TL.
+
+**Expected Behaviour**
+- Display full unabbreviated numbers, or use explicit notation: `1,790,000,000 cr/week` or `1.79 × 10⁹ cr/week`.
+- Reconcile the weekly income figure with the annual total shown (check formula — are there multiple partial-year income sources being summed, or a period mismatch?).
+- Add a tooltip or label clarifying the unit if abbreviation is kept.
+
+**Working Document**  
+[260415-claude-open-qa027-income-notation.md](./260415-claude-open-qa027-income-notation.md) — full root cause analysis, code trace, and proposed fixes.
+
+**Notes**  
+Justin response: income UI will be redesigned (see FR-032). The math inconsistency may be a separate calculation bug that should be verified independently.
+
+---
+
+### QA-028
+
+**Title:** Wealth display contradicts World Development section  
+**Area:** UI — Economy  
+**Priority:** 🟠 Medium  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (email 2026-04-15)
+
+**Problem Statement**  
+Neil observes that the Wealth panel displays a world as "not rich" while the World Development section implies significant productive output ("seems to be working hard but not getting much in return"). The two panels give contradictory impressions of the same world.
+
+**Expected Behaviour**  
+Wealth and World Development descriptors should tell a coherent story. If a world has high development but low wealth, the text should explicitly surface this tension as a design outcome (e.g., "high-output resource extraction with wealth extracted off-world") rather than appearing contradictory.
+
+**Notes**  
+May be a display/wording issue rather than a calculation bug. Review what each panel sources its descriptors from and ensure they are contextually aware of each other.
+
+---
+
+### QA-029
+
+**Title:** Anarchy government type disproportionately dominant  
+**Area:** Engine — Government Generation  
+**Priority:** 🔴 High  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (emails 2026-04-14 and 2026-04-15)
+
+**Problem Statement**  
+Neil has generated many random worlds across multiple sessions and reports seeing Anarchy as the government type on almost every result. "Yet another world with Anarchy? I haven't seen anything else."
+
+QA-INV-001 previously investigated E/X port dominance and found it to be correct design behaviour. Government type distribution has not been separately verified.
+
+**Expected Behaviour**  
+Government type distribution should roughly follow the CE table probabilities. Anarchy (Government 0) should appear, but no more than its table frequency warrants — not as the near-universal result.
+
+**Investigation Required**
+- Run batch export (1,000 worlds) and tally government type distribution.
+- Compare against raw CE probability table.
+- Check if any modifier (population, TL, Depression Penalty from QA-026) is systematically pushing rolls toward 0.
+- Check if the Depression Penalty `effectiveTL` cascade is feeding back into government generation.
+
+---
+
+### QA-030
+
+**Title:** Ships at X/E-class starport: count too high for port class  
+**Area:** Engine — Ships (FR-030)  
+**Priority:** 🔴 High  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (email 2026-04-15)
+
+**Problem Statement**  
+Neil reports a TL9 X-class port showing 104 ships in orbit, including a 1,000-ton passenger liner. An X-class port means no facilities — there should be no docked traffic at all, and minimal in-system traffic.
+
+**Expected Behaviour**  
+- **Class X:** Zero docked/in-port ships. Minimal in-system traffic (scouts, prospectors, the occasional free trader).
+- **Class E:** Minimal facilities — handful of ships at most.
+- Ship count should be hard-gated by starport class, not just PSS/TL score.
+- A 1,000-ton passenger liner will not visit a world with no port facilities.
+
+**Files**  
+`src/lib/shipsInArea.ts` — add port class ceiling to traffic pool lookup.
+
+**Notes**  
+FR-030 (`shipsInArea.ts`) generates traffic from `traffic_pool` fields. The pool selection needs an additional gate: if `starport.class === 'X'`, zero docked ships; if `'E'`, minimal pool only. The `budget` from PSS may need to be zeroed or clamped for X/E regardless of TL.
+
+---
+
+### QA-031
+
+**Title:** Star color displayed as raw hex code  
+**Area:** UI — Stars  
+**Priority:** 🟠 Medium  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (email 2026-04-14)
+
+**Problem Statement**  
+The star color field displays the raw hexadecimal value (e.g., `#ff8a65`) directly in the UI. This adds no value to a user — they need a human-readable colour description to picture what the star looks like.
+
+**Expected Behaviour**  
+Display a colour name or description alongside (or instead of) the hex value. E.g.:
+- `#ff8a65` → "Orange-Red" or "Coral Orange"
+- Link to an authoritative reference (stellar classification colour chart) for easy cross-checking.
+
+**Notes**  
+Justin (email reply): "I can just make the stars color adopt that (and link to it directly for easy checking)." The hex value can be kept as a secondary display (tooltip or small swatch) while the primary display shows the name.
+
+---
+
+### QA-032
+
+**Title:** Small world surface gravity floor — 427 km world showing 0.18G  
+**Area:** Engine — World Physics  
+**Priority:** 🟠 Medium  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (email 2026-04-14)
+
+**Problem Statement**  
+Neil reports a 427 km world (roughly the size of Ceres) displaying a surface gravity of 0.18G. This is physically implausible — Ceres has ~0.029G. Even a very dense iron-rich body of 427 km would not exceed ~0.04–0.06G.
+
+QA-022 and QA-023 implemented the mass + density pipeline. However, this case suggests the floor density or the gravity derivation formula may still produce unrealistic results for small bodies.
+
+**Expected Behaviour**  
+A 427 km world at any realistic density should produce gravity well under 0.1G.
+
+**Investigation Required**
+- Trace the pipeline for `size = 427 km` through `worldData.ts` density tables and `physicalProperties.ts`.
+- Check the minimum density floor value.
+- Verify the gravity formula: `g = G × m / r²` with correct unit conversions.
+- Justin note (email reply): "I'll double check the floor density" and "I'll also double check the surface gravity formula."
+
+---
+
+### FR-032
+
+**Title:** Income system redesign — average income per TL + ships as income-years  
+**Area:** Feature — Economy  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Proposed  
+**Datetime:** 260415-120000  
+**Proposed by:** Justin (email reply 2026-04-15)
+
+**Proposal**  
+Justin's three-part income system redesign, driven by Neil's feedback on implausible income figures:
+
+1. **Settings: average income per TL (in Credits)**  
+   World builders can set a baseline "average annual income per person per TL" in the Generator Settings. This anchors all economic outputs to a user-defined plausible value.
+
+2. **Ships = X income-years stat**  
+   Each ship entry gets a derived stat: `cost / annual_income_per_capita = X income-years`. This makes ship costs legible in human terms ("this frigate costs 12 years of the entire planet's per-capita output").  
+   All ship cost displays recalculate relative to the income setting.
+
+3. **Underlying income forces**  
+   Set up the fundamental economic forces that feed the income calculation: trade routes, resource extraction, population productivity, TL multiplier. These feed up into the displayed income rather than income being a single formula.
+
+**Dependencies**  
+QA-027 (income display bugs should be fixed as part of this redesign).  
+Links to QA-026 (Depression Penalty already modifies effectiveTL which feeds GDP).
+
+---
+
+### FR-033
+
+**Title:** Sector Dynamics — goal-loop generation for Starport/Population/Habitability targets  
+**Area:** Feature — Generate Page  
+**Priority:** 🟡 Low  
+**Status:** 📋 Proposed  
+**Datetime:** 260415-120000  
+**Proposed by:** Justin (email reply 2026-04-15)
+
+**Proposal**  
+On the Generate page, add a "Goal Mode" that loops the world generator until it produces a system matching user-specified targets:
+
+- **Starport class target** — e.g., "generate until I get at least a Class C port"
+- **Population target** — e.g., "minimum 1,000,000 population"
+- **Habitability target** — e.g., "habitable main world"
+
+The generator already supports batch runs of up to 1,000 for statistical testing. Goal-loop simply returns the first system satisfying all goals rather than displaying all 1,000.
+
+**UX**  
+- Goals are optional — if none set, generator behaves as normal.
+- Show iteration count on result ("found after 47 generations").
+- Add max-iteration safety cap (e.g., 2,000) with "no matching world found" fallback.
+
+**Notes**  
+Justin: "the loops just generates thousands until it hits the targets — it's through your feedback I didn't think of some things."
+
+---
+
 ## Document History
 
 | Version | Date | Changes |
@@ -1519,6 +1780,8 @@ Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT
 | 1.18 | 2026-04-14 | QA-023 preliminary analysis added: gravity matrices for all mass × density combinations; REF-013 DeepSeek analysis brief created; Option A vs Option B design question documented |
 | 1.19 | 2026-04-15 | QA-023 implemented: mass+density physics pipeline, Option B gravity-derived habitability, monotonic terrestrial table; @ts-expect-error cleanup; build verified |
 | 1.20 | 2026-04-15 | FR-031 Phase 0 scaffolded: 2D map monorepo entry point, Vite multi-page config, Canvas RAF skeleton, procedural starfield PRNG, dataAdapter for INTRAS Level 1; build verified |
+| 1.21 | 2026-04-15 | Added QA-027–QA-032 (Neil Lucock feedback: income display, wealth contradiction, anarchy dominance, X-port ship count, star hex color, small-world gravity floor); FR-032 (income redesign) and FR-033 (goal-loop generation) proposed by Justin; QA-025/026 added to index table |
+| 1.22 | 2026-04-15 | FR-031 Phases 2–5 completed: camera interactions, animation hardening, starfield polish, disk point-field rendering, label/off-screen culling; QA-033 added for Map button URL resolution spec review |
 
 ---
 
