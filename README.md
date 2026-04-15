@@ -15,7 +15,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/License-MIT-e53935?style=flat-square)](LICENSE)
 
-[**▶ Launch App**](https://github.com/Game-in-the-Brain) · [**📖 Book on DriveThruRPG**](https://www.drivethrurpg.com/en/product/403824/MNEME-World-Generator) · [**🎬 Video Tutorial**](https://youtu.be/661aEOMOwKM)
+[**▶ Launch App**](https://github.com/Game-in-the-Brain) · [**📖 Book on DriveThruRPG**](https://www.drivethrurpg.com/en/product/403824/MNEME-World-Generator) · [**🎬 Video Tutorial**](https://youtu.be/661aEOMOwKM) · [**📜 Versions**](./VERSIONS.md) · [**🗺️ Roadmap**](./ROADMAP.md)
 
 </div>
 
@@ -28,6 +28,17 @@ The **Mneme CE World Generator** replaces the original Google Sheets world gener
 It is a digital companion to the [**Mneme World Generator book**](https://www.drivethrurpg.com/en/product/403824/MNEME-World-Generator) by Game in the Brain, which provides scientifically grounded rules for building detailed star systems for the Cepheus Engine RPG and compatible games. One tap generates an entire solar system — complete with stars, a habitable world, its inhabitants, and a full planetary system — all saved locally on your device.
 
 > **Built for:** Referees, worldbuilders, game designers, and sci-fi writers who want plausible, detailed star systems fast.
+
+---
+
+## Project Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [**VERSIONS.md**](./VERSIONS.md) | Complete version history from v1.3.1 to current |
+| [**ROADMAP.md**](./ROADMAP.md) | Backlog of planned features (2D map, CSV export, faction generator, etc.) |
+| [**QA.md**](./QA.md) | Bug tracker and quality assurance log |
+| [**260410-Changes.md**](./260410-Changes.md) | Detailed mechanics changes vs the original book rules |
 
 ---
 
