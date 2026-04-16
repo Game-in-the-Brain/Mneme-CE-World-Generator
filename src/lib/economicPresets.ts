@@ -150,16 +150,28 @@ export function buildPresetFromBase(
 // Table Weights Defaults
 // =====================
 
-export const DEFAULT_DEVELOPMENT_WEIGHTS: TableWeights = {
-  dice: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // 2D6 rolls 2..12
+/** Natural 2D6 bell curve weights (rolls 2..12) */
+export const NATURAL_2D6_WEIGHTS: TableWeights = {
+  dice: [1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1],
 };
 
-export const DEFAULT_POWER_WEIGHTS: TableWeights = {
+/** Flat / uniform distribution weights */
+export const FLAT_WEIGHTS: TableWeights = {
   dice: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 };
 
-export const DEFAULT_GOV_WEIGHTS: TableWeights = {
-  dice: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+export const DEFAULT_DEVELOPMENT_WEIGHTS: TableWeights = NATURAL_2D6_WEIGHTS;
+export const DEFAULT_POWER_WEIGHTS: TableWeights = NATURAL_2D6_WEIGHTS;
+export const DEFAULT_GOV_WEIGHTS: TableWeights = NATURAL_2D6_WEIGHTS;
+
+/** QA-029: Democratic bias — reduces Anarchy probability */
+export const DEMOCRATIC_POWER_WEIGHTS: TableWeights = {
+  dice: [1, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1],
+};
+
+/** QA-029: Stable bias — increases Unitary State probability */
+export const STABLE_POWER_WEIGHTS: TableWeights = {
+  dice: [1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 3],
 };
 
 // =====================

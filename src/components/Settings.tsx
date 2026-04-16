@@ -16,6 +16,13 @@ import {
   exportPresetToJSON,
   importPresetFromJSON,
   BOAT_PRICE_CR,
+  NATURAL_2D6_WEIGHTS,
+  FLAT_WEIGHTS,
+  DEFAULT_DEVELOPMENT_WEIGHTS,
+  DEFAULT_POWER_WEIGHTS,
+  DEFAULT_GOV_WEIGHTS,
+  DEMOCRATIC_POWER_WEIGHTS,
+  STABLE_POWER_WEIGHTS,
 } from '../lib/economicPresets';
 
 interface SettingsProps {
@@ -74,6 +81,18 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
   const [showGrid, setShowGrid] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [presetImportStatus, setPresetImportStatus] = useState<string | null>(null);
+
+  // =====================
+  // Table Weights State (QA-029)
+  // =====================
+  const [devWeights, setDevWeights] = useState(generatorOptions.developmentWeights || DEFAULT_DEVELOPMENT_WEIGHTS);
+  const [powerWeights, setPowerWeights] = useState(generatorOptions.powerWeights || DEFAULT_POWER_WEIGHTS);
+  const [govWeights, setGovWeights] = useState(generatorOptions.govWeights || DEFAULT_GOV_WEIGHTS);
+
+  useEffect(() => {
+    const current = loadGeneratorOptions();
+    saveGeneratorOptions({ ...current, developmentWeights: devWeights, powerWeights, govWeights });
+  }, [devWeights, powerWeights, govWeights]);
 
   // Persist active preset to generator options whenever it changes
   useEffect(() => {
@@ -694,6 +713,70 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
         </div>
       </div>
 
+      {/* Table Weights (QA-029) */}
+      <div className="card space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Settings2 className="text-[#e53935]" size={20} />
+          Table Weights
+        </h3>
+        <p className="text-sm text-[#9e9e9e]">
+          Adjust the probability distributions used for 2D6 table lookups. These affect how common or rare each outcome is during world generation.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Development</label>
+            <select
+              value={arraysEqual(devWeights.dice, NATURAL_2D6_WEIGHTS.dice) ? 'natural' : 'flat'}
+              onChange={(e) => setDevWeights(e.target.value === 'natural' ? NATURAL_2D6_WEIGHTS : FLAT_WEIGHTS)}
+              className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
+            >
+              <option value="natural">Natural 2D6 — bell curve</option>
+              <option value="flat">Flat — uniform</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Power Structure</label>
+            <select
+              value={
+                arraysEqual(powerWeights.dice, NATURAL_2D6_WEIGHTS.dice) ? 'natural' :
+                arraysEqual(powerWeights.dice, DEMOCRATIC_POWER_WEIGHTS.dice) ? 'democratic' :
+                arraysEqual(powerWeights.dice, STABLE_POWER_WEIGHTS.dice) ? 'stable' :
+                'flat'
+              }
+              onChange={(e) => {
+                const map: Record<string, import('../types').TableWeights> = {
+                  natural: NATURAL_2D6_WEIGHTS,
+                  flat: FLAT_WEIGHTS,
+                  democratic: DEMOCRATIC_POWER_WEIGHTS,
+                  stable: STABLE_POWER_WEIGHTS,
+                };
+                setPowerWeights(map[e.target.value]);
+              }}
+              className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
+            >
+              <option value="natural">Natural 2D6 — bell curve</option>
+              <option value="flat">Flat — uniform</option>
+              <option value="democratic">Democratic — less Anarchy</option>
+              <option value="stable">Stable — more Unitary</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Source of Power</label>
+            <select
+              value={arraysEqual(govWeights.dice, NATURAL_2D6_WEIGHTS.dice) ? 'natural' : 'flat'}
+              onChange={(e) => setGovWeights(e.target.value === 'natural' ? NATURAL_2D6_WEIGHTS : FLAT_WEIGHTS)}
+              className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
+            >
+              <option value="natural">Natural 2D6 — bell curve</option>
+              <option value="flat">Flat — uniform</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Debug Mode Toggle (QA-014) */}
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -766,4 +849,8 @@ function formatCreditCompact(value: number): string {
   if (abs >= 1e6) return `${(value / 1e6).toFixed(2)} M Cr`;
   if (abs >= 1e3) return `${(value / 1e3).toFixed(2)} K Cr`;
   return `${formatNumber(value)} Cr`;
+}
+
+function arraysEqual(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
 }
