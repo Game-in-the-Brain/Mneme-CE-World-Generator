@@ -54,6 +54,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-048** | ✅ Fixed | Boat Years and SOC 7 Income should be independently fillable — v1.3.108 |
 | **QA-049** | 📋 Queued | Economic model toggle (Stable vs Compounding) — Settings, generator pipeline |
 | **QA-050** | 📋 Queued | Recent Systems should show Economic Assumptions used |
+| **QA-051** | 📋 Queued | Economic Assumptions Customizations roll profiles (documented spec) |
 
 
 ### Key Files
@@ -189,6 +190,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-048](#qa-048) | Engine — Economy / Ships | Boat Years and SOC 7 Income should be decoupled | 🔴 High | ✅ Fixed |
 | [QA-049](#qa-049) | Engine — Economy / Population | Economic model toggle (Stable vs Compounding) | 🔴 High | 📋 Queued |
 | [QA-050](#qa-050) | UI — Recent Systems | Recent Systems should show Economic Assumptions used | 🟠 Medium | 📋 Queued |
+| [QA-051](#qa-051) | Engine — Inhabitants | Economic Assumptions Customizations roll profiles | 🟠 Medium | 📋 Queued |
 
 ---
 
@@ -2575,4 +2577,46 @@ Each entry in the Recent Systems list should visually indicate the economic pres
 1. Every Recent Systems entry shows the name of the `economicPreset` used at generation time.
 2. Legacy systems without an `economicPreset` display "Legacy" or "Mneme (default)".
 3. No source-code changes to generation logic — this is a pure UI enhancement.
+
+
+---
+
+---
+
+### QA-051
+
+**Title:** Economic Assumptions Customizations — Roll Profile Presets for Inhabitants Tables  
+**Area:** Engine — Inhabitants  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+
+**Description:**  
+Defines preset roll profiles for **Wealth**, **Development**, **Power Structure**, and **Source of Power** tables to align generated inhabitants with three distinct campaign assumptions. The profiles are implemented as weighted-distribution presets bundled with economic presets.
+
+**Background:**  
+The Mneme default tables are calibrated to realistic socio-economic diversity — underdeveloped and poor worlds are common, power is often fragmented or authoritarian. Classic Traveller / CE players typically come from high-income nations and carry different baseline assumptions: poverty is the exception, governments are stable, and power leans democratic. A third **Stagnant / Uniform** profile represents a plateaued, homogenised galaxy with no dramatic extremes.
+
+**Presets:**
+
+| Preset | Wealth | Development | Power Structure | Source of Power |
+|--------|--------|-------------|-----------------|-----------------|
+| **Mneme Default** | 70% Average, 20% Better-off, 5% Prosperous, 5% Affluent | 53% UnderDeveloped, 13% Developing, 13% Mature, 13% Developed, 5% Well Developed, 5% Very Developed | 53% Anarchy, 20% Confederation, 20% Federation, 8% Unitary | 38% Aristocracy, 20% Ideocracy, 20% Kratocracy, 20% Democracy, 3% Meritocracy |
+| **CE / Traveller** | 20% Average, 35% Better-off, 25% Prosperous, 20% Affluent | 8% UnderDeveloped, 10% Developing, 25% Mature, 25% Developed, 23% Well Developed, 10% Very Developed | 10% Anarchy, 20% Confederation, 45% Federation, 25% Unitary | 8% Aristocracy, 13% Ideocracy, 18% Kratocracy, 50% Democracy, 13% Meritocracy |
+| **Stagnant / Uniform** | 30% Average, 50% Better-off, 18% Prosperous, 3% Affluent | 3% UnderDeveloped, 15% Developing, 40% Mature, 35% Developed, 8% Well Developed, 0% Very Developed | 5% Anarchy, 40% Confederation, 45% Federation, 10% Unitary | 13% Aristocracy, 25% Ideocracy, 25% Kratocracy, 33% Democracy, 5% Meritocracy |
+
+**Implementation Notes:**  
+- Weights are **relative** and converted to percentages per table.
+- Modifiers (e.g. resource bonuses on Wealth) apply on top of the weighted selection.
+- Roll profiles are bundled into `TLProductivityPreset` (`wealthWeights`, `developmentWeights`, `powerWeights`, `govWeights`) and passed to the respective table lookup functions.
+- Custom presets can override individual table weights in Settings.
+
+**Files:**  
+- `src/lib/economicPresets.ts` — weight constants and preset bundling
+- `src/lib/worldData.ts` — weighted table lookup functions
+- `src/lib/generator.ts` — wiring weights into inhabitants generation
+- `src/components/Settings.tsx` — Table Weights UI panel
+
+**Reference:**  
+See `260416 Economic Assumptions Customizations Custom tables.md` for full derivation, comparison matrices, and design intent.
 
