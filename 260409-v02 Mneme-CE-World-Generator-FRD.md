@@ -1366,8 +1366,12 @@ interface GasWorld extends PlanetaryBody {
 | `starGrade` | `StellarGrade \| 'random'` | `'random'` |
 | `mainWorldType` | `WorldType \| 'random'` | `'random'` |
 | `populated` | `boolean` | `true` |
+| `tlProductivityPreset` | `TLProductivityPreset` | Mneme default |
+| `developmentWeights` | `number[]` | Mneme default (uniform 2D6) |
+| `powerWeights` | `number[]` | Mneme default (uniform 2D6) |
+| `govWeights` | `number[]` | Mneme default (uniform 2D6) |
 
-**localStorage key:** `mneme_generator_options` (JSON object with the four fields above)
+**localStorage key:** `mneme_generator_options` (JSON object with the fields above)
 
 **Behaviour:**
 - On component mount: read from `mneme_generator_options`; if present, initialise state from stored values; if absent, use defaults above.
@@ -1398,6 +1402,95 @@ The generator view is a **single page**. The five tabs jump to anchored sections
 | `settings` | Theme toggle, export/import |
 
 > ✅ **QA-010:** Single-page with anchor tabs implemented. [See QA-010](./QA.md#qa-010)
+
+### 10.4 Economic Settings (FR-032)
+
+A new **Settings** panel titled **"Economic Assumptions"** lets the user configure the underlying economic engine. This directly affects starport trade volumes, ship traffic density, and the affordability of spacecraft.
+
+#### 10.4.1 Preset Selector
+
+| Preset | Description |
+|---|---|
+| `Mneme` | Compounding productivity growth per TL. Default. |
+| `CE / Traveller` | Flat 2,000 Cr/month SOC 7 income at **all TLs** (stagnant). |
+| `Custom` | User-editable curve. |
+
+Actions beside the dropdown: **Save**, **Save As**, **Load**, **Import** (JSON), **Export** (JSON).
+
+#### 10.4.2 Boat-Years Calibration
+
+The primary calibration input is:
+
+> **"Years for a SOC 7 worker to purchase the base Boat (10DT)"**
+
+- Boat price is fixed at **5,320,400 Cr**.
+- `SOC 7 annual income = 5,320,400 / Y`
+- `gdpPerDay = SOC 7 annual income / 365`
+
+**Mneme default:** Y = 30 yrs → ~486 Cr/day at TL 7, compounding upward.  
+**CE default:** Y ≈ 222 yrs → ~66 Cr/day, **identical at every TL**.
+
+#### 10.4.3 Growth Curves
+
+| Curve | Behaviour |
+|---|---|
+| `mneme` | Anchors TL 7 to the Boat-Years value; TL 8–16 scale via the Mneme productivity curve. |
+| `flat` | Applies the same SOC 7 income to **every TL** (CE stagnation model). |
+| `linear` | Adds a fixed percentage per TL step (e.g. +50% each TL). |
+| `custom` | User directly edits the SOC 7 income for each TL (7–16). |
+
+#### 10.4.4 SOC-Income Grid
+
+An expandable grid shows **SOC 1 through SOC 60** for the selected TL.
+- Only **SOC 7** is editable.
+- `SOC > 7`: doubles per step (`× 2^(SOC − 7)`)
+- `SOC < 7`: halves per step (`× 0.5^(7 − SOC)`)
+
+#### 10.4.5 World Economics Mechanics — GDP & PSS
+
+The generator uses a four-step pipeline to derive starport size from economic assumptions:
+
+**Step 1 — Per-Capita Income**
+```
+SOC 7 annual income = Boat Price / boatYears
+gdpPerDay = SOC 7 annual income / 365
+```
+
+**Step 2 — Gross Domestic Product**
+```
+GDP/year = Population × gdpPerDay × 365
+```
+
+**Step 3 — Port Trade Volume**
+```
+Annual Port Trade = GDP/year × TradeFraction(development) × WealthMultiplier(wealth)
+```
+
+Trade Fraction:
+- UnderDeveloped: 5% | Developing: 10% | Mature: 15% | Developed: 20% | Well Developed: 25% | Very Developed: 30%
+
+Wealth Multiplier:
+- Average: ×1.0 | Better-off: ×1.2 | Prosperous: ×1.5 | Affluent: ×2.0
+
+**Step 4 — Port Size Score (PSS) & Ships**
+```
+PSS = floor( log10(Annual Port Trade) ) − 10
+Raw Class = f(PSS) → X / E / D / C / B / A
+Final Class = min(Raw Class, TL Capability Cap)
+Weekly Base = Annual Port Trade ÷ 364
+Weekly Activity = Weekly Base × 3D6
+```
+
+`Weekly Activity` is the budget passed to `shipsInArea.ts`. Lower `gdpPerDay` (e.g. CE mode) shrinks this budget and produces far fewer/larger ships.
+
+#### 10.4.6 Table Customization
+
+The panel also includes weight editors for:
+- **Development distribution** (2D6 weights, 2–12)
+- **Source of Power distribution** (2D6 weights, 2–12)
+- **Government structure distribution** (2D6 weights, 2–12)
+
+Each editor shows the mapped result, HDI/SOC context for Development, and preset buttons (`Mneme Default`, `Reset Uniform`, etc.).
 
 ---
 

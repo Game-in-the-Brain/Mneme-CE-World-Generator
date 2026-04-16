@@ -4,6 +4,20 @@
 
 ---
 
+## v1.3.80 — FR-032/FR-033 Spec + FRD Economic Settings Section (2026-04-16)
+
+### Documentation
+- Created `260416-fr032-fr033-spec.md` — unified spec for Economic Engine Customization and Goal-Loop Generation
+- FR-032 spec now defines:
+  - Boat-Years calibration (Mneme default Y=30, CE default Y≈222 with flat 2,000 Cr/month SOC 7 at all TLs)
+  - Four growth curves: `mneme`, `flat`, `linear`, `custom`
+  - Engine-level integration: preset replaces `GDP_PER_DAY_BY_TL`, driving `calculateStarport()` and `shipsInArea.ts`
+  - SOC-Income grid (1–60), Development/Power/Gov weight customization, and Income-Years ship display
+  - Inline GDP/PSS mechanics reference for the Settings UI
+- `260409-v02 Mneme-CE-World-Generator-FRD.md`: added **Section 10.4 — Economic Settings (FR-032)** documenting presets, Boat-Years calibration, growth curves, GDP/PSS pipeline, and table customization
+
+---
+
 ## v1.3.79 — QA-034 Canonical Depression Penalty + Economy Docs (2026-04-15)
 
 ### Code Changes
