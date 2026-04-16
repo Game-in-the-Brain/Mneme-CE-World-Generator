@@ -173,7 +173,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-042](#qa-042) | UI — Generate / Settings | Generator: TL9 SOC7 & growth curve read-only; editing belongs in Settings | 🟠 Medium | ✅ Fixed |
 | [QA-043](#qa-043) | UI — Recent Systems | Recent systems table should display world code or WB-assigned star system name | 🟠 Medium | ✅ Fixed |
 | [QA-044](#qa-044) | UI — System Viewer | Overview should display economic assumptions: "made with: CE / Traveller" | 🟠 Medium | ✅ Fixed |
-| [QA-046](#qa-046) | UI — Settings | Settings: Boat Years should be the editable primary calibration input | 🟠 Medium | 📋 Queued |
+| [QA-046](#qa-046) | UI — Settings | Settings: Boat Years should be the editable primary calibration input | 🟠 Medium | ✅ Fixed |
 | [QA-047](#qa-047) | Engine — Ships | Ships in the Area should use visiting cost scaled by economic scarcity multiplier | 🟠 Medium | ✅ Fixed |
 
 ---
@@ -2036,25 +2036,25 @@ Users viewing a generated system have no immediate visual indication of which ec
 **Title:** Settings: Boat Years should be the editable primary calibration input  
 **Area:** UI — Settings / Economic Assumptions  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Queued  
-**Datetime:** 260416
+**Status:** ✅ Fixed  
+**Datetime:** 260416 | Fixed: 260416
 
 **Problem Statement**  
 Currently the Settings preset editor exposes **TL 9 SOC 7 Income (Cr/month)** as the editable number. World builders think in terms of "how many years of average salary does it take to buy a Boat?" — not in raw Credits. The current UI forces them to do mental arithmetic.
 
-**Expected Behaviour**
-- In the **Settings** Economic Assumptions panel, add a prominent editable field:
-  - **"Boat Years at TL {baseTL}"** — default 10.1 for Mneme, 228.35 for CE.
-- When the user edits Boat Years, the app **automatically computes** `baseIncome = BOAT_PRICE_CR / (boatYears × 12)`.
-- The existing **TL 9 SOC 7 Income** field becomes read-only (or updates live) to show the derived value.
-- The Generator Dashboard should continue to show Boat Years as read-only summary text (QA-042).
+**Fix Applied**
+- `src/lib/economicPresets.ts`: added `getBaseIncomeFromBoatYears(boatYears)` helper.
+- `src/components/Settings.tsx`:
+  - The **"Boat Years at TL {baseTL}"** input is now the primary editable field.
+  - Typing a value (e.g. `228.35`) instantly computes `baseIncome = 5,480,400 / (boatYears × 12)`.
+  - The old **TL 9 SOC 7 Income (Cr/mo)** field is now a read-only derived summary displayed below the inputs.
+  - Added helper text explaining the relationship: "Lower years = higher income = more ships."
+- Generator Dashboard remains read-only summary only (QA-042).
 
 **Rationale**  
 Boat-years is the intuitive human-scale anchor. It directly answers: "is a ship like a car (10 years), a house (30 years), or a medieval cathedral (200+ years)?"
 
-**Files**
-- `src/components/Settings.tsx` — add Boat Years input, derive baseIncome from it.
-- `src/lib/economicPresets.ts` — ensure `getBoatYears()` and inverse helper are exported.
+**Commit:** `v1.3.105`
 
 ---
 

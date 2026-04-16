@@ -65,6 +65,14 @@ export function getBoatYears(monthlyIncome: number): number {
 }
 
 /**
+ * Derive SOC 7 monthly income from a target boat-years value (QA-046).
+ */
+export function getBaseIncomeFromBoatYears(boatYears: number): number {
+  if (!boatYears || boatYears <= 0) return 1;
+  return BOAT_PRICE_CR / (boatYears * 12);
+}
+
+/**
  * Compute SOC 7 monthly income for a given TL using a preset.
  */
 export function getSoc7MonthlyIncome(tl: number, preset: TLProductivityPreset): number {

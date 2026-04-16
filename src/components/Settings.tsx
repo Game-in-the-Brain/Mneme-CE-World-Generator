@@ -13,6 +13,7 @@ import {
   getIncomeForSoc,
   getGdpPerDayFromPreset,
   getBoatYears,
+  getBaseIncomeFromBoatYears,
   exportPresetToJSON,
   importPresetFromJSON,
   BOAT_PRICE_CR,
@@ -117,14 +118,15 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
     }
   }
 
-  function handleBaseIncomeChange(val: number) {
-    const baseIncome = Math.max(1, Math.min(1e9, val));
+  function handleBoatYearsChange(val: number) {
+    const boatYears = Math.max(0.01, Math.min(10000, val));
+    const baseIncome = getBaseIncomeFromBoatYears(boatYears);
     setActivePreset((prev) => ({
       ...prev,
       id: 'custom',
       name: 'Custom',
       baseIncome,
-      boatYears: getBoatYears(baseIncome),
+      boatYears,
     }));
   }
 
@@ -566,17 +568,19 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">
-                TL {activePreset.baseTL} SOC 7 Income (Cr/mo)
+                Boat Years at TL {activePreset.baseTL}
               </label>
               <input
                 type="number"
-                min={1}
-                max={1000000000}
-                value={Math.round(activePreset.baseIncome)}
-                onChange={(e) => handleBaseIncomeChange(Number(e.target.value))}
+                min={0.01}
+                step={0.01}
+                value={Number((activePreset.boatYears ?? getBoatYears(activePreset.baseIncome)).toFixed(2))}
+                onChange={(e) => handleBoatYearsChange(Number(e.target.value))}
                 className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
               />
-              <p className="text-xs text-[#9e9e9e] mt-1">Boat price: {formatNumber(BOAT_PRICE_CR)} Cr</p>
+              <p className="text-xs text-[#9e9e9e] mt-1">
+                Boat price: {formatNumber(BOAT_PRICE_CR)} Cr
+              </p>
             </div>
 
             <div>
@@ -604,6 +608,16 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div className="p-3 rounded bg-white/5">
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Derived TL {activePreset.baseTL} SOC 7 Income:{' '}
+              <strong className="text-white">{formatNumber(Math.round(activePreset.baseIncome))} Cr/mo</strong>
+            </div>
+            <div className="text-xs text-[#9e9e9e] mt-1">
+              This is calculated automatically from Boat Years. Lower years = higher income = more ships.
             </div>
           </div>
 
