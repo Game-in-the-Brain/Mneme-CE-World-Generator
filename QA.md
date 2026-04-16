@@ -170,6 +170,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-040](#qa-040) | Lore — Megastructures | Great Trees — space elevator megastructures | 🟢 Lore | ✅ Documented |
 | [QA-041](#qa-041) | UI — Generate | Economic assumptions selectable in generation; recent systems show preset used | 🟠 Medium | ✅ Fixed |
 | [QA-042](#qa-042) | UI — Generate / Settings | Generator: TL9 SOC7 & growth curve read-only; editing belongs in Settings | 🟠 Medium | 📋 Queued |
+| [QA-043](#qa-043) | UI — Recent Systems | Recent systems table should display world code or WB-assigned star system name | 🟠 Medium | 📋 Queued |
 
 ---
 
@@ -1979,6 +1980,36 @@ World builders who want to craft a custom economic model should do so deliberate
 - `src/components/GeneratorDashboard.tsx` — simplify economic UI to preset selector + read-only summary
 - `src/components/Settings.tsx` — keep full preset editor as the authoritative editing surface
 - `src/lib/optionsStorage.ts` — ensure custom presets list is loaded for the dropdown
+
+---
+
+### QA-043
+
+**Title:** Recent systems table should display the world code or the WB-assigned star system name  
+**Area:** UI — Recent Systems  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Queued  
+**Datetime:** 260416
+
+**Problem Statement**  
+The Recent Systems table currently shows only a generic identifier or timestamp, making it hard for world builders (and users) to quickly locate a previously generated system. When a user generates multiple worlds in a session, the list becomes visually indistinguishable.
+
+**Expected Behaviour**
+- Each row in the Recent Systems table should display a **human-readable label**:
+  - **Option A:** The world's **UWP-style code** (e.g. `A-234567-9`) if one is generated or assigned.
+  - **Option B:** The **star system name** if the world builder (WB) has manually named it.
+  - **Fallback:** A short generated alias or truncated timestamp.
+- The label should be the primary clickable text that loads the system.
+
+**App Impact / Files**
+- `src/components/RecentSystems.tsx` (or equivalent) — update table columns and row rendering.
+- `src/types/index.ts` — ensure `StarSystem` can store an optional `name` or `code` field.
+- `src/lib/generator.ts` — generate a deterministic world code (or accept a user-provided name).
+- **Export / share flows** may also need to surface this name/code so that exported worlds are identifiable.
+
+**Open Questions**
+- Should the generator auto-assign a pronounceable name (e.g. phonetic star-name generator) or stick to code-only?
+- If the WB renames a system after generation, does the Recent Systems list update in-place?
 
 ---
 
