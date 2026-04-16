@@ -193,19 +193,19 @@ communities to new stars. CE TL 10.5." />
           <GlossaryEntry term="MTL 16" unit="2700 CE — Self-Sufficient Megastructures"
             def="Serpents, Trees, and Celestials become self-directed — jumping and spreading
 outward independently. CE TL 11.0." />
-          <GlossaryEntry term="Bakunawa Coil" unit="MTL 12 megastructure"
-            def="A particle accelerator 898,394 km in circumference (≈ the Sun's
-circumference) at the Jupiter/Sol Lagrange point. Named after mythological world serpents.
-Produces antimatter to power jump gates." />
+          <GlossaryEntry term="Great Serpents" unit="MTL 12 megastructure"
+            def="Particle accelerators 898,394 km in circumference (≈ the Sun's
+circumference) built around gas-giant radiation belts. Named after mythological world serpents (Bakunawa, Jormungandr, Antaboga, etc.). Powered by thousands of fusion plants; capture and
+channel particles to generate antimatter for FTL travel. Manufactured from carbon nanotubes at Lagrange points and reinforced in Jovian Forges." />
           <GlossaryEntry term="Celestials"    unit="Solar swarm megastructure"
-            def="Self-directed solar swarm megastructures (MTL 13) that sail on light and gravity in the inner system (Venus, Mars, Mercury). Harvest trace atmospheres, reflect or concentrate light for terraforming. Named after celestial beings from various cultures. Become fully autonomous by MTL 16." />
+            def="Self-directed solar swarm megastructures (MTL 13) that sail on light and gravity in the inner system (Venus, Mars, Mercury orbits). Harvest trace atmospheres, reflect or concentrate light for terraforming. Named after celestial beings from various cultures. Become fully autonomous by MTL 16. Essential for making Hot or Cool worlds terraformable; self-sustaining when a Great Tree is configured to extract resources for their maintenance." />
           <GlossaryEntry term="Divergent Humans" unit="MTL 14 first contact"
             def="Humans from outside Sol who used Xeno-Surrogacy technology (early FTL) to colonise other stars independently. 200+ years of accelerated growth and freedom allowed populations to reach tens of millions to billions. First contact with Sol at MTL 14, followed by convergent technology exchange. Distinct from Variant Humans (Sol gene-gineered)." />
           <GlossaryEntry term="Great Trees"   unit="Space elevator megastructure"
-            def="Fixed space elevator megastructures (MTL 13) that grow to enormous scale. Based on Bradley C. Edwards' designs — only viable for >1G world escape by 24th century. Cultural term varies — Great Trees is one of many names used across human cultures. Become self-directed by MTL 16, capable of jumping between star systems." />
-          <GlossaryEntry term="Jovian Hammers" unit="MTL 12 industry"
-            def="Industrial spacecraft skimming Jupiter's atmosphere to harvest materials
-only producible under gas-giant conditions." />
+            def="Fixed space elevator megastructures (MTL 13) that grow to enormous scale. Based on Bradley C. Edwards' designs — only viable for >1G world escape by 24th century. Cultural term varies; Great Trees is one of many names used across human cultures. Become self-directed by MTL 16, capable of jumping between star systems." />
+          <GlossaryEntry term="Jovian Hammers and Forges" unit="MTL 12 industry"
+            def="Carbon-nanotube megastructures functioning like sky-hooks or spinning bolas in orbit around gas giants. They make deep gouging or skimming passes through upper atmospheres to harvest materials
+only producible under gas-giant conditions. At TL 13 they can skim Brown Dwarf Stars. At higher TLs, Titans - megaton Celestials arranged as rings orbiting Hot Giants or Cool Brown Dwarfs - create magnetic runways that launch Hammers into hotter gas giants, cooler stars, and more intense stellar environments. As humanity spreads interstellar, Hammers and Forges diversify into exotic crystallisation and quantum-specialised forms." />
           <GlossaryEntry term="Jovian Variant" unit="MTL 11 human variant"
             def="A branch of Variant Humans (Sol gene-gineered) adapted for life in and around Jupiter's environment — high gravity, high radiation, extreme cold. Emerges at MTL 11." />
           <GlossaryEntry term="Variant Humans" unit="MTL 9–10 Sol gene-engineered"
@@ -217,7 +217,7 @@ only producible under gas-giant conditions." />
 generation for whom Earth is an abstraction. Emerges as a distinct population at MTL 10." 
 />
           <GlossaryEntry term="World Serpents" unit="Particle accelerator megastructure"
-            def="Particle accelerators placed on the jet streams of solar winds (radiation belts) of high-gravity objects — Jupiter has the largest due to its massive magnetosphere, Earth has one due to its strong magnetic field. Named after great serpents from mythology (Bakunawa, Antaboga, Jörmungandr, etc.). Create antimatter to power jump gates. Mobile, self-extending variants unfold between star systems at MTL 13; become autonomous at MTL 16." />
+            def="Synonym for Great Serpents. Particle accelerators placed on the jet streams of solar winds (radiation belts) of high-gravity objects. Named after great serpents from mythology (Bakunawa, Antaboga, Jörmungandr, etc.). Create antimatter to power jump gates. Mobile, self-extending variants unfold between star systems at MTL 13; become autonomous at MTL 16." />
           <GlossaryEntry term="Terraforming Worms" unit="MTL 9–13 biological engineering"
             def="Gene-gineered organisms (beasts great and small) that process seeded microbiomes and minerals to terraform worlds. Slow down as they grow larger. Used primarily on low-G worlds, dwarf worlds, and ice worlds where biological alteration is preferred over mechanical terraforming. Not all colonies preserve native biomes." />
         </GlossarySection>

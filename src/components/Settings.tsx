@@ -16,14 +16,10 @@ import {
   exportPresetToJSON,
   importPresetFromJSON,
   BOAT_PRICE_CR,
-  NATURAL_2D6_WEIGHTS,
-  FLAT_WEIGHTS,
   DEFAULT_DEVELOPMENT_WEIGHTS,
   DEFAULT_POWER_WEIGHTS,
   DEFAULT_GOV_WEIGHTS,
   MNEME_WEALTH_WEIGHTS,
-  DEMOCRATIC_POWER_WEIGHTS,
-  STABLE_POWER_WEIGHTS,
 } from '../lib/economicPresets';
 
 interface SettingsProps {
@@ -34,6 +30,69 @@ interface SettingsProps {
   onExportAll: () => void;
   onClearAll: () => void;
   systemCount: number;
+}
+
+// =====================
+// Table Weights Outcome Configs (QA-055)
+// =====================
+
+type WeightOutcome = { label: string; descriptor: string; span: number };
+
+const WEALTH_OUTCOMES: WeightOutcome[] = [
+  { label: 'Average', descriptor: 'SOC +0', span: 7 },      // rolls 2-8
+  { label: 'Better-off', descriptor: 'SOC +1', span: 2 },  // rolls 9-10
+  { label: 'Prosperous', descriptor: 'SOC +2', span: 1 },  // roll 11
+  { label: 'Affluent', descriptor: 'SOC +3', span: 1 },    // roll 12
+];
+
+const DEV_OUTCOMES: WeightOutcome[] = [
+  { label: 'UnderDeveloped', descriptor: 'HDI 0.0–0.59', span: 6 },    // rolls 2-7
+  { label: 'Developing', descriptor: 'HDI 0.60–0.69', span: 1 },      // roll 8
+  { label: 'Mature', descriptor: 'HDI 0.70–0.79', span: 1 },          // roll 9
+  { label: 'Developed', descriptor: 'HDI 0.80–0.89', span: 1 },       // roll 10
+  { label: 'Well Developed', descriptor: 'HDI 0.90–0.94', span: 1 },  // roll 11
+  { label: 'Very Developed', descriptor: 'HDI >0.95', span: 1 },      // roll 12
+];
+
+const POWER_OUTCOMES: WeightOutcome[] = [
+  { label: 'Anarchy', descriptor: '≤7', span: 6 },           // rolls 2-7
+  { label: 'Confederation', descriptor: '8–9', span: 2 },    // rolls 8-9
+  { label: 'Federation', descriptor: '10–11', span: 2 },     // rolls 10-11
+  { label: 'Unitary State', descriptor: '12', span: 1 },     // roll 12
+];
+
+const GOV_OUTCOMES: WeightOutcome[] = [
+  { label: 'Aristocracy', descriptor: '2–5', span: 4 },   // rolls 2-5
+  { label: 'Ideocracy', descriptor: '6–7', span: 2 },     // rolls 6-7
+  { label: 'Kratocracy', descriptor: '8–9', span: 2 },    // rolls 8-9
+  { label: 'Democracy', descriptor: '10–11', span: 2 },   // rolls 10-11
+  { label: 'Meritocracy', descriptor: '12', span: 1 },    // roll 12
+];
+
+function diceToOutcomeWeights(dice: number[], outcomes: WeightOutcome[]): number[] {
+  const weights: number[] = [];
+  let idx = 0;
+  for (const outcome of outcomes) {
+    let sum = 0;
+    for (let i = 0; i < outcome.span; i++) {
+      sum += dice[idx + i] ?? 0;
+    }
+    weights.push(sum);
+    idx += outcome.span;
+  }
+  return weights;
+}
+
+function outcomeWeightsToDice(weights: number[], outcomes: WeightOutcome[]): number[] {
+  const dice: number[] = [];
+  for (let i = 0; i < weights.length; i++) {
+    const span = outcomes[i].span;
+    const perIndex = span > 0 ? weights[i] / span : 0;
+    for (let j = 0; j < span; j++) {
+      dice.push(perIndex);
+    }
+  }
+  return dice;
 }
 
 const CURVE_LABELS: Record<string, string> = {
@@ -102,6 +161,16 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
     saveGeneratorOptions({ ...current, tlProductivityPreset: activePreset });
     setGeneratorOptions({ ...current, tlProductivityPreset: activePreset });
   }, [activePreset]);
+
+  // Sync table weights to active preset when a named preset is selected (QA-055)
+  useEffect(() => {
+    if (activePreset.id !== 'custom' && activePreset.id !== 'custom-default') {
+      setWealthWeights(activePreset.wealthWeights ?? MNEME_WEALTH_WEIGHTS);
+      setDevWeights(activePreset.developmentWeights ?? DEFAULT_DEVELOPMENT_WEIGHTS);
+      setPowerWeights(activePreset.powerWeights ?? DEFAULT_POWER_WEIGHTS);
+      setGovWeights(activePreset.govWeights ?? DEFAULT_GOV_WEIGHTS);
+    }
+  }, [activePreset.id, activePreset.wealthWeights, activePreset.developmentWeights, activePreset.powerWeights, activePreset.govWeights]);
 
   // Persist custom presets array to localStorage
   useEffect(() => {
@@ -758,79 +827,61 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
         </div>
       </div>
 
-      {/* Table Weights (QA-029) */}
+      {/* Table Weights (QA-055) */}
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Settings2 className="text-[#e53935]" size={20} />
           Table Weights
         </h3>
         <p className="text-sm text-[#9e9e9e]">
-          Adjust the probability distributions used for 2D6 table lookups. These affect how common or rare each outcome is during world generation.
+          Adjust the probability distributions used for 2D6 table lookups. Each outcome gets a relative weight; the generator converts these into percentages automatically.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Wealth</label>
-            <select
-              value={arraysEqual(wealthWeights.dice, NATURAL_2D6_WEIGHTS.dice) ? 'natural' : 'flat'}
-              onChange={(e) => setWealthWeights(e.target.value === 'natural' ? NATURAL_2D6_WEIGHTS : FLAT_WEIGHTS)}
-              className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
-            >
-              <option value="natural">Natural 2D6 — bell curve</option>
-              <option value="flat">Flat — uniform</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Development</label>
-            <select
-              value={arraysEqual(devWeights.dice, NATURAL_2D6_WEIGHTS.dice) ? 'natural' : 'flat'}
-              onChange={(e) => setDevWeights(e.target.value === 'natural' ? NATURAL_2D6_WEIGHTS : FLAT_WEIGHTS)}
-              className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
-            >
-              <option value="natural">Natural 2D6 — bell curve</option>
-              <option value="flat">Flat — uniform</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Power Structure</label>
-            <select
-              value={
-                arraysEqual(powerWeights.dice, NATURAL_2D6_WEIGHTS.dice) ? 'natural' :
-                arraysEqual(powerWeights.dice, DEMOCRATIC_POWER_WEIGHTS.dice) ? 'democratic' :
-                arraysEqual(powerWeights.dice, STABLE_POWER_WEIGHTS.dice) ? 'stable' :
-                'flat'
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <WeightCard
+            title="Wealth"
+            outcomes={WEALTH_OUTCOMES}
+            weights={wealthWeights}
+            onChange={(w) => {
+              setWealthWeights(w);
+              if (activePreset.id !== 'custom' && activePreset.id !== 'custom-default') {
+                setActivePreset((prev) => ({ ...prev, id: 'custom', name: 'Custom' }));
               }
-              onChange={(e) => {
-                const map: Record<string, import('../types').TableWeights> = {
-                  natural: NATURAL_2D6_WEIGHTS,
-                  flat: FLAT_WEIGHTS,
-                  democratic: DEMOCRATIC_POWER_WEIGHTS,
-                  stable: STABLE_POWER_WEIGHTS,
-                };
-                setPowerWeights(map[e.target.value]);
-              }}
-              className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
-            >
-              <option value="natural">Natural 2D6 — bell curve</option>
-              <option value="flat">Flat — uniform</option>
-              <option value="democratic">Democratic — less Anarchy</option>
-              <option value="stable">Stable — more Unitary</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Source of Power</label>
-            <select
-              value={arraysEqual(govWeights.dice, NATURAL_2D6_WEIGHTS.dice) ? 'natural' : 'flat'}
-              onChange={(e) => setGovWeights(e.target.value === 'natural' ? NATURAL_2D6_WEIGHTS : FLAT_WEIGHTS)}
-              className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
-            >
-              <option value="natural">Natural 2D6 — bell curve</option>
-              <option value="flat">Flat — uniform</option>
-            </select>
-          </div>
+            }}
+          />
+          <WeightCard
+            title="Development"
+            outcomes={DEV_OUTCOMES}
+            weights={devWeights}
+            onChange={(w) => {
+              setDevWeights(w);
+              if (activePreset.id !== 'custom' && activePreset.id !== 'custom-default') {
+                setActivePreset((prev) => ({ ...prev, id: 'custom', name: 'Custom' }));
+              }
+            }}
+          />
+          <WeightCard
+            title="Power Structure"
+            outcomes={POWER_OUTCOMES}
+            weights={powerWeights}
+            onChange={(w) => {
+              setPowerWeights(w);
+              if (activePreset.id !== 'custom' && activePreset.id !== 'custom-default') {
+                setActivePreset((prev) => ({ ...prev, id: 'custom', name: 'Custom' }));
+              }
+            }}
+          />
+          <WeightCard
+            title="Source of Power"
+            outcomes={GOV_OUTCOMES}
+            weights={govWeights}
+            onChange={(w) => {
+              setGovWeights(w);
+              if (activePreset.id !== 'custom' && activePreset.id !== 'custom-default') {
+                setActivePreset((prev) => ({ ...prev, id: 'custom', name: 'Custom' }));
+              }
+            }}
+          />
         </div>
       </div>
 
@@ -886,6 +937,75 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
   );
 }
 
+function WeightCard({
+  title,
+  outcomes,
+  weights,
+  onChange,
+}: {
+  title: string;
+  outcomes: WeightOutcome[];
+  weights: import('../types').TableWeights;
+  onChange: (weights: import('../types').TableWeights) => void;
+}) {
+  const outcomeWeights = diceToOutcomeWeights(weights.dice, outcomes);
+  const total = outcomeWeights.reduce((a, b) => a + b, 0);
+
+  function updateOutcomeWeight(index: number, value: number) {
+    const next = [...outcomeWeights];
+    next[index] = Math.max(0, value);
+    onChange({ dice: outcomeWeightsToDice(next, outcomes) });
+  }
+
+  return (
+    <div className="p-3 rounded border bg-[#141419] border-white/10 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="font-medium text-sm text-white">{title}</span>
+        <span
+          className={`text-xs px-2 py-0.5 rounded font-medium ${
+            total > 0 ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'
+          }`}
+        >
+          {'\u2211'} {Math.round(total * 10) / 10}
+        </span>
+      </div>
+      <div className="space-y-2">
+        {outcomes.map((outcome, i) => {
+          const weight = outcomeWeights[i];
+          const pct = total > 0 ? Math.round((weight / total) * 100) : 0;
+          return (
+            <div key={outcome.label} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-white truncate">{outcome.label}</span>
+                  <span className="text-[#9e9e9e] shrink-0">{outcome.descriptor}</span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[#9e9e9e] w-8 text-right">{pct}%</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={Math.round(weight)}
+                    onChange={(e) => updateOutcomeWeight(i, Number(e.target.value))}
+                    className="w-14 text-right text-sm rounded px-1 py-0.5 bg-[#0f0f14] border border-white/10 text-white"
+                  />
+                </div>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                <div
+                  className="h-full bg-[#e53935]/60 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, pct)}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function formatPopulation(pop: number): string {
   if (pop >= 1000000000) return `${(pop / 1000000000).toFixed(1)}B`;
   if (pop >= 1000000) return `${(pop / 1000000).toFixed(1)}M`;
@@ -908,6 +1028,4 @@ function formatCreditCompact(value: number): string {
   return `${formatNumber(value)} Cr`;
 }
 
-function arraysEqual(a: number[], b: number[]): boolean {
-  return a.length === b.length && a.every((v, i) => v === b[i]);
-}
+

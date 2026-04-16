@@ -58,6 +58,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-052** | 📋 Queued | Ships in the Area should use Credit values based on Economic Assumptions, not Years-to-own |
 | **QA-053** | 📋 Queued | Recent Items should display what Economic Assumptions were used |
 | **QA-054** | 📋 Queued | Terraforming Terraton Structures — megastructure lore umbrella |
+| **QA-055** | ✅ Fixed | Table Weights UI: per-outcome editable rows with live bars and percentages |
 
 
 ### Key Files
@@ -197,6 +198,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-052](#qa-052) | Engine — Ships | Ships in the Area should use Credit values based on Economic Assumptions | 🟠 Medium | 📋 Queued |
 | [QA-053](#qa-053) | UI — Recent Systems | Recent Items should display what Economic Assumptions were used | 🟡 Low | 📋 Queued |
 | [QA-054](#qa-054) | Lore — Megastructures | Terraforming Terraton Structures | 🟢 Lore | 📋 Queued |
+| [QA-055](#qa-055) | UI — Settings | Table Weights UI: per-outcome editable rows | 🔴 High | ✅ Fixed |
 
 ---
 
@@ -2733,4 +2735,56 @@ These structures are necessary in the ever-compounding growth of technology and 
 
 **Design Note:**  
 The megastructure cluster forms the technological backbone of the Mneme setting. In a high-compound economy, these projects are not optional luxuries — they are the minimum infrastructure required to prevent stagnation and maintain upward trajectory.
+
+
+---
+
+---
+
+### QA-055
+
+**Title:** Table Weights UI: Replace dropdowns with per-outcome editable weight rows  
+**Area:** UI — Settings → Economic Assumptions → Table Weights  
+**Priority:** 🔴 High  
+**Status:** ✅ Fixed  
+**Datetime:** 2026-04-16 | Fixed: 2026-04-16  
+
+**Problem Statement**  
+The Table Weights panel in `Settings.tsx` rendered four coarse dropdown selects ("Natural 2D6", "Flat", etc.) instead of the specified per-outcome editor. Users could not see or edit individual outcome probabilities, and the UI provided no live feedback on how weights translated to percentages.
+
+**Fix Applied**
+1. `src/components/Settings.tsx`:
+   - Replaced the four `<select>` dropdowns with `WeightCard` components.
+   - Each card shows one row per outcome with: label, descriptor, live percentage, numeric input, and a proportional fill bar.
+   - Outcome configs define the mapping from dice indices (rolls 2–12) to logical outcomes:
+     - **Wealth:** 4 outcomes (Average/Better-off/Prosperous/Affluent)
+     - **Development:** 6 outcomes
+     - **Power Structure:** 4 outcomes
+     - **Source of Power:** 5 outcomes
+   - Helper functions `diceToOutcomeWeights()` and `outcomeWeightsToDice()` convert between the 11-index dice array and the outcome-level weights.
+   - Editing any weight immediately recalculates all percentages and fill bars in that card.
+   - Editing any weight automatically switches the Preset label to `Custom`.
+   - Added a `useEffect` that syncs table-weight states to the active named preset (Mneme / CE / Stagnant) when the preset changes.
+
+2. `src/components/Glossary.tsx`:
+   - Updated megastructure entries (Great Serpents, Celestials, Great Trees, Jovian Hammers and Forges) to match the latest lore from QA-038/039/040/045.
+
+**Visual Result**
+```
+┌─────────────────────────────────────────────────────┐
+│ Wealth                                     ∑ 40     │
+├─────────────────────────────────────────────────────┤
+│ Average     SOC +0  ████████████████░░░░  [ 28 ] 70%│
+│ Better-off  SOC +1  ████░░░░░░░░░░░░░░░░  [  8 ] 20%│
+│ Prosperous  SOC +2  █░░░░░░░░░░░░░░░░░░░  [  2 ]  5%│
+│ Affluent    SOC +3  █░░░░░░░░░░░░░░░░░░░  [  2 ]  5%│
+└─────────────────────────────────────────────────────┘
+```
+
+**Files**
+- `src/components/Settings.tsx` — new WeightCard UI, outcome configs, conversion helpers
+- `src/components/Glossary.tsx` — lore updates for megastructures
+
+**Reference**
+See `260416-04 Economic Assumptions Customizations Custom tables.md` for the original spec and comparison matrices.
 
