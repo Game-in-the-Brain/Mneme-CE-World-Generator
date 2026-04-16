@@ -91,10 +91,11 @@ export function generateShipsInTheArea(
   const budgetRoll = rollD6();
   const rawBudget = weeklyTradeValue * (budgetRoll * 0.1);
 
-  // Step 1b: Economic scarcity adjustment (v1.3.103)
+  // Step 1b: Economic scarcity adjustment (v1.3.103 / QA-048)
   // In CE/Traveller, ships cost many salary-years, so they are treated as proportionally
   // scarcer capital goods. In Mneme, ships are affordable and traffic is dense.
-  const boatYears = preset?.baseIncome ? getBoatYears(preset.baseIncome) : MNEME_PRESET.boatYears ?? 10;
+  // QA-048: preset.boatYears is now an independent scarcity dial.
+  const boatYears = preset?.boatYears ?? (preset?.baseIncome ? getBoatYears(preset.baseIncome) : MNEME_PRESET.boatYears ?? 10);
   const mnemeReference = MNEME_PRESET.boatYears ?? 10;
   const scarcityMultiplier = Math.max(1, boatYears / mnemeReference);
   const budget = rawBudget / scarcityMultiplier;

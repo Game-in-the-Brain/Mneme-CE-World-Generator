@@ -90,13 +90,44 @@ export function getIncomeForSoc(soc: number, soc7Monthly: number): number {
 }
 
 /**
+ * Compute boat-years at a given TL using the preset's curve.
+ * Uses preset.boatYears when available (QA-048), otherwise derives from baseIncome.
+ */
+export function getBoatYearsAtTL(tl: number, preset: TLProductivityPreset): number {
+  const reference = preset.boatYears ?? getBoatYears(preset.baseIncome);
+  if (!reference || reference <= 0) return Infinity;
+
+  if (preset.curve === 'custom' && preset.soc7IncomeByTL) {
+    const tlIncome = preset.soc7IncomeByTL[tl] ?? preset.soc7IncomeByTL[preset.baseTL] ?? preset.baseIncome;
+    return getBoatYears(tlIncome);
+  }
+
+  if (preset.curve === 'flat') {
+    return reference;
+  }
+
+  if (preset.curve === 'mneme') {
+    const baseRatio = MNEME_RATIOS[preset.baseTL] ?? 1;
+    const tlRatio = MNEME_RATIOS[tl] ?? baseRatio;
+    return reference * (baseRatio / tlRatio);
+  }
+
+  if (preset.curve === 'linear' && preset.linearMultiplier) {
+    const steps = tl - preset.baseTL;
+    return reference / Math.pow(preset.linearMultiplier, steps);
+  }
+
+  return reference;
+}
+
+/**
  * Compute "income-years" to buy a ship at a given world's TL.
+ * QA-048: uses boatYears directly when decoupled from baseIncome.
  */
 export function getIncomeYears(shipPriceCr: number, tl: number, preset: TLProductivityPreset): number {
-  const monthly = getSoc7MonthlyIncome(tl, preset);
-  if (!monthly || monthly <= 0) return Infinity;
-  const annual = monthly * 12;
-  return shipPriceCr / annual;
+  const boatYears = getBoatYearsAtTL(tl, preset);
+  if (!boatYears || boatYears <= 0 || !BOAT_PRICE_CR) return Infinity;
+  return (shipPriceCr / BOAT_PRICE_CR) * boatYears;
 }
 
 // =====================

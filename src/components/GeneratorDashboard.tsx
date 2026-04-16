@@ -368,7 +368,7 @@ export function GeneratorDashboard({
                 <span>
                   Boat unit ({formatCredits(BOAT_PRICE_CR)}):{' '}
                   <strong style={{ color: 'var(--text-primary)' }}>
-                    {Math.round(getBoatYears(activePreset.baseIncome) * 100) / 100} years
+                    {Math.round((activePreset.boatYears ?? getBoatYears(activePreset.baseIncome)) * 100) / 100} years
                   </strong>{' '}
                   at TL {activePreset.baseTL}
                 </span>
