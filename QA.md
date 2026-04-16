@@ -53,6 +53,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — extracted to standalone repo; MWG links to it |
 | **QA-048** | 📋 Queued | Boat Years and SOC 7 Income should be independently fillable — Boat Years must independently scale ship scarcity |
 | **QA-049** | 📋 Queued | Economic model toggle (Stable vs Compounding) — Settings, generator pipeline |
+| **QA-050** | 📋 Queued | Recent Systems should show Economic Assumptions used |
 
 
 ### Key Files
@@ -187,6 +188,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-047](#qa-047) | Engine — Ships | Ships in the Area should use visiting cost scaled by economic scarcity multiplier | 🟠 Medium | ✅ Fixed |
 | [QA-048](#qa-048) | Engine — Economy / Ships | Boat Years and SOC 7 Income should be decoupled | 🔴 High | 📋 Queued |
 | [QA-049](#qa-049) | Engine — Economy / Population | Economic model toggle (Stable vs Compounding) | 🔴 High | 📋 Queued |
+| [QA-050](#qa-050) | UI — Recent Systems | Recent Systems should show Economic Assumptions used | 🟠 Medium | 📋 Queued |
 
 ---
 
@@ -2555,3 +2557,34 @@ Persist to localStorage key: `mneme_economic_model`.
 
 **Reference:**  
 See `population_recommendation.md` and `starport_recommendation_v1.1.md` in project outputs for full formula derivations and comparison tables. See `population_comparison.csv` and `starport_comparison.csv` for the statistical dataset comparing both models across 1,760–2,304 test cases.
+
+---
+
+---
+
+### QA-050
+
+**Title:** Recent Systems should show Economic Assumptions used  
+**Area:** UI — Recent Systems  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+
+**Problem Statement**  
+The Recent Systems list on the Generator page currently shows the world code or system name, but it does not display which **Economic Assumptions** (preset) were used when the world was generated. Because Mneme and CE/Traveller worlds are intentionally incompatible (different GDP curves, ship scarcity, and income scales), users need this context at a glance to avoid mixing incompatible settings in the same campaign.
+
+**Expected Behaviour**  
+Each entry in the Recent Systems list should visually indicate the economic preset that was active when the system was generated. This could be:
+- A small badge or tag showing the preset name (e.g. "Mneme", "CE / Traveller", "Stagnant", or "Custom")
+- A tooltip on hover with full preset details (TL 9 SOC 7 income, growth curve, boat years)
+- Colour-coding or an icon for quick scanning
+
+**Files**  
+- `src/components/GeneratorDashboard.tsx` — Recent Systems list UI
+- `src/types/index.ts` — `StarSystem` already snapshots `economicPreset`
+
+**Acceptance Criteria**
+1. Every Recent Systems entry shows the name of the `economicPreset` used at generation time.
+2. Legacy systems without an `economicPreset` display "Legacy" or "Mneme (default)".
+3. No source-code changes to generation logic — this is a pure UI enhancement.
+
