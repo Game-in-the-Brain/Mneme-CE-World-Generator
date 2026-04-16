@@ -1,5 +1,6 @@
-import type { ShipInArea, ShipsInAreaResult, ShipLocation } from '../types';
+import type { ShipInArea, ShipsInAreaResult, ShipLocation, TLProductivityPreset } from '../types';
 import shipReference from '../../mneme_ship_reference.json';
+import { getBoatYears, MNEME_PRESET } from './economicPresets';
 
 interface ShipRef {
   name: string;
@@ -81,10 +82,22 @@ function generatePoolShips(pool: ShipRef[], budget: number, totalBodies: number)
   return result;
 }
 
-export function generateShipsInTheArea(weeklyTradeValue: number, totalBodies: number): ShipsInAreaResult {
+export function generateShipsInTheArea(
+  weeklyTradeValue: number,
+  totalBodies: number,
+  preset?: TLProductivityPreset
+): ShipsInAreaResult {
   // Step 1: Ships Budget = Weekly Trade Value × (1D6 × 10%)
   const budgetRoll = rollD6();
-  const budget = weeklyTradeValue * (budgetRoll * 0.1);
+  const rawBudget = weeklyTradeValue * (budgetRoll * 0.1);
+
+  // Step 1b: Economic scarcity adjustment (v1.3.103)
+  // In CE/Traveller, ships cost many salary-years, so they are treated as proportionally
+  // scarcer capital goods. In Mneme, ships are affordable and traffic is dense.
+  const boatYears = preset?.baseIncome ? getBoatYears(preset.baseIncome) : MNEME_PRESET.boatYears ?? 10;
+  const mnemeReference = MNEME_PRESET.boatYears ?? 10;
+  const scarcityMultiplier = Math.max(1, boatYears / mnemeReference);
+  const budget = rawBudget / scarcityMultiplier;
 
   // Step 2: Category distribution
   const distRoll = rollD6();

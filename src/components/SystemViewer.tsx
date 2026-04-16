@@ -710,7 +710,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
       (system.iceWorlds?.length ?? 0) +
       (system.gasWorlds?.length ?? 0) +
       (system.mainWorld ? 1 : 0); // QA-036: main world is independent, must be counted
-    const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity, totalBodies);
+    const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity, totalBodies, system.economicPreset);
     setShipsResult(result);
   }
 
