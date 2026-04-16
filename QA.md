@@ -168,6 +168,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-038](#qa-038) | Lore — Megastructures | Great Serpent (formerly Bakunawa Coil) — MTL 12 antimatter ring | 🟢 Lore | ✅ Documented |
 | [QA-039](#qa-039) | Lore — Megastructures | Celestials — self-directed solar swarm for terraforming | 🟢 Lore | ✅ Documented |
 | [QA-040](#qa-040) | Lore — Megastructures | Great Trees — space elevator megastructures | 🟢 Lore | ✅ Documented |
+| [QA-045](#qa-045) | Lore — Megastructures | Jovian Hammers — MTL 12 gas-giant skimming industry | 🟢 Lore | ✅ Documented |
 | [QA-041](#qa-041) | UI — Generate | Economic assumptions selectable in generation; recent systems show preset used | 🟠 Medium | ✅ Fixed |
 | [QA-042](#qa-042) | UI — Generate / Settings | Generator: TL9 SOC7 & growth curve read-only; editing belongs in Settings | 🟠 Medium | ✅ Fixed |
 | [QA-043](#qa-043) | UI — Recent Systems | Recent systems table should display world code or WB-assigned star system name | 🟠 Medium | 📋 Queued |
@@ -2114,6 +2115,27 @@ Cultural terms vary; **Great Trees** is one of many names used across human cult
 
 **Autonomy & Mobility**  
 Become **self-directed by MTL 16**, capable of **jumping between star systems**.
+
+---
+
+### QA-045
+
+**Title:** Megastructure — Jovian Hammers (MTL 12 gas-giant skimming industry)  
+**Area:** Lore — Megastructures  
+**Priority:** 🟢 Lore  
+**Status:** ✅ Documented  
+**Datetime:** 260416
+
+**Description**  
+**MTL 12** industrial megastructures built from carbon nanotubes — the same core material used in space elevators and Great Serpents. Jovian Hammers function like sky-hooks or spinning bolas in orbit around gas giants (e.g. Jupiter, Saturn). They make deep gouging or skimming passes through the upper atmosphere to harvest materials that can only be produced under gas-giant conditions.
+
+**Evolution by Tech Level**
+- **TL 13:** Hammers can skim **Brown Dwarf Stars**, accessing even denser exotic atmospheres.
+- **Higher TLs:** The simple bolas design gives way to **megaton Celestials** (called **Titans**) that create a magnetic runway and catch system. This launches Hammers into hotter gas giants, and eventually into **cooler stars** and more intense stellar environments.
+- **Exotic specialisation:** As humanity spreads interstellar, Jovian Hammers and their supporting **Forges** diversify. Crystallisation processes and quantum properties unique to gas-giant pressures become industrial staples.
+
+**Role**  
+They extract the raw bulk materials needed for antimatter rings (Great Serpents), space-elevator tethers (Great Trees), and the orbital infrastructure that powers FTL civilisation.
 
 ---
 
