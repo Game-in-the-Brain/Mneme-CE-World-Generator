@@ -171,6 +171,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-041](#qa-041) | UI — Generate | Economic assumptions selectable in generation; recent systems show preset used | 🟠 Medium | ✅ Fixed |
 | [QA-042](#qa-042) | UI — Generate / Settings | Generator: TL9 SOC7 & growth curve read-only; editing belongs in Settings | 🟠 Medium | ✅ Fixed |
 | [QA-043](#qa-043) | UI — Recent Systems | Recent systems table should display world code or WB-assigned star system name | 🟠 Medium | 📋 Queued |
+| [QA-044](#qa-044) | UI — System Viewer | Overview should display economic assumptions: "made with: CE / Traveller" | 🟠 Medium | 📋 Queued |
 
 ---
 
@@ -2015,6 +2016,33 @@ The Recent Systems table currently shows only a generic identifier or timestamp,
 **Open Questions**
 - Should the generator auto-assign a pronounceable name (e.g. phonetic star-name generator) or stick to code-only?
 - If the WB renames a system after generation, does the Recent Systems list update in-place?
+
+---
+
+### QA-044
+
+**Title:** Overview should display economic assumptions: "made with: CE / Traveller" or "Mneme"  
+**Area:** UI — System Viewer / Overview  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Queued  
+**Datetime:** 260416
+
+**Problem Statement**  
+Users viewing a generated system have no immediate visual indication of which economic model was used to create it. Because Mneme and CE/Traveller worlds are intentionally incompatible (different GDP curves, different ship traffic logic), this context is essential for referees interpreting trade, ship budgets, and world wealth.
+
+**Expected Behaviour**
+- In the **System Viewer Overview** card (or tab), add a small metadata line:
+  - **"Economic model: Mneme"** or **"Economic model: CE / Traveller"** (or the custom preset name).
+- If the world was generated before FR-032 (no `economicPreset` stored), show **"Economic model: Legacy / Unknown"**.
+- The label should be subtle but scannable — e.g. a badge or fine-print line next to the generation timestamp.
+
+**App Impact / Files**
+- `src/components/SystemViewer.tsx` — Overview panel rendering.
+- `src/types/index.ts` — already stores `economicPreset` on `StarSystem` (FR-032).
+
+**Related**
+- QA-041 (economic assumptions in generation / recent systems)
+- FR-032 (income system redesign)
 
 ---
 
