@@ -12,15 +12,36 @@ interface ShipRef {
   monthly_operating_cost_cr: number;
   visiting_cost_cr: number;
   traffic_pool: 'small' | 'civilian' | 'warship';
+  minTL: number;
 }
 
-const SHIPS: ShipRef[] = shipReference.ships as ShipRef[];
+/** QA-059: Jump-capable ships require MTL 12+; everything else is intra-system (MTL 9) */
+const JUMP_SHIPS = new Set<string>([
+  'Courier Ship',
+  'Yacht',
+  'Merchant Trader',
+  'Merchant Liner',
+  'Frontier Trader',
+  'Merchant Freighter',
+  "'Bosco' Merchant Freighter",
+  'Patrol Frigate',
+  'Corvette',
+  'Exploration Vessel',
+  'Missile Frigate',
+  'Escort Frigate',
+  'Raider',
+  'Passenger Ship',
+  'Passenger Liner (400DT)',
+  'Frontier Passenger',
+  'Passenger Liner (1000DT)',
+  'Research Vessel',
+  'Survey Vessel',
+]);
 
-const POOL_SHIPS: Record<'small' | 'civilian' | 'warship', ShipRef[]> = {
-  small: SHIPS.filter(s => s.traffic_pool === 'small'),
-  civilian: SHIPS.filter(s => s.traffic_pool === 'civilian'),
-  warship: SHIPS.filter(s => s.traffic_pool === 'warship'),
-};
+const SHIPS: ShipRef[] = (shipReference.ships as Omit<ShipRef, 'minTL'>[]).map(s => ({
+  ...s,
+  minTL: JUMP_SHIPS.has(s.name) ? 12 : 9,
+}));
 
 /** 1D6 × 10% distribution table for Small/Civilian/Warship budget split */
 const DISTRIBUTION_TABLE: Record<number, { small: number; civilian: number; warship: number }> = {
@@ -86,8 +107,17 @@ function generatePoolShips(pool: ShipRef[], budget: number, totalBodies: number)
 export function generateShipsInTheArea(
   weeklyTradeValue: number,
   totalBodies: number,
+  worldTL: number,
   _preset?: TLProductivityPreset
 ): ShipsInAreaResult {
+  // Step 0: QA-059 — TL gate. Filter pool to ships buildable/servicable at this world's TL
+  const availableShips = SHIPS.filter(s => s.minTL <= worldTL);
+  const availablePool: Record<'small' | 'civilian' | 'warship', ShipRef[]> = {
+    small: availableShips.filter(s => s.traffic_pool === 'small'),
+    civilian: availableShips.filter(s => s.traffic_pool === 'civilian'),
+    warship: availableShips.filter(s => s.traffic_pool === 'warship'),
+  };
+
   // Step 1: Ships Budget = Weekly Trade Value × (1D6 × 10%)
   const budgetRoll = rollD6();
   const rawBudget = weeklyTradeValue * (budgetRoll * 0.1);
@@ -104,9 +134,9 @@ export function generateShipsInTheArea(
   const warshipBudget = budget * dist.warship;
 
   // Step 4: Generation loop per pool (QA-024: pass totalBodies for In System position roll)
-  const smallShips = generatePoolShips(POOL_SHIPS.small, smallCraftBudget, totalBodies);
-  const civilianShips = generatePoolShips(POOL_SHIPS.civilian, civilianBudget, totalBodies);
-  const warshipShips = generatePoolShips(POOL_SHIPS.warship, warshipBudget, totalBodies);
+  const smallShips = generatePoolShips(availablePool.small, smallCraftBudget, totalBodies);
+  const civilianShips = generatePoolShips(availablePool.civilian, civilianBudget, totalBodies);
+  const warshipShips = generatePoolShips(availablePool.warship, warshipBudget, totalBodies);
 
   return {
     budget,

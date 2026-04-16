@@ -421,10 +421,10 @@ No amount of money lets a TL 9 world build jump drives.
 
 **Step 3 — Weekly Activity:**
 ```
-Weekly Base     = Annual Port Trade ÷ 364
+Weekly Base     = Annual Port Trade ÷ 52
 Weekly Activity = Weekly Base × 3D6
 ```
-3D6 (not 2D6) — port activity clusters around a normal level with lower variance. ÷364 includes transit multiplier (~1.43×).
+3D6 (not 2D6) — port activity clusters around a normal level with lower variance. ÷52 gives a true weekly rate. (Earlier drafts and a stale JSDoc said ÷364 — that was a daily rate misread as weekly; corrected in QA-027 v1.3.97.)
 
 ### Old vs New Comparison
 
@@ -443,7 +443,7 @@ Weekly Activity = Weekly Base × 3D6
 |------|-----|-----|
 | Score formula | `floor(Hab/4) + (TL−7) + mods` | `floor(log10(pop × gdp × trade × wealth)) − 10` |
 | TL role | Addend | Capability cap |
-| Output | `10^PVS Cr/week` (deterministic) | `(annualTrade ÷ 364) × 3D6` (variable) |
+| Output | `10^PVS Cr/week` (deterministic) | `(annualTrade ÷ 52) × 3D6` (variable) |
 | Scale awareness | None | Population × GDP determines economic size |
 | Weekly dice | — (none) | 3D6 (lower variance than 2D6) |
 | Base rolls (naval/scout/pirate) | Unchanged | Unchanged |
@@ -730,6 +730,64 @@ Update Sections 6.1 and 6.3 with the following changes:
 
 ---
 
+## 13. Economic Preset System (FR-032 — 2026-04-16)
+
+### Problem
+
+The original `GDP_PER_DAY_BY_TL` table in `worldData.ts` hardcoded Mneme's compounding productivity curve. Users expecting CE/Traveller economics (flat income, slow growth) saw confusingly large credit values from small populations.
+
+### Current Implementation
+
+**Files:** `src/lib/economicPresets.ts`, `src/lib/optionsStorage.ts`, `src/components/Settings.tsx`
+
+A `TLProductivityPreset` object replaces the hardcoded table:
+
+```typescript
+interface TLProductivityPreset {
+  id: string;
+  name: string;
+  boatYears: number;      // Years for SOC 7 to buy the 10DT Boat at referenceTL
+  referenceTL: number;    // Default 7
+  curve: 'mneme' | 'flat' | 'linear' | 'custom';
+  linearMultiplier?: number;
+  soc7IncomeByTL?: Record<number, number>;  // curve === 'custom' only
+}
+```
+
+**Built-in presets:**
+
+| Preset | boatYears | Curve | SOC 7 at TL 9 | Notes |
+|--------|-----------|-------|---------------|-------|
+| Mneme (default) | 10.1 | mneme | ~44 580 Cr/mo | Compounding ×3.3/TL |
+| CE / Traveller | 222 | flat | 2 000 Cr/mo | Stagnant across all TLs |
+
+**How it integrates:**
+- `getGdpPerDayFromPreset(tl, preset)` replaces `GDP_PER_DAY_BY_TL[tl]` throughout
+- `calculateStarport()` accepts `gdpPerDayOverride` from the active preset
+- `generateShipsInTheArea()` accepts `preset` and derives the scarcity multiplier from `boatYears`
+- Generator options stored via `optionsStorage.ts`; old stored objects auto-merge with defaults (QA-037)
+
+**Table weights (QA-051):**
+`GeneratorOptions` now includes `developmentWeights`, `powerWeights`, `govWeights` for per-outcome 2D6 roll customization. Named weight presets (Mneme, CE, Stagnant) ship alongside the income presets.
+
+### Hard Gates (QA-030)
+
+Ships in the Area is now hard-gated before any budget calculation:
+- **Class X:** returns zero ships
+- **Class E:** budget capped 10%, small craft only, max 5 ships
+
+### Known Open Work
+
+- **QA-056:** GDP/day should use average-SOC income (Development + Wealth) not hardcoded SOC 7
+- **QA-057:** After QA-056: `wealthMultiplier` in annual trade formula becomes partially redundant — needs impact analysis
+- **QA-058:** Ships in Area rework — remove Boat Years from the ships pipeline, use Credit-native values
+
+### Recommendation for 2026 Book
+
+Add Section 7.9: Economic Assumptions. Document the two canonical presets (Mneme compounding, CE flat) and the Boat-Years calibration method. Note that the GDP/day table in §8a should match whichever preset a campaign uses.
+
+---
+
 ## Implementation Notes for Developers
 
 ### Key Files
@@ -750,6 +808,6 @@ All fixes tracked in `QA.md` with IDs QA-001 through QA-023.
 
 ---
 
-**Document Version:** 1.1 (2026-04-15 — renamed to Changes.md; added Key Mechanics Change summary; Section 12 gravity pipeline added)  
+**Document Version:** 1.2 (2026-04-16 — added §13 Economic Preset System; corrected weekly activity ÷364→÷52 in §8a and summary table)  
 **Prepared for:** 2026 Mneme CE World Generator Book Update  
 **Author:** PWA Development Team

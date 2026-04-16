@@ -4,6 +4,123 @@
 
 ---
 
+## v1.3.109 — QA-051 Table-Weight Calibration Pass (2026-04-16)
+
+### Fixes
+- **QA-051 Phase 2:** Weight calibration pass for Development, Power Structure, and Source of Power tables
+- Mneme, CE, and Stagnant weight presets tuned against 1 000-system batch export
+- Build passes with zero TypeScript errors
+
+---
+
+## v1.3.108 — QA-048 Boat Years / SOC7 Income Decoupled (2026-04-16)
+
+### Fixes
+- **QA-048:** Boat Years and SOC 7 Income are now independently fillable inputs in Settings
+- Changing one no longer force-recalculates the other; both accept direct user entry
+- Derived GDP/day updates from whichever field was last edited
+
+---
+
+## v1.3.106 — QA-051 Economic Customizations Roll Profiles + QA-029 Weight Presets (2026-04-16)
+
+### Features / Fixes
+- **QA-051:** Economic Assumptions panel in Settings now includes per-table roll-weight customization
+  - Development, Power Structure, Source of Power, Government weights each have editable per-outcome rows
+  - Live bar and percentage display updates as weights are changed
+- **QA-029 (Addressed):** Mneme, CE/Traveller, and Stagnant named weight presets shipped
+  - Mneme: progressive/meritocracy-skewed
+  - CE/Traveller: classic Traveller distribution
+  - Stagnant: Anarchy-heavy frontier default
+
+---
+
+## v1.3.105 — QA-046 Boat Years as Primary Calibration Input (2026-04-16)
+
+### Fixes
+- **QA-046:** Settings Economic panel — Boat Years is now the editable primary calibration input
+- SOC 7 monthly income and GDP/day are derived read-outs from Boat Years, not separate edit fields
+
+---
+
+## v1.3.103 — QA-047 Ships Scarcity Multiplier by Economic Preset (2026-04-16)
+
+### Fixes
+- **QA-047:** `shipsInArea.ts` — scarcity multiplier now derived from the active economic preset's `boatYears` ratio
+- CE worlds (boatYears ≈ 222) see ≈22× budget deflation vs Mneme (boatYears = 10.1)
+- Ships visiting-cost still in native Credits; multiplier gates total budget, not individual ship cost
+
+---
+
+## v1.3.101 — QA-029 Government Weights (2026-04-16)
+
+### Fixes
+- **QA-029 (Partial):** Anarchy disproportionality addressed via the `govWeights` table in GeneratorOptions
+- Natural 2D6 distribution preserved as default; override weights can be set in Settings or via preset
+
+---
+
+## v1.3.99 — FR-033 Sector Dynamics Goal-Loop (2026-04-16)
+
+### Features
+- **FR-033:** Goal-loop generation in GeneratorDashboard — generate until Starport/Pop/Habitability targets hit
+- Target selectors: min starport class, min population, min habitability
+- Loop runs up to configurable max attempts, reports success/fail summary
+
+---
+
+## v1.3.98 — FR-034 Ships Price List Modal (2026-04-16)
+
+### Features
+- **FR-034:** Ships Price List page (modal) accessible from System Viewer
+- Lists all 35 ships from `mneme_ship_reference.json` with cost-in-years display based on active economic preset
+- "Years to own" column recalculates live when preset changes
+
+---
+
+## v1.3.97 — QA-027 / QA-028 Income Display Fixes (2026-04-16)
+
+### Fixes
+- **QA-027 (final):** `formatCreditScale()` now outputs full comma-separated numbers (`1,790,000,000 Cr`); `annualTrade / 52` weekly base confirmed in code
+- **QA-028 (partial):** `SystemViewer.tsx` — contextual narrative notes now appear when Wealth and Development levels mismatch (e.g. high dev + low wealth shows "productive but poor" flavour text); underlying independent-roll table tension noted as remaining work
+
+---
+
+## v1.3.96 — QA-025 Low Population Terminology Override (2026-04-16)
+
+### Fixes
+- **QA-025:** Wealth and Development descriptor text now uses scalable language for small populations
+- Replaces "Economy", "Middle class", "Investment capital" etc. with "Fiscal condition", "Specialist groups", "Communal resources" at population < 10 000
+
+---
+
+## v1.3.95 — QA-043 Recent Systems World Code (2026-04-16)
+
+### Fixes
+- **QA-043:** Recent systems table now displays world code or WB-assigned star system name alongside system ID
+- Falls back to truncated UUID when no name assigned
+
+---
+
+## v1.3.94 — QA-044 System Viewer Economic Model Badge (2026-04-16)
+
+### Fixes
+- **QA-044:** System Viewer Overview tab now shows an "Economic Model" badge (Mneme / CE / Custom)
+- Badge displays the preset name used when generating that system, not the current active preset
+
+---
+
+## v1.3.85 — FR-032 Phase 3–4 + QA-030 Ship Hard Gates (2026-04-16)
+
+### Features / Fixes
+- **FR-032 Phase 3:** Engine integration — `calculateStarport()` and `generateShipsInTheArea()` accept and use the active `TLProductivityPreset` from generator options
+- **FR-032 Phase 4:** Ships displayed as "income-years" in Ship Detail cards alongside Credit cost
+- **QA-030:** `shipsInArea.ts` — hard gates by starport class
+  - Class X: returns zero ships immediately
+  - Class E: budget capped at 10%, small craft only, max 5 ships
+
+---
+
 ## v1.3.84 — FR-032 Phase 2: Economic Settings UI (2026-04-16)
 
 ### Features

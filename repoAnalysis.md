@@ -43,6 +43,7 @@ src/
 │   ├── generator.ts        # Core generation pipeline — ENTRY POINT
 │   ├── worldData.ts        # Tables: gravity, atmosphere, TL, PSS, GDP — see §6.5
 │   ├── economicPresets.ts  # TL productivity presets (Mneme / CE / Custom) — see §6.5
+│   ├── optionsStorage.ts   # loadGeneratorOptions() / saveGeneratorOptions() — QA-037 backward compat
 │   ├── shipsInArea.ts      # Ships in the Area generation — see §6.5
 │   ├── stellarData.ts      # Star mass, luminosity, zone calculations
 │   ├── physicalProperties.ts # Density → radius/gravity/escape velocity
@@ -353,8 +354,11 @@ Ships are then selected greedily from pool by `visiting_cost_cr` until the categ
 - Class E port → budget capped at 10%, small-craft-only, max 5 ships
 These gates are applied upstream in `SystemViewer.tsx` before `generateShipsInTheArea` is called.
 
-**Known design tension — QA-052 (queued):**  
-The scarcity multiplier deflates the *budget* in Credits using a Boat Years ratio, but ship costs inside the pool remain raw Credits. This is internally consistent as a "how many ships can this port afford?" model, but it couples ship availability to the income-years concept rather than native Credits throughout. The proposed fix (QA-052) is to replace the Boat Years ratio with a Credit-native multiplier (`baseIncome_Mneme / baseIncome_preset`) so the entire pipeline operates in the same unit.
+**Scarcity multiplier (QA-047 ✅ Fixed v1.3.103):**  
+The scarcity multiplier is now derived from the active preset's `boatYears` ratio (`max(1, boatYears / MNEME_REF)`). A CE preset (boatYears ≈ 222) produces ≈22× budget deflation vs Mneme (boatYears ≈ 10.1). Ship visiting costs remain in raw Credits; the multiplier gates the total budget, not individual ship cost.
+
+**Remaining design tension — QA-052/058 (queued):**  
+The budget-deflation approach works but still mixes units (Boat Years ratio × Credit budget). QA-058 proposes a full rework: remove Boat Years from the ships pipeline entirely, use Credit-native values derived from the preset's base income, and add an X-port toggle for edge cases. QA-056/057 (GDP/day uses average SOC, wealthMultiplier redundancy) are architectural prerequisites for QA-058.
 
 ---
 
@@ -365,7 +369,14 @@ The scarcity multiplier deflates the *budget* in Credits using a Boat Years rati
 | PSS           | ✅ Correct | `getGdpPerDayFromPreset()` via preset |
 | GDP Per Day   | ✅ Correct | `economicPresets.ts` — Mneme compounding vs CE flat |
 | Annual Trade  | ✅ Correct | GDP/day × population × dev/wealth multipliers |
-| Ships in Area | ⚠️ Working, design tension | Boat Years scarcity on budget; QA-052 queued |
+| Ships in Area | ✅ Working (QA-030/047 fixed) | Hard-gated by port class; Boat Years scarcity applied to budget; QA-052/058 queued for Credit-native rework |
+
+**Open economic engine issues (queued, not blocking):**
+- **QA-049** — Economic model toggle (Stable vs Compounding) in Settings
+- **QA-052** — Ships budget: Boat Years ratio → Credit-native multiplier
+- **QA-056** — GDP/day: use average SOC (Dev+Wealth) not hardcoded SOC 7
+- **QA-057** — Impact analysis after QA-056: resolve `wealthMultiplier` redundancy
+- **QA-058** — Ships in Area full rework (prerequisite: QA-056/057)
 
 ---
 
@@ -461,9 +472,11 @@ Generate a G5 star with Average atmo/temp, no hazard, Abundant biochem, TL 14:
 
 7. **GDP/day legacy table vs preset path**: `GDP_PER_DAY_BY_TL` in `worldData.ts` still exists but is dead code — all live generation uses `getGdpPerDayFromPreset()`. Do not extend the legacy table; extend the preset system.
 
-8. **Stale JSDoc in `worldData.ts`**: The comment on the weekly trade line says `annualTrade ÷ 364 × weeklyRoll`. The actual code uses `/ 52` (weeks). The comment is wrong; the code is right. Do not "fix" the code to match the comment.
+8. **Weekly activity formula**: code uses `annualTrade / 52` (true weekly rate). Any old comment or doc saying `÷ 364` is stale — fixed in QA-027 v1.3.81/v1.3.97.
 
-9. **Ships scarcity unit mismatch (QA-052)**: `generateShipsInTheArea` deflates the budget using a Boat Years ratio, but `visiting_cost_cr` in the ship pool is raw Credits. These are different economic units. The scarcity works numerically but the conceptual mismatch will matter when CE and Mneme worlds are compared side-by-side. See §6.5 Ships section.
+9. **Ships scarcity uses Boat Years ratio (QA-052/058 queued)**: `generateShipsInTheArea` deflates the budget via `max(1, preset.boatYears / MNEME_REF)`. QA-047 fixed this to be preset-aware; QA-052/058 queue a full rework to Credit-native values. See §6.5 Ships section.
+
+10. **`optionsStorage.ts` is the single gateway to `mneme_generator_options`**: Do not access `localStorage` for generator options directly in components. Always use `loadGeneratorOptions()` / `saveGeneratorOptions()` from `src/lib/optionsStorage.ts` to ensure backward-compat merging with defaults (QA-037).
 
 3. **Stellar class modifiers**: REF-007 v1.1 changed these:
    - F: Adv+2 (was +1)
@@ -512,7 +525,7 @@ npm run preview
 ---
 
 **Last Updated:** 2026-04-16  
-**Version:** 1.4.0
+**Version:** 1.5.0
 
 ## 13. Batch Export & Statistical Analysis (QA-012, QA-016)
 
@@ -530,14 +543,37 @@ DEV-only feature for statistical validation:
 
 ## 15. Open Issues (2026-04-16)
 
-| Issue | Location | Description |
-|-------|----------|-------------|
-| QA-027 | `worldData.ts`, `SystemViewer.tsx` | Income notation ambiguous — "B" = billion unclear, weekly vs annual figures don't reconcile. Root cause: Mneme compounding makes CE-scale populations produce CE-unfamiliar numbers. Blocked on FR-032 (income redesign). |
-| QA-028 | `SystemViewer.tsx` | Wealth panel contradicts World Development description. Same root cause as QA-027. |
-| QA-030 | `shipsInArea.ts`, `SystemViewer.tsx` | Ships at X/E-class starports too numerous. Hard gates exist but may need tightening. |
-| **QA-052** | `shipsInArea.ts` | Ships scarcity uses Boat Years ratio to deflate Credit budget, but ship pool costs are raw Credits. Proposed fix: replace `boatYears/mnemeRef` ratio with `baseIncome_Mneme/baseIncome_preset` Credit-native multiplier. See §6.5. |
-| **Stale JSDoc** | `worldData.ts` ~line 574 | Comment says `annualTrade ÷ 364 × weeklyRoll`; code uses `/ 52`. Comment is wrong. Fix: update JSDoc only — do not change code. |
-| FR-032 | `economicPresets.ts` | Income system redesign: avg income per TL + ships-as-income-years UI. Architectural prerequisite for resolving QA-027/028/030. Spec in `260416-fr032-fr033-spec.md`. |
+### Queued — blocking or high priority
+
+| Issue | Priority | Location | Description |
+|-------|----------|----------|-------------|
+| QA-049 | 🔴 High | `Settings.tsx`, `generator.ts` | Economic model toggle (Stable vs Compounding) — surface the curve type as a first-class user choice |
+| QA-056 | 🔴 High | `worldData.ts`, `economicPresets.ts` | GDP/day should use average-SOC income (derived from Development + Wealth), not hardcoded SOC 7 |
+| QA-057 | 🔴 High | `worldData.ts` | Impact analysis after QA-056: resolve `wealthMultiplier` redundancy in annual trade formula |
+| QA-058 | 🔴 High | `shipsInArea.ts` | Ships in Area full rework — remove Boat Years scarcity from ships, use Credit-native values, add X-port toggle; prerequisite: QA-056/057 |
+
+### Queued — lower priority / UI polish
+
+| Issue | Priority | Location | Description |
+|-------|----------|----------|-------------|
+| QA-050 | 🟠 Medium | `SystemViewer.tsx` | Recent Systems should show Economic Assumptions used per system |
+| QA-052 | 🟠 Medium | `shipsInArea.ts` | Interim fix: use Credit ratio multiplier instead of Boat Years ratio for ship budget (absorbed into QA-058) |
+| QA-053 | 🟡 Low | Recent Systems UI | Recent Items should display what Economic Assumptions were used |
+| QA-054 | 🟢 Lore | Glossary | Terraforming Terraton Structures — megastructure lore umbrella entry |
+| QA-ADD-002 | 🟡 Low | `exportCSV.ts` | CSV export — spec in REF-012; no implementation yet |
+
+### Partially fixed
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| QA-028 | 🟡 Partial | Wealth vs Development contradiction — narrative bridge added (v1.3.97); underlying independent-roll table tension remains |
+| QA-029 | 📋 Addressed | Anarchy over-representation — natural 2D6 preserved as default; Mneme/CE/Stagnant weight presets reduce skew (v1.3.101/106) |
+
+### In progress
+
+| Item | Status | Notes |
+|------|--------|-------|
+| FR-031 | 🟡 In Progress | 2D Animated Map — standalone repo (`2d-star-system-map`); Phases 0–5 complete; Phase 6 (tooltips, Brachistochrone, moons) pending |
 
 ---
 
