@@ -1,8 +1,10 @@
 import type { 
   StellarClass, Zone, LesserEarthType, 
   AtmosphereType, TemperatureType, HazardType, HazardIntensityType, ResourceLevel,
-  WealthLevel, PowerStructure, DevelopmentLevel, PowerSource, StarportClass, TravelZone
+  WealthLevel, PowerStructure, DevelopmentLevel, PowerSource, StarportClass, TravelZone,
+  TableWeights
 } from '../types';
+import { rollWeighted2D6 } from './dice';
 
 // =====================
 // World Type by Stellar Class
@@ -388,10 +390,14 @@ export function getWealthModifier(wealth: WealthLevel): number {
 // Power Structure Table
 // =====================
 
-export function getPowerStructure(roll: number): PowerStructure {
-  if (roll <= 7) return 'Anarchy';
-  if (roll <= 9) return 'Confederation';
-  if (roll <= 11) return 'Federation';
+export function getPowerStructure(roll?: number, weights?: TableWeights): PowerStructure {
+  const r = roll ?? (weights ? rollWeighted2D6(weights).value : (() => {
+    const v = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+    return v;
+  })());
+  if (r <= 7) return 'Anarchy';
+  if (r <= 9) return 'Confederation';
+  if (r <= 11) return 'Federation';
   return 'Unitary State';
 }
 
@@ -399,14 +405,18 @@ export function getPowerStructure(roll: number): PowerStructure {
 // Development Table
 // =====================
 
-export function getDevelopment(roll: number): { level: DevelopmentLevel; hdi: string; soc: number } {
-  if (roll === 2) return { level: 'UnderDeveloped', hdi: '0.0-0.39', soc: 2 };
-  if (roll <= 5) return { level: 'UnderDeveloped', hdi: '0.40-0.49', soc: 3 };
-  if (roll <= 7) return { level: 'UnderDeveloped', hdi: '0.50-0.59', soc: 4 };
-  if (roll === 8) return { level: 'Developing', hdi: '0.60-0.69', soc: 5 };
-  if (roll === 9) return { level: 'Mature', hdi: '0.70-0.79', soc: 6 };
-  if (roll === 10) return { level: 'Developed', hdi: '0.80-0.89', soc: 8 };
-  if (roll === 11) return { level: 'Well Developed', hdi: '0.9-0.94', soc: 9 };
+export function getDevelopment(roll?: number, weights?: TableWeights): { level: DevelopmentLevel; hdi: string; soc: number } {
+  const r = roll ?? (weights ? rollWeighted2D6(weights).value : (() => {
+    const v = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+    return v;
+  })());
+  if (r === 2) return { level: 'UnderDeveloped', hdi: '0.0-0.39', soc: 2 };
+  if (r <= 5) return { level: 'UnderDeveloped', hdi: '0.40-0.49', soc: 3 };
+  if (r <= 7) return { level: 'UnderDeveloped', hdi: '0.50-0.59', soc: 4 };
+  if (r === 8) return { level: 'Developing', hdi: '0.60-0.69', soc: 5 };
+  if (r === 9) return { level: 'Mature', hdi: '0.70-0.79', soc: 6 };
+  if (r === 10) return { level: 'Developed', hdi: '0.80-0.89', soc: 8 };
+  if (r === 11) return { level: 'Well Developed', hdi: '0.9-0.94', soc: 9 };
   return { level: 'Very Developed', hdi: '>0.95', soc: 10 };
 }
 
@@ -425,11 +435,15 @@ export function getDevelopmentModifier(dev: DevelopmentLevel): number {
 // Source of Power Table
 // =====================
 
-export function getSourceOfPower(roll: number): PowerSource {
-  if (roll <= 5) return 'Aristocracy';
-  if (roll <= 7) return 'Ideocracy';
-  if (roll <= 9) return 'Kratocracy';
-  if (roll <= 11) return 'Democracy';
+export function getSourceOfPower(roll?: number, weights?: TableWeights): PowerSource {
+  const r = roll ?? (weights ? rollWeighted2D6(weights).value : (() => {
+    const v = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+    return v;
+  })());
+  if (r <= 5) return 'Aristocracy';
+  if (r <= 7) return 'Ideocracy';
+  if (r <= 9) return 'Kratocracy';
+  if (r <= 11) return 'Democracy';
   return 'Meritocracy';
 }
 
@@ -533,6 +547,7 @@ export function calculateStarport(
   wealth: WealthLevel,
   dev: DevelopmentLevel,
   weeklyRoll: number,
+  gdpPerDayOverride?: number,
 ): {
   class: StarportClass;
   pss: number;
@@ -542,7 +557,7 @@ export function calculateStarport(
   weeklyBase: number;
   weeklyActivity: number;
 } {
-  const gdpPerDay   = getGdpPerDay(tl);
+  const gdpPerDay   = gdpPerDayOverride ?? getGdpPerDay(tl);
   const annualTrade = population * gdpPerDay * 365 * getTradeFraction(dev) * getWealthTradeMultiplier(wealth);
 
   const pss       = Math.floor(Math.log10(Math.max(1, annualTrade))) - 10;

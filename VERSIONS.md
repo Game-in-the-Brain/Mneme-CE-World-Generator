@@ -4,6 +4,25 @@
 
 ---
 
+## v1.3.83 — FR-032 Phase 1: Economic Engine Data Model (2026-04-16)
+
+### Features
+- **FR-032 Phase 1**: Scaffolded the full economic engine customization layer
+- `src/types/index.ts`: added `TLProductivityPreset`, `ProductivityCurve`, `TableWeights`, expanded `GeneratorOptions`
+- `src/lib/economicPresets.ts`: Mneme & CE built-in presets, SOC-income grid helpers, preset import/export
+- `src/lib/optionsStorage.ts`: validates and defaults `tlProductivityPreset`, `developmentWeights`, `powerWeights`, `govWeights`
+- `src/lib/dice.ts`: added `rollWeighted2D6()` for configurable 2D6 table distributions
+- `src/lib/worldData.ts`: `calculateStarport()` accepts optional `gdpPerDayOverride`; `getDevelopment`/`getPowerStructure`/`getSourceOfPower` accept optional `weights`
+- `src/lib/generator.ts`: wires preset GDP into starport calculation and weights into Development/Power/Gov rolls
+- `GeneratorDashboard.tsx`: passes full options object (including new fields) to `generateStarSystem()`
+
+### Design Notes
+- Mneme preset exactly reproduces legacy `GDP_PER_DAY_BY_TL` behavior (backward compatible)
+- CE preset uses flat 2,000 Cr/month SOC 7 income across all TLs (Y≈222)
+- Build passes with zero TypeScript errors
+
+---
+
 ## v1.3.82 — QA-037 localStorage Backward Compatibility (2026-04-16)
 
 ### Fixes

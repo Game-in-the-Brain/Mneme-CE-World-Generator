@@ -58,6 +58,59 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | `mneme_ship_reference.json` | 35 ships with `traffic_pool` + `monthly_operating_cost_cr` |
 | `260409-v02 Mneme-CE-World-Generator-FRD.md` | Full feature spec |
 
+### 2D Star System Map Integration
+
+MWG links to a **separate standalone repo** (`Game-in-the-Brain/2d-star-system-map`) for the animated planetary system map. The integration is a one-way URL push — MWG encodes the generated system as Base64 and opens the map in a new browser tab. The map repo has no dependency on MWG at runtime.
+
+**Trigger location:** `src/components/SystemViewer.tsx` lines ~126–135 — the "View System Map" button.
+
+**How it works (step by step):**
+1. The button click handler takes the current `StarSystem` object (`system` prop).
+2. It builds a `MapPayload`: `{ starSystem: system, starfieldSeed: <random 8-char>, epoch: { year: 2300, month: 1, day: 1 } }`.
+3. It encodes the JSON as Unicode-safe Base64:
+   ```ts
+   btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))))
+   ```
+4. It opens `https://game-in-the-brain.github.io/2d-star-system-map/?system=<encoded>` in a new tab.
+
+**The `StarSystem` fields the map actually reads:**
+
+| MWG field | Map field | Notes |
+|-----------|-----------|-------|
+| `system.key` | `key` | Used as hash seed for deterministic orbit angles |
+| `system.primaryStar.class/grade/mass` | `primaryStar.*` | Spectral colour + label |
+| `system.companionStars[].orbitDistance` | `companionStars[].orbitDistance` | Companion orbit period |
+| `system.circumstellarDisks[].distanceAU` | `circumstellarDisks[].distanceAU` | Disk point fields |
+| `system.terrestrialWorlds[].distanceAU/mass` | `terrestrialWorlds[].distanceAU/mass` | Green circles |
+| `system.dwarfPlanets[].distanceAU/mass` | `dwarfPlanets[].distanceAU/mass` | Grey circles |
+| `system.iceWorlds[].distanceAU/mass` | `iceWorlds[].distanceAU/mass` | Cyan circles |
+| `system.gasWorlds[].distanceAU/mass/gasClass` | `gasWorlds[].distanceAU/mass/gasClass` | `gasClass` is a **number** 1–5 |
+| `system.mainWorld.type/distanceAU/massEM` | `mainWorld.*` | Gold stroke; added explicitly if not in body arrays |
+
+**Troubleshooting — map opens blank / no bodies rendered:**
+
+1. **Check the URL** — open DevTools → Network, click "View System Map", copy the URL. Paste into a new tab. If blank, the `?system=` param is missing or malformed.
+2. **Decode the payload** — in the browser console:
+   ```js
+   const p = new URLSearchParams(location.search);
+   JSON.parse(decodeURIComponent(Array.from(atob(p.get('system'))).map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')))
+   ```
+   Verify `starSystem.primaryStar` is populated and `terrestrialWorlds`/`gasWorlds` etc. have entries.
+3. **`gasClass` must be a number** — if MWG ever serialises `gasClass` as a string (e.g., `"IV"`), the map's `switch` falls through to `gas-i`. Check `src/types/index.ts` `gasWorlds` — it must be `gasClass: number`.
+4. **Main world missing** — `dataAdapter.ts` in the map repo explicitly adds `mainWorld` if no existing body matches its `distanceAU`. If the main world disappears, check that `system.mainWorld` is not `null` in the payload and that its `type` is `"Terrestrial"`, `"Dwarf"`, `"Ice World"`, or `"Habitat"`.
+5. **URL too long** — very large systems (many bodies) can push the Base64 string past browser URL limits (~2 000 chars). Check total body count; if > ~30 bodies the URL may silently truncate. Mitigation: switch to `sessionStorage` handoff if this becomes an issue.
+6. **Unicode in system `key`** — `btoa` throws if any character is outside Latin-1. The `encodeURIComponent` + `replace` dance in the button handler prevents this. If you see `"InvalidCharacterError"` in the console, the encoding wrapper has been accidentally removed.
+
+**What NOT to change in this integration:**
+- The encoding dance — do not simplify to plain `btoa(json)`. It will crash on any non-ASCII world name.
+- The `?system=` param name — the map's `main.ts` decodes exactly this key.
+- The `epoch` structure `{ year, month, day }` — used to initialise the orbital simulation date.
+
+**Local testing without GitHub Pages:**
+Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, then open `http://localhost:<port>/test.html`. This lets you browse 1 000 batch-generated worlds and open any in the renderer — no MWG needed.
+
+---
+
 ### What NOT to change
 - PSS starport formula (QA-019 ✅) — E/X on frontier worlds is correct (see QA-INV-001)
 - Half Dice mechanic for M-class stars (QA-015 ✅)
@@ -106,7 +159,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | [QA-032](#qa-032) | Engine — World Physics | 427 km world showing 0.18G — stale pre-QA-023 data | 🟠 Medium | ✅ Fixed — No Bug |
 | [QA-033](#qa-033) | UI — 2D Map | Map button URL broken on GitHub Pages — extracted to standalone repo | 🔴 High | ✅ Fixed |
 | [QA-034](#qa-034) | Engine — Inhabitants | Remove Depression Penalty Timing option — default to after-starport only | 🟠 Medium | ✅ Fixed |
-| [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | 📋 Proposed |
+| [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | 🟡 In Progress |
 | [QA-035](#qa-035) | UI — 2D Map | Main world missing from 2D map — buildSceneGraph never adds it (only marks) | 🔴 High | ✅ Fixed |
 | [QA-036](#qa-036) | UI — Planetary System Tab | Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one | 🟠 Medium | ✅ Fixed |
 | [QA-037](#qa-037) | UI — Settings | localStorage `mneme_generator_options` backward compatibility for new fields | 🟠 Medium | ✅ Fixed |
@@ -1763,26 +1816,36 @@ Implement a dynamic text replacement or secondary lookup table for populations `
 **Title:** Income system redesign — average income per TL + ships as income-years  
 **Area:** Feature — Economy  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Proposed  
-**Datetime:** 260415-120000  
+**Status:** 🟡 In Progress  
+**Datetime:** 260415-120000 | Phase 1: 260416  
 **Proposed by:** Justin (email reply 2026-04-15)
 
 **Proposal**  
-Justin's three-part income system redesign, driven by Neil's feedback on implausible income figures:
+Justin's expanded economic engine redesign:
 
-1. **Settings: average income per TL (in Credits)**  
-   World builders can set a baseline "average annual income per person per TL" in the Generator Settings. This anchors all economic outputs to a user-defined plausible value.
+1. **Settings: TL Productivity Presets**  
+   Choose between `Mneme` (compounding growth) and `CE / Traveller` (flat 2,000 Cr/month SOC 7 at all TLs), or build a `Custom` curve. The preset replaces the hardcoded `GDP_PER_DAY_BY_TL`, directly affecting starport trade and ship traffic budgets.
 
-2. **Ships = X income-years stat**  
-   Each ship entry gets a derived stat: `cost / annual_income_per_capita = X income-years`. This makes ship costs legible in human terms ("this frigate costs 12 years of the entire planet's per-capita output").  
-   All ship cost displays recalculate relative to the income setting.
+2. **Boat-Years Calibration**  
+   The primary input is "years for SOC 7 to buy the base Boat (10DT)". This sets the per-capita GDP baseline. In CE mode (Y≈222) ships become enormously expensive in human terms, shrinking port traffic naturally.
 
-3. **Underlying income forces**  
-   Set up the fundamental economic forces that feed the income calculation: trade routes, resource extraction, population productivity, TL multiplier. These feed up into the displayed income rather than income being a single formula.
+3. **SOC-Income Grid & Table Weights**  
+   Users can view/edit the SOC 1–60 income table and adjust Development, Power, and Government 2D6 distributions.
+
+4. **Ships = Income-Years stat**  
+   `cost / annual_income_per_capita = X income-years`. This makes ship costs legible in human terms.
+
+**Phase 1 Completed (260416)**
+- `src/types/index.ts`: added `TLProductivityPreset`, `ProductivityCurve`, `TableWeights`, expanded `GeneratorOptions`
+- `src/lib/economicPresets.ts`: Mneme & CE built-in presets, SOC-income helpers, import/export
+- `src/lib/optionsStorage.ts`: validates and defaults new fields on load
+- `src/lib/dice.ts`: added `rollWeighted2D6()`
+- `src/lib/worldData.ts`: `calculateStarport()` accepts `gdpPerDayOverride`; `getDevelopment`/`getPowerStructure`/`getSourceOfPower` accept optional `weights`
+- `src/lib/generator.ts`: passes preset GDP into `calculateStarport()` and weights into table rolls
 
 **Dependencies**  
-QA-027 (income display bugs should be fixed as part of this redesign).  
-Links to QA-026 (Depression Penalty already modifies effectiveTL which feeds GDP).
+QA-027 ✅ (fixed as prerequisite).  
+QA-037 ✅ (localStorage backward compatibility).
 
 ---
 

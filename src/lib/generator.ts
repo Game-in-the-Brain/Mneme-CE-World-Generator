@@ -4,6 +4,7 @@ import type {
   StellarClass, StellarGrade, Zone, BodyType, GasWorldClass, LesserEarthType, ZoneBoundaries,
   WorldType, GeneratorOptions
 } from '../types';
+import { getGdpPerDayFromPreset, MNEME_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS } from './economicPresets';
 import { roll5D6, roll2D6, roll3D6, rollKeep, rollD6 } from './dice';
 import {
   getClassFromRoll, getGradeFromRoll, getStellarMass, getStellarLuminosity,
@@ -30,10 +31,14 @@ import { calculatePhysicalProperties } from './physicalProperties';
 
 export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSystem {
   const opts: GeneratorOptions = {
-    starClass:     options?.starClass     ?? 'random',
-    starGrade:     options?.starGrade     ?? 'random',
-    mainWorldType: options?.mainWorldType ?? 'random',
-    populated:     options?.populated     ?? true,
+    starClass:               options?.starClass               ?? 'random',
+    starGrade:               options?.starGrade               ?? 'random',
+    mainWorldType:           options?.mainWorldType           ?? 'random',
+    populated:               options?.populated               ?? true,
+    tlProductivityPreset:    options?.tlProductivityPreset    ?? MNEME_PRESET,
+    developmentWeights:      options?.developmentWeights      ?? DEFAULT_DEVELOPMENT_WEIGHTS,
+    powerWeights:            options?.powerWeights            ?? DEFAULT_POWER_WEIGHTS,
+    govWeights:              options?.govWeights              ?? DEFAULT_GOV_WEIGHTS,
   };
 
   const id = uuidv4();
@@ -55,7 +60,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
   const mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
 
   // Generate inhabitants
-  const inhabitants = generateInhabitants(mainWorld, opts.populated);
+  const inhabitants = generateInhabitants(mainWorld, opts);
 
   return {
     id,
@@ -323,9 +328,9 @@ function generateMainWorld(
 
 function generateInhabitants(
   mainWorld: MainWorld,
-  populated: boolean
+  opts: GeneratorOptions
 ): Inhabitants {
-  if (!populated) {
+  if (!opts.populated) {
     return {
       populated: false,
       techLevel: 0,
@@ -369,14 +374,11 @@ function generateInhabitants(
   const wealthRoll = roll2D6().value;
   const wealth = getWealth(wealthRoll, mainWorld.biochemicalResources);
 
-  const powerRoll = roll2D6().value;
-  const powerStructure = getPowerStructure(powerRoll);
+  const powerStructure = getPowerStructure(undefined, opts.powerWeights);
 
-  const devRoll = roll2D6().value;
-  const devResult = getDevelopment(devRoll);
+  const devResult = getDevelopment(undefined, opts.developmentWeights);
 
-  const sourceRoll = roll2D6().value;
-  const sourceOfPower = getSourceOfPower(sourceRoll);
+  const sourceOfPower = getSourceOfPower(undefined, opts.govWeights);
 
   const governance = getGovernanceDM(devResult.level, wealth);
 
@@ -385,12 +387,15 @@ function generateInhabitants(
 
   const weeklyRoll = roll3D6().value;
 
+  const gdpPerDay = getGdpPerDayFromPreset(techLevel, opts.tlProductivityPreset!);
+
   // QA-034: depression penalty is always applied after starport calculation
-  let foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll);
+  let foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll, gdpPerDay);
   let starportResult = foundingStarportResult;
 
   if (effectiveTL !== techLevel) {
-    starportResult = calculateStarport(population, effectiveTL, wealth, devResult.level, weeklyRoll);
+    const effectiveGdpPerDay = getGdpPerDayFromPreset(effectiveTL, opts.tlProductivityPreset!);
+    starportResult = calculateStarport(population, effectiveTL, wealth, devResult.level, weeklyRoll, effectiveGdpPerDay);
   }
 
   const starport = {

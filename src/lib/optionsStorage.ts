@@ -1,4 +1,5 @@
-import type { GeneratorOptions, StellarClass, StellarGrade, WorldType } from '../types';
+import type { GeneratorOptions, StellarClass, StellarGrade, WorldType, TLProductivityPreset, TableWeights } from '../types';
+import { MNEME_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS } from './economicPresets';
 
 const VALID_CLASSES = new Set<string>(['random', 'O', 'B', 'A', 'F', 'G', 'K', 'M']);
 const VALID_GRADES = new Set<string>(['random', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
@@ -9,7 +10,30 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   starGrade: 'random',
   mainWorldType: 'random',
   populated: true,
+  tlProductivityPreset: MNEME_PRESET,
+  developmentWeights: DEFAULT_DEVELOPMENT_WEIGHTS,
+  powerWeights: DEFAULT_POWER_WEIGHTS,
+  govWeights: DEFAULT_GOV_WEIGHTS,
 };
+
+function isValidPreset(value: unknown): value is TLProductivityPreset {
+  if (!value || typeof value !== 'object') return false;
+  const p = value as Record<string, unknown>;
+  return (
+    typeof p.id === 'string' &&
+    typeof p.name === 'string' &&
+    typeof p.boatYears === 'number' &&
+    typeof p.referenceTL === 'number' &&
+    typeof p.curve === 'string' &&
+    ['mneme', 'flat', 'linear', 'custom'].includes(p.curve)
+  );
+}
+
+function isValidWeights(value: unknown): value is TableWeights {
+  if (!value || typeof value !== 'object') return false;
+  const w = value as Record<string, unknown>;
+  return Array.isArray(w.dice) && w.dice.length === 11 && w.dice.every(n => typeof n === 'number' && n >= 0);
+}
 
 /**
  * Safely load GeneratorOptions from localStorage.
@@ -41,11 +65,31 @@ export function loadGeneratorOptions(): GeneratorOptions {
 
   const populated = typeof stored.populated === 'boolean' ? stored.populated : DEFAULT_GENERATOR_OPTIONS.populated;
 
+  const tlProductivityPreset = isValidPreset(stored.tlProductivityPreset)
+    ? stored.tlProductivityPreset
+    : DEFAULT_GENERATOR_OPTIONS.tlProductivityPreset!;
+
+  const developmentWeights = isValidWeights(stored.developmentWeights)
+    ? stored.developmentWeights
+    : DEFAULT_GENERATOR_OPTIONS.developmentWeights!;
+
+  const powerWeights = isValidWeights(stored.powerWeights)
+    ? stored.powerWeights
+    : DEFAULT_GENERATOR_OPTIONS.powerWeights!;
+
+  const govWeights = isValidWeights(stored.govWeights)
+    ? stored.govWeights
+    : DEFAULT_GENERATOR_OPTIONS.govWeights!;
+
   return {
     starClass,
     starGrade,
     mainWorldType,
     populated,
+    tlProductivityPreset,
+    developmentWeights,
+    powerWeights,
+    govWeights,
   };
 }
 

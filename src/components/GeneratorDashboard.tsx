@@ -51,11 +51,25 @@ export function GeneratorDashboard({
   const [populated, setPopulated] = useState<boolean>(defaults.populated);
 
   useEffect(() => {
-    saveGeneratorOptions({ starClass, starGrade, mainWorldType, populated });
+    const current = loadGeneratorOptions();
+    saveGeneratorOptions({
+      ...current,
+      starClass,
+      starGrade,
+      mainWorldType,
+      populated,
+    });
   }, [starClass, starGrade, mainWorldType, populated]);
 
   function handleGenerate() {
-    onGenerate({ starClass, starGrade, mainWorldType, populated });
+    const current = loadGeneratorOptions();
+    onGenerate({
+      ...current,
+      starClass,
+      starGrade,
+      mainWorldType,
+      populated,
+    });
   }
 
   return (

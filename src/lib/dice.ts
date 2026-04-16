@@ -1,4 +1,4 @@
-import type { RollResult } from '../types';
+import type { RollResult, TableWeights } from '../types';
 
 // =====================
 // Basic Dice Rolls
@@ -86,6 +86,36 @@ export function rollExploding(
 // =====================
 // Dice Notation Helpers
 // =====================
+
+/**
+ * Roll 2D6 with weighted probabilities.
+ * `weights.dice` must be length 11, mapping indices 0..10 to rolls 2..12.
+ */
+export function rollWeighted2D6(weights: TableWeights): RollResult {
+  const totalWeight = weights.dice.reduce((sum, w) => sum + w, 0);
+  if (totalWeight <= 0) {
+    // Fallback to uniform if weights are all zero
+    return roll2D6();
+  }
+  let pick = Math.random() * totalWeight;
+  for (let i = 0; i < weights.dice.length; i++) {
+    pick -= weights.dice[i];
+    if (pick <= 0) {
+      const value = i + 2; // map index 0 -> roll 2
+      return {
+        value,
+        rolls: [{
+          notation: `weighted 2D6 [${weights.dice.join(', ')}]`,
+          dice: [value],
+          modifier: 0,
+          total: value,
+        }]
+      };
+    }
+  }
+  // Should never reach here, but safety fallback
+  return roll2D6();
+}
 
 export function roll2D6(): RollResult {
   return rollKeep(2, 6, 2, 'highest', 0);

@@ -219,11 +219,32 @@ export interface GeneratorState {
   isGenerating: boolean;
 }
 
+export type ProductivityCurve = 'mneme' | 'flat' | 'linear' | 'custom';
+
+export interface TLProductivityPreset {
+  id: string;
+  name: string;
+  description: string;
+  boatYears: number;
+  referenceTL: number;
+  curve: ProductivityCurve;
+  linearMultiplier?: number;
+  soc7IncomeByTL?: Record<number, number>;
+}
+
+export interface TableWeights {
+  dice: number[]; // length 11, indices 0..10 map to rolls 2..12
+}
+
 export interface GeneratorOptions {
   starClass: StellarClass | 'random';
   starGrade: StellarGrade | 'random';
   mainWorldType: WorldType | 'random';
   populated: boolean;
+  tlProductivityPreset?: TLProductivityPreset;
+  developmentWeights?: TableWeights;
+  powerWeights?: TableWeights;
+  govWeights?: TableWeights;
 }
 
 export type BodyAnnotations = Record<string, { name: string; notes: string }>;
