@@ -230,7 +230,7 @@ Justin response: income UI will be redesigned (see FR-032). The underlying plaus
 **Title:** Wealth display contradicts World Development section  
 **Area:** UI — Economy  
 **Priority:** 🟠 Medium  
-**Status:** 🔴 Open  
+**Status:** 🟡 Partially Fixed  
 **Datetime:** 260415-120000  
 **Reported by:** Neil Lucock (email 2026-04-15)
 
@@ -240,8 +240,12 @@ Neil observes that the Wealth panel displays a world as "not rich" while the Wor
 **Expected Behaviour**  
 Wealth and World Development descriptors should tell a coherent story. If a world has high development but low wealth, the text should explicitly surface this tension as a design outcome (e.g., "high-output resource extraction with wealth extracted off-world") rather than appearing contradictory.
 
-**Notes**  
-May be a display/wording issue rather than a calculation bug. Review what each panel sources its descriptors from and ensure they are contextually aware of each other.
+**Fix Applied (v1.3.97)**  
+- `src/components/SystemViewer.tsx`: contextual narrative notes now appear when Wealth and Development levels mismatch (e.g. high development + low wealth shows "productive but poor" flavour text).
+- This masks the contradiction in the UI, but the underlying independent-roll tables can still produce these pairings.
+
+**Remaining Work**  
+The root tension (Wealth and Development are rolled independently) still exists. A deeper fix would require coupled table lookups or a unified socioeconomic generation pass. For now, the narrative bridge is considered sufficient for most use cases.
 
 ---
 
