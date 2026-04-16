@@ -246,6 +246,69 @@ export function GeneratorDashboard({
             )}
           </div>
 
+          {/* Sector Dynamics — Goal Mode (FR-033) */}
+          <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+            <button
+              onClick={() => setGoalModeOpen((v) => !v)}
+              className="text-xs flex items-center gap-1 mb-2 font-medium"
+              style={{ color: 'var(--text-secondary)' }}
+              type="button"
+            >
+              {goalModeOpen ? '▾' : '▸'} Sector Dynamics — Goal Mode
+            </button>
+
+            {goalModeOpen && (
+              <div className="text-left space-y-3">
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  Set optional targets. The generator will loop up to 2,000 times and return the first matching world.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                      Min Starport
+                    </label>
+                    <select
+                      value={goalStarportMin}
+                      onChange={(e) => setGoalStarportMin(e.target.value as import('../types').StarportClass | '')}
+                      className="w-full rounded px-2 py-2 text-sm border"
+                      style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="">Any</option>
+                      {['X', 'E', 'D', 'C', 'B', 'A'].map((c) => (
+                        <option key={c} value={c}>Class {c} or better</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                      Min Population
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="e.g. 1000000"
+                      value={goalMinPopulation}
+                      onChange={(e) => setGoalMinPopulation(e.target.value)}
+                      className="w-full rounded px-2 py-2 text-sm border"
+                      style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={goalHabitable}
+                        onChange={(e) => setGoalHabitable(e.target.checked)}
+                        className="rounded"
+                      />
+                      Habitable world (Hab &gt; 0)
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Economic Assumptions (FR-032) — QA-042: read-only in Generator */}
           <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
             <label className="block text-xs mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>
@@ -344,68 +407,6 @@ export function GeneratorDashboard({
             </>
           )}
         </button>
-
-        {/* Goal Mode (FR-033) */}
-        <div className="max-w-2xl mx-auto">
-          <button
-            onClick={() => setGoalModeOpen((v) => !v)}
-            className="text-xs flex items-center gap-1 mx-auto mb-2"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            {goalModeOpen ? '▾' : '▸'} Sector Dynamics — Goal Mode
-          </button>
-
-          {goalModeOpen && (
-            <div className="card text-left space-y-3">
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Set optional targets. The generator will loop up to 2,000 times and return the first matching world.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
-                    Min Starport
-                  </label>
-                  <select
-                    value={goalStarportMin}
-                    onChange={(e) => setGoalStarportMin(e.target.value as import('../types').StarportClass | '')}
-                    className="w-full rounded px-2 py-2 text-sm border"
-                    style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
-                  >
-                    <option value="">Any</option>
-                    {['X', 'E', 'D', 'C', 'B', 'A'].map((c) => (
-                      <option key={c} value={c}>Class {c} or better</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
-                    Min Population
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="e.g. 1000000"
-                    value={goalMinPopulation}
-                    onChange={(e) => setGoalMinPopulation(e.target.value)}
-                    className="w-full rounded px-2 py-2 text-sm border"
-                    style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={goalHabitable}
-                      onChange={(e) => setGoalHabitable(e.target.checked)}
-                      className="rounded"
-                    />
-                    Habitable world (Hab &gt; 0)
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Debug Batch Export — toggleable in Settings (QA-012, QA-014) */}
         <DebugBatchExportWrapper />
@@ -540,7 +541,7 @@ function DebugBatchExportWrapper() {
 }
 
 function DebugBatchExport() {
-  const [batchSize, setBatchSize] = useState(40);
+  const [batchSize, setBatchSize] = useState(1000);
   const [isExporting, setIsExporting] = useState(false);
   const [lastStats, setLastStats] = useState<string | null>(null);
 
