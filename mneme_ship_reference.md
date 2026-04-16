@@ -11,9 +11,11 @@
 
 > **Note:** `Supplies (Cr)` is treated as the **monthly operating cost** for ship traffic generation (resupply, life support, minor maintenance). The JSON file includes an explicit `monthly_operating_cost_cr` field set equal to `supplies_cr` for app integration.
 >
-> **Boat Units (v1.3.100):** Each ship's cost is expressed in **Boat Units** — `total_cost_cr ÷ 5,480,400`. This makes ship prices legible across economic presets:
+> **Boat Units (v1.3.100+):** All costs are expressed in **Boat Units** — `cost_cr ÷ 5,480,400`. This makes ship prices legible across economic presets:
 > - **CE / Traveller:** 1 Boat Unit ≈ 228.35 salary-years (stagnant, few ships).
 > - **Mneme:** 1 Boat Unit ≈ 10.1 salary-years (high growth, ships are common).
+>
+> **Visiting Cost (v1.3.102):** `monthly_operating_cost_cr + supplies_cr`. This is the actual cost used by the "Ships in the Area" generator to determine whether a given port budget can support a ship's presence.
 
 > **Traffic Pool:** Each ship carries a `traffic_pool` short key identifying which FR-030 generation pool it belongs to. The pool mapping is:
 > - `"small"` — categories `Small Craft` and `Fighter`, DT ≤ 100
@@ -22,43 +24,43 @@
 >
 > Filter by `traffic_pool` directly in code (`ship.traffic_pool === 'small'` etc.) — do not re-derive from `category` at runtime.
 
-| Ship Name | TL | DT | Total Cost (Cr) | Boat Units | Supplies (Cr) | Category | Traffic Pool |
-|-----------|----|----|-----------------|------------|---------------|----------|-------------|
-| Courier Ship | 9 | 100 | 44,175,000 | 8.06 | 284,000 | Small Craft | small |
-| Yacht | 9 | 100 | 32,200,000 | 5.88 | 284,000 | Small Craft | small |
-| Research Vessel | 9 | 200 | 56,545,000 | 10.32 | 9,758,000 | Specialized | civilian |
-| Asteroid Miner | 9 | 200 | 87,470,000 | 15.96 | 284,000 | Specialized | civilian |
-| Merchant Trader | 9 | 200 | 43,070,000 | 7.86 | 164,000 | Merchant | civilian |
-| Merchant Liner | 9 | 300 | 78,254,000 | 14.28 | 254,000 | Passenger | civilian |
-| Frontier Trader | 9 | 300 | 91,944,000 | 16.78 | 304,000 | Merchant | civilian |
-| Tender | 9 | 100 | 54,720,000 | 9.98 | 114,000 | Support | civilian |
-| Habitat Ring | 9 | 300 | 63,645,000 | 11.61 | 164,000 | Specialized | civilian |
-| Merchant Freighter | 9 | 400 | 76,994,000 | 14.05 | 174,000 | Merchant | civilian |
-| 'Bosco' Merchant Freighter | 9 | 400 | 156,120,000 | 28.49 | 158,000 | Merchant | civilian |
-| Patrol Frigate | 9 | 300 | 176,496,000 | 32.2 | 22,096,000 | Military | warship |
-| Corvette | 9 | 300 | 190,179,000 | 34.7 | 629,000 | Military | warship |
-| Exploration Vessel | 9 | 300 | 113,758,000 | 20.76 | 113,758,000 | Specialized | civilian |
-| Survey Vessel | 9 | 200 | 82,658,000 | 15.08 | 10,008,000 | Specialized | civilian |
-| System Defense Boat | 9 | 400 | 185,084,000 | 33.77 | 764,000 | Military | warship |
-| Missile Frigate | 9 | 400 | 175,870,000 | 32.09 | 404,000 | Military | warship |
-| Escort Frigate | 9 | 400 | 150,270,000 | 27.42 | 204,000 | Military | warship |
-| Raider | 9 | 600 | 288,500,000 | 52.64 | 38,517,000 | Military | warship |
-| Fighter (1BL/2M) | 9 | 10 | 12,930,630 | 2.36 | 11,430,630 | Fighter | small |
-| Escort Fighter | 9 | 10 | 11,975,630 | 2.19 | 505,630 | Fighter | small |
-| Fighter (3M) | 9 | 10 | 10,741,630 | 1.96 | 21,630 | Fighter | small |
-| Medium Fighter | 9 | 20 | 16,156,630 | 2.95 | 21,630 | Fighter | small |
-| Passenger Ship | 9 | 200 | 48,320,000 | 8.82 | 314,000 | Passenger | civilian |
-| Passenger Liner (400DT) | 9 | 400 | 94,544,000 | 17.25 | 174,000 | Passenger | civilian |
-| Frontier Passenger | 9 | 300 | 102,094,000 | 18.63 | 174,000 | Passenger | civilian |
+| Ship Name | TL | DT | Total Cost (Cr) | Total Boat Units | Monthly (Cr) | Monthly Boat Units | Supplies (Cr) | Visiting Cost (Cr) | Visiting Boat Units | Category | Traffic Pool |
+|-----------|----|----|-----------------|------------------|--------------|--------------------|---------------|--------------------|---------------------|----------|-------------|
+| Courier Ship | 9 | 100 | 44,175,000 | 8.06 | 284,000 | 0.0518 | 284,000 | 568,000 | 0.1036 | Small Craft | small |
+| Yacht | 9 | 100 | 32,200,000 | 5.88 | 284,000 | 0.0518 | 284,000 | 568,000 | 0.1036 | Small Craft | small |
+| Research Vessel | 9 | 200 | 56,545,000 | 10.32 | 9,758,000 | 1.7805 | 9,758,000 | 19,516,000 | 3.5611 | Specialized | civilian |
+| Asteroid Miner | 9 | 200 | 87,470,000 | 15.96 | 284,000 | 0.0518 | 284,000 | 568,000 | 0.1036 | Specialized | civilian |
+| Merchant Trader | 9 | 200 | 43,070,000 | 7.86 | 164,000 | 0.0299 | 164,000 | 328,000 | 0.0598 | Merchant | civilian |
+| Merchant Liner | 9 | 300 | 78,254,000 | 14.28 | 254,000 | 0.0463 | 254,000 | 508,000 | 0.0927 | Passenger | civilian |
+| Frontier Trader | 9 | 300 | 91,944,000 | 16.78 | 304,000 | 0.0555 | 304,000 | 608,000 | 0.1109 | Merchant | civilian |
+| Tender | 9 | 100 | 54,720,000 | 9.98 | 114,000 | 0.0208 | 114,000 | 228,000 | 0.0416 | Support | civilian |
+| Habitat Ring | 9 | 300 | 63,645,000 | 11.61 | 164,000 | 0.0299 | 164,000 | 328,000 | 0.0598 | Specialized | civilian |
+| Merchant Freighter | 9 | 400 | 76,994,000 | 14.05 | 174,000 | 0.0317 | 174,000 | 348,000 | 0.0635 | Merchant | civilian |
+| 'Bosco' Merchant Freighter | 9 | 400 | 156,120,000 | 28.49 | 158,000 | 0.0288 | 158,000 | 316,000 | 0.0577 | Merchant | civilian |
+| Patrol Frigate | 9 | 300 | 176,496,000 | 32.2 | 22,096,000 | 4.0318 | 22,096,000 | 44,192,000 | 8.0636 | Military | warship |
+| Corvette | 9 | 300 | 190,179,000 | 34.7 | 629,000 | 0.1148 | 629,000 | 1,258,000 | 0.2295 | Military | warship |
+| Exploration Vessel | 9 | 300 | 113,758,000 | 20.76 | 113,758,000 | 20.7572 | 113,758,000 | 227,516,000 | 41.5145 | Specialized | civilian |
+| Survey Vessel | 9 | 200 | 82,658,000 | 15.08 | 10,008,000 | 1.8261 | 10,008,000 | 20,016,000 | 3.6523 | Specialized | civilian |
+| System Defense Boat | 9 | 400 | 185,084,000 | 33.77 | 764,000 | 0.1394 | 764,000 | 1,528,000 | 0.2788 | Military | warship |
+| Missile Frigate | 9 | 400 | 175,870,000 | 32.09 | 404,000 | 0.0737 | 404,000 | 808,000 | 0.1474 | Military | warship |
+| Escort Frigate | 9 | 400 | 150,270,000 | 27.42 | 204,000 | 0.0372 | 204,000 | 408,000 | 0.0744 | Military | warship |
+| Raider | 9 | 600 | 288,500,000 | 52.64 | 38,517,000 | 7.0281 | 38,517,000 | 77,034,000 | 14.0563 | Military | warship |
+| Fighter (1BL/2M) | 9 | 10 | 12,930,630 | 2.36 | 11,430,630 | 2.0857 | 11,430,630 | 22,861,260 | 4.1715 | Fighter | small |
+| Escort Fighter | 9 | 10 | 11,975,630 | 2.19 | 505,630 | 0.0923 | 505,630 | 1,011,260 | 0.1845 | Fighter | small |
+| Fighter (3M) | 9 | 10 | 10,741,630 | 1.96 | 21,630 | 0.0039 | 21,630 | 43,260 | 0.0079 | Fighter | small |
+| Medium Fighter | 9 | 20 | 16,156,630 | 2.95 | 21,630 | 0.0039 | 21,630 | 43,260 | 0.0079 | Fighter | small |
+| Passenger Ship | 9 | 200 | 48,320,000 | 8.82 | 314,000 | 0.0573 | 314,000 | 628,000 | 0.1146 | Passenger | civilian |
+| Passenger Liner (400DT) | 9 | 400 | 94,544,000 | 17.25 | 174,000 | 0.0317 | 174,000 | 348,000 | 0.0635 | Passenger | civilian |
+| Frontier Passenger | 9 | 300 | 102,094,000 | 18.63 | 174,000 | 0.0317 | 174,000 | 348,000 | 0.0635 | Passenger | civilian |
 | Passenger Liner (1000DT) | 9 | 1,000 | 379,156,000 | 3,249,000 | Passenger | civilian |
-| Shuttle | 9 | 90 | 29,715,400 | 5.42 | 965,400 | Small Craft | small |
+| Shuttle | 9 | 90 | 29,715,400 | 5.42 | 965,400 | 0.1762 | 965,400 | 1,930,800 | 0.3523 | Small Craft | small |
 | Boat (10DT) | 9 | 10 | 5,320,400 | 5,400 | Small Craft | small |
-| Boat (20DT) | 9 | 20 | 5,480,400 | 1.0 | 5,400 | Small Craft | small |
-| Armed Gig | 9 | 20 | 15,465,400 | 2.82 | 5,400 | Small Craft | small |
-| Ship's Boat (30DT) | 9 | 30 | 18,651,200 | 3.4 | 16,200 | Small Craft | small |
-| Ship's Boat (50DT) | 9 | 50 | 13,471,200 | 2.46 | 16,200 | Small Craft | small |
-| Ship's Boat (70DT) | 9 | 70 | 13,791,200 | 2.52 | 16,200 | Small Craft | small |
-| Ship's Boat (95DT) | 9 | 95 | 14,191,200 | 2.59 | 16,200 | Small Craft | small |
+| Boat (20DT) | 9 | 20 | 5,480,400 | 1.0 | 5,400 | 0.001 | 5,400 | 10,800 | 0.002 | Small Craft | small |
+| Armed Gig | 9 | 20 | 15,465,400 | 2.82 | 5,400 | 0.001 | 5,400 | 10,800 | 0.002 | Small Craft | small |
+| Ship's Boat (30DT) | 9 | 30 | 18,651,200 | 3.4 | 16,200 | 0.003 | 16,200 | 32,400 | 0.0059 | Small Craft | small |
+| Ship's Boat (50DT) | 9 | 50 | 13,471,200 | 2.46 | 16,200 | 0.003 | 16,200 | 32,400 | 0.0059 | Small Craft | small |
+| Ship's Boat (70DT) | 9 | 70 | 13,791,200 | 2.52 | 16,200 | 0.003 | 16,200 | 32,400 | 0.0059 | Small Craft | small |
+| Ship's Boat (95DT) | 9 | 95 | 14,191,200 | 2.59 | 16,200 | 0.003 | 16,200 | 32,400 | 0.0059 | Small Craft | small |
 
 ---
 

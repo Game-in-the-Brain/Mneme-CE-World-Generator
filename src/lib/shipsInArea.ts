@@ -9,6 +9,7 @@ interface ShipRef {
   supplies_cr: number;
   category: string;
   monthly_operating_cost_cr: number;
+  visiting_cost_cr: number;
   traffic_pool: 'small' | 'civilian' | 'warship';
 }
 
@@ -54,15 +55,15 @@ function generatePoolShips(pool: ShipRef[], budget: number, totalBodies: number)
   const result: ShipInArea[] = [];
   if (pool.length === 0 || budget <= 0) return result;
 
-  const minCost = Math.min(...pool.map(s => s.monthly_operating_cost_cr));
+  const minCost = Math.min(...pool.map(s => s.visiting_cost_cr));
   let remaining = budget;
   let safety = 0;
 
   while (remaining >= minCost && safety < 1000) {
     safety++;
     const ship = pickRandomShip(pool);
-    if (ship.monthly_operating_cost_cr <= remaining) {
-      remaining -= ship.monthly_operating_cost_cr;
+    if (ship.visiting_cost_cr <= remaining) {
+      remaining -= ship.visiting_cost_cr;
       const { location, systemPosition } = rollLocationWithPosition(totalBodies);
       result.push({
         name: ship.name,

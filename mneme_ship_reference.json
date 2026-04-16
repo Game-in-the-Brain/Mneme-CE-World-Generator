@@ -36,7 +36,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 284000,
-      "boat_units": 8.06
+      "total_cost_boat_units": 8.06,
+      "monthly_operating_cost_boat_units": 0.0518,
+      "supplies_boat_units": 0.0518,
+      "visiting_cost_cr": 568000,
+      "visiting_cost_boat_units": 0.1036
     },
     {
       "name": "Yacht",
@@ -47,7 +51,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 284000,
-      "boat_units": 5.88
+      "total_cost_boat_units": 5.88,
+      "monthly_operating_cost_boat_units": 0.0518,
+      "supplies_boat_units": 0.0518,
+      "visiting_cost_cr": 568000,
+      "visiting_cost_boat_units": 0.1036
     },
     {
       "name": "Research Vessel",
@@ -58,7 +66,11 @@
       "category": "Specialized",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 9758000,
-      "boat_units": 10.32
+      "total_cost_boat_units": 10.32,
+      "monthly_operating_cost_boat_units": 1.7805,
+      "supplies_boat_units": 1.7805,
+      "visiting_cost_cr": 19516000,
+      "visiting_cost_boat_units": 3.5611
     },
     {
       "name": "Asteroid Miner",
@@ -69,7 +81,11 @@
       "category": "Specialized",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 284000,
-      "boat_units": 15.96
+      "total_cost_boat_units": 15.96,
+      "monthly_operating_cost_boat_units": 0.0518,
+      "supplies_boat_units": 0.0518,
+      "visiting_cost_cr": 568000,
+      "visiting_cost_boat_units": 0.1036
     },
     {
       "name": "Merchant Trader",
@@ -80,7 +96,11 @@
       "category": "Merchant",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 164000,
-      "boat_units": 7.86
+      "total_cost_boat_units": 7.86,
+      "monthly_operating_cost_boat_units": 0.0299,
+      "supplies_boat_units": 0.0299,
+      "visiting_cost_cr": 328000,
+      "visiting_cost_boat_units": 0.0598
     },
     {
       "name": "Merchant Liner",
@@ -91,7 +111,11 @@
       "category": "Passenger",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 254000,
-      "boat_units": 14.28
+      "total_cost_boat_units": 14.28,
+      "monthly_operating_cost_boat_units": 0.0463,
+      "supplies_boat_units": 0.0463,
+      "visiting_cost_cr": 508000,
+      "visiting_cost_boat_units": 0.0927
     },
     {
       "name": "Frontier Trader",
@@ -102,7 +126,11 @@
       "category": "Merchant",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 304000,
-      "boat_units": 16.78
+      "total_cost_boat_units": 16.78,
+      "monthly_operating_cost_boat_units": 0.0555,
+      "supplies_boat_units": 0.0555,
+      "visiting_cost_cr": 608000,
+      "visiting_cost_boat_units": 0.1109
     },
     {
       "name": "Tender",
@@ -113,7 +141,11 @@
       "category": "Support",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 114000,
-      "boat_units": 9.98
+      "total_cost_boat_units": 9.98,
+      "monthly_operating_cost_boat_units": 0.0208,
+      "supplies_boat_units": 0.0208,
+      "visiting_cost_cr": 228000,
+      "visiting_cost_boat_units": 0.0416
     },
     {
       "name": "Habitat Ring",
@@ -124,7 +156,11 @@
       "category": "Specialized",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 164000,
-      "boat_units": 11.61
+      "total_cost_boat_units": 11.61,
+      "monthly_operating_cost_boat_units": 0.0299,
+      "supplies_boat_units": 0.0299,
+      "visiting_cost_cr": 328000,
+      "visiting_cost_boat_units": 0.0598
     },
     {
       "name": "Merchant Freighter",
@@ -135,7 +171,11 @@
       "category": "Merchant",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 174000,
-      "boat_units": 14.05
+      "total_cost_boat_units": 14.05,
+      "monthly_operating_cost_boat_units": 0.0317,
+      "supplies_boat_units": 0.0317,
+      "visiting_cost_cr": 348000,
+      "visiting_cost_boat_units": 0.0635
     },
     {
       "name": "'Bosco' Merchant Freighter",
@@ -146,7 +186,11 @@
       "category": "Merchant",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 158000,
-      "boat_units": 28.49
+      "total_cost_boat_units": 28.49,
+      "monthly_operating_cost_boat_units": 0.0288,
+      "supplies_boat_units": 0.0288,
+      "visiting_cost_cr": 316000,
+      "visiting_cost_boat_units": 0.0577
     },
     {
       "name": "Patrol Frigate",
@@ -157,7 +201,11 @@
       "category": "Military",
       "traffic_pool": "warship",
       "monthly_operating_cost_cr": 22096000,
-      "boat_units": 32.2
+      "total_cost_boat_units": 32.2,
+      "monthly_operating_cost_boat_units": 4.0318,
+      "supplies_boat_units": 4.0318,
+      "visiting_cost_cr": 44192000,
+      "visiting_cost_boat_units": 8.0636
     },
     {
       "name": "Corvette",
@@ -168,7 +216,11 @@
       "category": "Military",
       "traffic_pool": "warship",
       "monthly_operating_cost_cr": 629000,
-      "boat_units": 34.7
+      "total_cost_boat_units": 34.7,
+      "monthly_operating_cost_boat_units": 0.1148,
+      "supplies_boat_units": 0.1148,
+      "visiting_cost_cr": 1258000,
+      "visiting_cost_boat_units": 0.2295
     },
     {
       "name": "Exploration Vessel",
@@ -179,7 +231,11 @@
       "category": "Specialized",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 113758000,
-      "boat_units": 20.76
+      "total_cost_boat_units": 20.76,
+      "monthly_operating_cost_boat_units": 20.7572,
+      "supplies_boat_units": 20.7572,
+      "visiting_cost_cr": 227516000,
+      "visiting_cost_boat_units": 41.5145
     },
     {
       "name": "Survey Vessel",
@@ -190,7 +246,11 @@
       "category": "Specialized",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 10008000,
-      "boat_units": 15.08
+      "total_cost_boat_units": 15.08,
+      "monthly_operating_cost_boat_units": 1.8261,
+      "supplies_boat_units": 1.8261,
+      "visiting_cost_cr": 20016000,
+      "visiting_cost_boat_units": 3.6523
     },
     {
       "name": "System Defense Boat",
@@ -201,7 +261,11 @@
       "category": "Military",
       "traffic_pool": "warship",
       "monthly_operating_cost_cr": 764000,
-      "boat_units": 33.77
+      "total_cost_boat_units": 33.77,
+      "monthly_operating_cost_boat_units": 0.1394,
+      "supplies_boat_units": 0.1394,
+      "visiting_cost_cr": 1528000,
+      "visiting_cost_boat_units": 0.2788
     },
     {
       "name": "Missile Frigate",
@@ -212,7 +276,11 @@
       "category": "Military",
       "traffic_pool": "warship",
       "monthly_operating_cost_cr": 404000,
-      "boat_units": 32.09
+      "total_cost_boat_units": 32.09,
+      "monthly_operating_cost_boat_units": 0.0737,
+      "supplies_boat_units": 0.0737,
+      "visiting_cost_cr": 808000,
+      "visiting_cost_boat_units": 0.1474
     },
     {
       "name": "Escort Frigate",
@@ -223,7 +291,11 @@
       "category": "Military",
       "traffic_pool": "warship",
       "monthly_operating_cost_cr": 204000,
-      "boat_units": 27.42
+      "total_cost_boat_units": 27.42,
+      "monthly_operating_cost_boat_units": 0.0372,
+      "supplies_boat_units": 0.0372,
+      "visiting_cost_cr": 408000,
+      "visiting_cost_boat_units": 0.0744
     },
     {
       "name": "Raider",
@@ -234,7 +306,11 @@
       "category": "Military",
       "traffic_pool": "warship",
       "monthly_operating_cost_cr": 38517000,
-      "boat_units": 52.64
+      "total_cost_boat_units": 52.64,
+      "monthly_operating_cost_boat_units": 7.0281,
+      "supplies_boat_units": 7.0281,
+      "visiting_cost_cr": 77034000,
+      "visiting_cost_boat_units": 14.0563
     },
     {
       "name": "Fighter (1BL/2M)",
@@ -245,7 +321,11 @@
       "category": "Fighter",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 11430630,
-      "boat_units": 2.36
+      "total_cost_boat_units": 2.36,
+      "monthly_operating_cost_boat_units": 2.0857,
+      "supplies_boat_units": 2.0857,
+      "visiting_cost_cr": 22861260,
+      "visiting_cost_boat_units": 4.1715
     },
     {
       "name": "Escort Fighter",
@@ -256,7 +336,11 @@
       "category": "Fighter",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 505630,
-      "boat_units": 2.19
+      "total_cost_boat_units": 2.19,
+      "monthly_operating_cost_boat_units": 0.0923,
+      "supplies_boat_units": 0.0923,
+      "visiting_cost_cr": 1011260,
+      "visiting_cost_boat_units": 0.1845
     },
     {
       "name": "Fighter (3M)",
@@ -267,7 +351,11 @@
       "category": "Fighter",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 21630,
-      "boat_units": 1.96
+      "total_cost_boat_units": 1.96,
+      "monthly_operating_cost_boat_units": 0.0039,
+      "supplies_boat_units": 0.0039,
+      "visiting_cost_cr": 43260,
+      "visiting_cost_boat_units": 0.0079
     },
     {
       "name": "Medium Fighter",
@@ -278,7 +366,11 @@
       "category": "Fighter",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 21630,
-      "boat_units": 2.95
+      "total_cost_boat_units": 2.95,
+      "monthly_operating_cost_boat_units": 0.0039,
+      "supplies_boat_units": 0.0039,
+      "visiting_cost_cr": 43260,
+      "visiting_cost_boat_units": 0.0079
     },
     {
       "name": "Passenger Ship",
@@ -289,7 +381,11 @@
       "category": "Passenger",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 314000,
-      "boat_units": 8.82
+      "total_cost_boat_units": 8.82,
+      "monthly_operating_cost_boat_units": 0.0573,
+      "supplies_boat_units": 0.0573,
+      "visiting_cost_cr": 628000,
+      "visiting_cost_boat_units": 0.1146
     },
     {
       "name": "Passenger Liner (400DT)",
@@ -300,7 +396,11 @@
       "category": "Passenger",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 174000,
-      "boat_units": 17.25
+      "total_cost_boat_units": 17.25,
+      "monthly_operating_cost_boat_units": 0.0317,
+      "supplies_boat_units": 0.0317,
+      "visiting_cost_cr": 348000,
+      "visiting_cost_boat_units": 0.0635
     },
     {
       "name": "Frontier Passenger",
@@ -311,7 +411,11 @@
       "category": "Passenger",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 174000,
-      "boat_units": 18.63
+      "total_cost_boat_units": 18.63,
+      "monthly_operating_cost_boat_units": 0.0317,
+      "supplies_boat_units": 0.0317,
+      "visiting_cost_cr": 348000,
+      "visiting_cost_boat_units": 0.0635
     },
     {
       "name": "Passenger Liner (1000DT)",
@@ -322,7 +426,11 @@
       "category": "Passenger",
       "traffic_pool": "civilian",
       "monthly_operating_cost_cr": 3249000,
-      "boat_units": 69.18
+      "total_cost_boat_units": 69.18,
+      "monthly_operating_cost_boat_units": 0.5928,
+      "supplies_boat_units": 0.5928,
+      "visiting_cost_cr": 6498000,
+      "visiting_cost_boat_units": 1.1857
     },
     {
       "name": "Shuttle",
@@ -333,7 +441,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 965400,
-      "boat_units": 5.42
+      "total_cost_boat_units": 5.42,
+      "monthly_operating_cost_boat_units": 0.1762,
+      "supplies_boat_units": 0.1762,
+      "visiting_cost_cr": 1930800,
+      "visiting_cost_boat_units": 0.3523
     },
     {
       "name": "Boat (10DT)",
@@ -344,7 +456,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 5400,
-      "boat_units": 1.0
+      "total_cost_boat_units": 1.0,
+      "monthly_operating_cost_boat_units": 0.001,
+      "supplies_boat_units": 0.001,
+      "visiting_cost_cr": 10800,
+      "visiting_cost_boat_units": 0.002
     },
     {
       "name": "Boat (20DT)",
@@ -355,7 +471,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 5400,
-      "boat_units": 1.0
+      "total_cost_boat_units": 1.0,
+      "monthly_operating_cost_boat_units": 0.001,
+      "supplies_boat_units": 0.001,
+      "visiting_cost_cr": 10800,
+      "visiting_cost_boat_units": 0.002
     },
     {
       "name": "Armed Gig",
@@ -366,7 +486,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 5400,
-      "boat_units": 2.82
+      "total_cost_boat_units": 2.82,
+      "monthly_operating_cost_boat_units": 0.001,
+      "supplies_boat_units": 0.001,
+      "visiting_cost_cr": 10800,
+      "visiting_cost_boat_units": 0.002
     },
     {
       "name": "Ship's Boat (30DT)",
@@ -377,7 +501,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 16200,
-      "boat_units": 3.4
+      "total_cost_boat_units": 3.4,
+      "monthly_operating_cost_boat_units": 0.003,
+      "supplies_boat_units": 0.003,
+      "visiting_cost_cr": 32400,
+      "visiting_cost_boat_units": 0.0059
     },
     {
       "name": "Ship's Boat (50DT)",
@@ -388,7 +516,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 16200,
-      "boat_units": 2.46
+      "total_cost_boat_units": 2.46,
+      "monthly_operating_cost_boat_units": 0.003,
+      "supplies_boat_units": 0.003,
+      "visiting_cost_cr": 32400,
+      "visiting_cost_boat_units": 0.0059
     },
     {
       "name": "Ship's Boat (70DT)",
@@ -399,7 +531,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 16200,
-      "boat_units": 2.52
+      "total_cost_boat_units": 2.52,
+      "monthly_operating_cost_boat_units": 0.003,
+      "supplies_boat_units": 0.003,
+      "visiting_cost_cr": 32400,
+      "visiting_cost_boat_units": 0.0059
     },
     {
       "name": "Ship's Boat (95DT)",
@@ -410,7 +546,11 @@
       "category": "Small Craft",
       "traffic_pool": "small",
       "monthly_operating_cost_cr": 16200,
-      "boat_units": 2.59
+      "total_cost_boat_units": 2.59,
+      "monthly_operating_cost_boat_units": 0.003,
+      "supplies_boat_units": 0.003,
+      "visiting_cost_cr": 32400,
+      "visiting_cost_boat_units": 0.0059
     }
   ]
 }
