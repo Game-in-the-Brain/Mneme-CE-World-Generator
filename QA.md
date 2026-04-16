@@ -169,6 +169,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-039](#qa-039) | Lore — Megastructures | Celestials — self-directed solar swarm for terraforming | 🟢 Lore | ✅ Documented |
 | [QA-040](#qa-040) | Lore — Megastructures | Great Trees — space elevator megastructures | 🟢 Lore | ✅ Documented |
 | [QA-041](#qa-041) | UI — Generate | Economic assumptions selectable in generation; recent systems show preset used | 🟠 Medium | ✅ Fixed |
+| [QA-042](#qa-042) | UI — Generate / Settings | Generator: TL9 SOC7 & growth curve read-only; editing belongs in Settings | 🟠 Medium | 📋 Queued |
 
 ---
 
@@ -1947,6 +1948,37 @@ Justin: "the loops just generates thousands until it hits the targets — it's t
 ## Lore — Megastructures & Terraforming
 
 These structures are necessary in the ever-compounding growth of technology and the self-directed growth of humans. The Great Serpents, Great Trees, Celestials, and Jump Gates are all necessary for trade and growth. Just as the Space Race, Earth's Recovery, and the Transition to Green Energy propelled civilisation forward, without such projects of science and engineering humans regress to infighting, capital hoarding, and enslaving each other. These infrastructures compound growth by harnessing a star's massive resources to propel humans to more stars.
+
+---
+
+### QA-042
+
+**Title:** Generator: TL9 SOC 7 income and growth curve should be read-only; full editing belongs in Settings  
+**Area:** UI — Generate / Settings  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Queued  
+**Datetime:** 260416
+
+**Problem Statement**  
+Currently the Generator dashboard exposes raw economic inputs (TL9 SOC 7 monthly income, growth curve selection) that can be edited inline. This blurs the line between *world selection* (Mneme vs CE/Traveller) and *world building* (customising the underlying income model).
+
+**Expected Behaviour**
+- **Generator Dashboard**: purely **selective**, not creative.
+  - Show a **preset dropdown** only: `Mneme`, `CE / Traveller`, or a user-saved custom preset.
+  - Display the resulting TL9 SOC 7 income and growth curve as **read-only summary text** (e.g. "TL 9 SOC 7 = 44,170 Cr/month • Mneme compounding curve").
+  - No inline number editing, no curve dropdown, no SOC grid.
+- **Settings Page**: the **world-building workshop**.
+  - Create / edit / import / export custom presets.
+  - Edit TL9 SOC 7 income, choose growth curves, view the full SOC 1–60 grid.
+  - Saved custom presets appear in the Generator dropdown.
+
+**Rationale**  
+World builders who want to craft a custom economic model should do so deliberately in Settings. Casual generators should only pick between existing models (Mneme vs CE) without risk of accidentally tweaking the maths.
+
+**Files**
+- `src/components/GeneratorDashboard.tsx` — simplify economic UI to preset selector + read-only summary
+- `src/components/Settings.tsx` — keep full preset editor as the authoritative editing surface
+- `src/lib/optionsStorage.ts` — ensure custom presets list is loaded for the dropdown
 
 ---
 
