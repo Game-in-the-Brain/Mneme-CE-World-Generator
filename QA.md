@@ -57,6 +57,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-051** | ✅ Fixed | Economic Assumptions Customizations roll profiles — v1.3.106 + v1.3.109 weight calibration |
 | **QA-052** | 📋 Queued | Ships in the Area should use Credit values based on Economic Assumptions, not Years-to-own |
 | **QA-053** | 📋 Queued | Recent Items should display what Economic Assumptions were used |
+| **QA-054** | 📋 Queued | Terraforming Terraton Structures — megastructure lore umbrella |
 
 
 ### Key Files
@@ -195,6 +196,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-051](#qa-051) | Engine — Inhabitants | Economic Assumptions Customizations roll profiles | 🟠 Medium | ✅ Fixed |
 | [QA-052](#qa-052) | Engine — Ships | Ships in the Area should use Credit values based on Economic Assumptions | 🟠 Medium | 📋 Queued |
 | [QA-053](#qa-053) | UI — Recent Systems | Recent Items should display what Economic Assumptions were used | 🟡 Low | 📋 Queued |
+| [QA-054](#qa-054) | Lore — Megastructures | Terraforming Terraton Structures | 🟢 Lore | 📋 Queued |
 
 ---
 
@@ -2191,7 +2193,7 @@ They create the necessary power infrastructure for **FTL travel**.
 **Datetime:** 260416
 
 **Description**  
-**MTL 13** self-directed solar swarm megastructures that sail on light and gravity in the inner system (e.g. Venus, Mars, Mercury orbits).
+**MTL 13** self-directed solar swarm megastructures that sail on light and gravity in the inner system (Venus, Mars, Mercury orbits).
 
 **Capabilities**
 - Harvest **trace atmospheres**
@@ -2701,4 +2703,29 @@ Each entry in the Recent Systems list should display the economic preset name th
 
 **Files:**  
 - `src/components/GeneratorDashboard.tsx` — Recent Systems rendering
+
+
+---
+
+---
+
+### QA-054
+
+**Title:** Terraforming Terraton Structures  
+**Area:** Lore — Megastructures  
+**Priority:** 🟢 Lore  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+
+**Description:**  
+These structures are necessary in the ever-compounding growth of technology and the self-directed growth of humans. The **Great Serpents**, **Great Trees**, **Celestials**, and **Jump Gates** are all necessary for trade and growth. Just as the Space Race, Earth's Recovery, and the Transition to Green Energy propelled civilisation forward, without such projects of science and engineering humans regress to infighting, capital hoarding, and enslaving each other. These infrastructures compound growth by harnessing a star's massive resources to propel humans to more stars.
+
+**Component Megastructures (Documented)**  
+- **QA-038 — Great Serpents** (formerly Bakunawa Coil): MTL 12 antimatter rings built around gas-giant radiation belts.
+- **QA-039 — Celestials**: MTL 13 self-directed solar swarms that harvest atmospheres and concentrate light for terraforming.
+- **QA-040 — Great Trees**: MTL 13 fixed space-elevator megastructures capable of interstellar travel by MTL 16.
+- **QA-045 — Jovian Hammers**: MTL 12 gas-giant skimming industry that extracts raw bulk materials for orbital infrastructure.
+
+**Design Note:**  
+The megastructure cluster forms the technological backbone of the Mneme setting. In a high-compound economy, these projects are not optional luxuries — they are the minimum infrastructure required to prevent stagnation and maintain upward trajectory.
 
