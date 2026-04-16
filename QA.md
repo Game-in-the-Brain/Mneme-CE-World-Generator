@@ -8,7 +8,7 @@
 
 **Project:** Mneme CE World Generator PWA  
 **Repo:** [Game-in-the-Brain / Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain)  
-**Last Updated:** 2026-04-16
+**Last Updated:** 2026-04-17
 
 ---
 
@@ -59,9 +59,10 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-053** | 📋 Queued | Recent Items should display what Economic Assumptions were used |
 | **QA-054** | 📋 Queued | Terraforming Terraton Structures — megastructure lore umbrella |
 | **QA-055** | ✅ Fixed | Table Weights UI: per-outcome editable rows with live bars and percentages |
-| **QA-056** | 📋 Queued | GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7 |
-| **QA-057** | 📋 Queued | Impact Analysis: Annual Trade after GDP fix — resolve wealthMultiplier redundancy |
-| **QA-058** | 📋 Queued | Ships in the Area rework — remove Boat Years scarcity, X-port toggle, Credit display |
+| **QA-056** | ✅ Fixed | GDP/day uses average SOC (Development + Wealth) — `getGdpPerDayForWorld()` |
+| **QA-057** | ✅ Fixed | Wealth multiplier removed from `annualTrade` — baked into GDP/day via SOC |
+| **QA-058** | ✅ Fixed | Ships in the Area: X-port toggle default ON, Boat Years scarcity removed, Credits display |
+| **QA-061** | ✅ Fixed | Population redesign: productivity ratio replaces `TL_POP_MOD`; +1 exponent; forgiving PSS mapping |
 
 
 ### Key Files
@@ -202,9 +203,10 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-053](#qa-053) | UI — Recent Systems | Recent Items should display what Economic Assumptions were used | 🟡 Low | 📋 Queued |
 | [QA-054](#qa-054) | Lore — Megastructures | Terraforming Terraton Structures | 🟢 Lore | 📋 Queued |
 | [QA-055](#qa-055) | UI — Settings | Table Weights UI: per-outcome editable rows | 🔴 High | ✅ Fixed |
-| [QA-056](#qa-056) | Engine — Economy | GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7 | 🔴 High | 📋 Queued |
-| [QA-057](#qa-057) | Engine — Economy | Impact Analysis: Annual Trade after GDP fix | 🔴 High | 📋 Queued |
-| [QA-058](#qa-058) | Engine — Ships | Ships in the Area rework | 🔴 High | 📋 Queued |
+| [QA-056](#qa-056) | Engine — Economy | GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7 | 🔴 High | ✅ Fixed |
+| [QA-057](#qa-057) | Engine — Economy | Impact Analysis: Annual Trade after GDP fix | 🔴 High | ✅ Fixed |
+| [QA-058](#qa-058) | Engine — Ships | Ships in the Area rework | 🔴 High | ✅ Fixed |
+| [QA-061](#qa-061) | Engine — Population / Starport | Population and PSS calibration — productivity ratio replaces TL_POP_MOD | 🔴 High | ✅ Fixed |
 
 ---
 
@@ -2804,8 +2806,8 @@ See `260416-04 Economic Assumptions Customizations Custom tables.md` for the ori
 **Title:** GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7  
 **Area:** Engine — Economy  
 **Priority:** 🔴 High  
-**Status:** 📋 Queued  
-**Datetime:** 2026-04-16  
+**Status:** ✅ Fixed  
+**Datetime:** 2026-04-16 | Fixed: 2026-04-17  
 
 **Problem Statement**  
 `getGdpPerDayFromPreset(tl, preset)` always anchors to **SOC 7 income** when computing per-capita GDP. Development and Wealth do affect `annualTrade` via `tradeFraction[dev]` and `wealthMultiplier[wealth]`, but those are rough proxies — they don't actually shift the **per-capita income baseline**, which is what Development and Wealth are supposed to represent mechanically.
@@ -2911,8 +2913,8 @@ With this fix, Development and Wealth are embedded in GDP/day. Two options:
 **Title:** Impact Analysis: Annual Trade after GDP fix — resolve wealthMultiplier redundancy  
 **Area:** Engine — Economy  
 **Priority:** 🔴 High  
-**Status:** 📋 Queued  
-**Datetime:** 2026-04-16  
+**Status:** ✅ Fixed  
+**Datetime:** 2026-04-16 | Fixed: 2026-04-17  
 
 **Problem Statement**  
 After implementing QA-056 (GDP/day derived from Development + Wealth), `annualTrade` still multiplies by both `tradeFraction[dev]` and `wealthMult[wealth]`. Since Development and Wealth are now already embedded in `gdpPerDay` via average SOC, this creates double-counting.
@@ -2956,8 +2958,8 @@ Ratio UnderDeveloped → Very Developed goes from **6×** to **~7,430×**. Addin
 **Title:** Ships in the Area rework — remove Boat Years scarcity, X-port toggle, Credit display  
 **Area:** Engine — Ships  
 **Priority:** 🔴 High  
-**Status:** 📋 Queued  
-**Datetime:** 2026-04-16  
+**Status:** ✅ Fixed  
+**Datetime:** 2026-04-16 | Fixed: 2026-04-17  
 
 **Problem Statement**  
 The Ships in the Area system needs three targeted fixes: (1) the Boat Years scarcity multiplier is redundant after the GDP fix, (2) X-class ports need a user-configurable override, and (3) the display should show raw Credit values instead of income-years.
@@ -3024,4 +3026,170 @@ The existing E-class gate (10% budget cap, small craft only, max 5 ships) is **u
 - `src/components/SystemViewer.tsx` — display table, X-port gate
 - `src/components/GeneratorDashboard.tsx` — X-port toggle
 - `src/types/index.ts` — `GeneratorOptions` extension
+
+
+---
+
+---
+
+### QA-061
+
+**Title:** Population and PSS Calibration — Productivity Ratio Replaces `TL_POP_MOD`  
+**Area:** Engine — Population / Starport / Economy  
+**Priority:** 🔴 High  
+**Status:** ✅ Fixed  
+**Datetime:** 2026-04-17  
+**Reported by:** Justin (design review)
+
+---
+
+**Problem Statement**
+
+The population system suffered from a fundamental disconnect between economic presets and population scaling:
+
+1. **`TL_POP_MOD` was a hardcoded Mneme table** (5–13 exponent bonus) that was applied **regardless of economic preset**. CE/Traveller worlds got the same artificial trillion-person boosts as Mneme worlds, making CE incompatible with its own stagnant-economy assumptions.
+
+2. **`TL_POP_MOD` was far more aggressive than actual income growth.** At TL 16 it added `+13` to the population exponent (`10^13` = 10 trillion multiplier), while Mneme's actual SOC-7 income ratio was only ~389,000×. Population scaling was arbitrarily 25 million times stronger than the productivity curve it was supposed to represent.
+
+3. **Removing `TL_POP_MOD` without compensation collapsed populations.** When the table was deleted, the new productivity-based multiplier was linear (1× to 389,232×) instead of exponential (10^5 to 10^13). CE worlds with habitability 4 dropped from ~7M people to ~36,000 people, causing almost every CE world to receive an **X-class starport**.
+
+4. **`GDP_PER_DAY_BY_TL` was dead code** — a hardcoded Mneme table left over from pre-preset days. It had been bypassed by `getGdpPerDayForWorld()` but still sat in `worldData.ts` as a false source of truth.
+
+5. **PSS thresholds were too steep.** `pssToClass` required PSS 6 for D, 8 for B, 10 for A. With populations collapsed, even reasonably productive worlds couldn't climb out of X/E.
+
+---
+
+**Root Cause Analysis**
+
+| Component | Old Behavior | Intended Behavior |
+|-----------|-------------|-------------------|
+| `TL_POP_MOD` | Hardcoded exponent bonus 5–13, all presets | Should scale with **actual preset productivity** |
+| Population formula | `10^(envHab + TL_POP_MOD) × 2d6` | Should be `10^(envHab) × productivityRatio × roll` |
+| CE preset productivity | Flat 1× (no TL growth) | Population should be **flat across TLs** |
+| Mneme preset productivity | Compounding 1× to ~389k× | Population should **match income curve exactly** |
+| PSS thresholds | PSS <4→X, ≤5→E, ≤7→D, ≤9→C, ≤11→B | Too steep for new population scale |
+| `GDP_PER_DAY_BY_TL` | Legacy dead table in `worldData.ts` | Should not exist; formula-driven only |
+
+---
+
+**Fixes Applied**
+
+#### Fix 1 — Deleted `TL_POP_MOD` and `GDP_PER_DAY_BY_TL`
+
+**Files:** `src/lib/worldData.ts`
+
+- Removed `TL_POP_MOD` table and `getPopTLMod()` helper
+- Removed `GDP_PER_DAY_BY_TL` table and `getGdpPerDay()` helper
+- Made `gdpPerDayOverride` **required** in `calculateStarport()` to prevent any fallback to dead code
+- Removed stale "× Wealth Multiplier" reference from the `SystemViewer.tsx` tooltip
+
+#### Fix 2 — Population now scales by productivity ratio
+
+**File:** `src/lib/generator.ts`
+
+```typescript
+const productivityMultiplier = getSoc7MonthlyIncome(techLevel, preset) 
+                             / getSoc7MonthlyIncome(preset.baseTL, preset);
+
+if (envHab <= 0) {
+  // Hostile world: habitats scaled by productivity
+  const habitatResult = getHabitatSize(roll2D6().value);
+  population = Math.max(10, Math.floor(habitatResult.population * productivityMultiplier));
+} else {
+  // Natural world: max capacity from envHab + productivity + exploding 2d6
+  const carryingCapacityRoll = rollExploding(2, 6).value;
+  const maxPopulation = Math.pow(10, envHab + 1) * productivityMultiplier * carryingCapacityRoll;
+  const popRoll = roll3D6().value;
+  population = Math.max(10, Math.floor(popRoll * maxPopulation * 0.05));
+}
+```
+
+**CE/Traveller result:** `productivityMultiplier = 1.0` at every TL. Population depends purely on habitability.
+
+**Mneme result:** `productivityMultiplier` follows the exact `MNEME_RATIOS` income curve.
+
+#### Fix 3 — +1 baseline exponent
+
+Added `+1` to `envHab` in the natural-world formula. This restores CE populations to playable Traveller levels:
+
+| envHab | Old (no +1) | New (+1) |
+|--------|-------------|----------|
+| 2 | ~360 | ~3,600 |
+| 4 | ~36,000 | ~360,000 |
+| 6 | ~3.6M | ~36M |
+| 8 | ~360M | ~3.6B |
+
+#### Fix 4 — More forgiving PSS thresholds
+
+**File:** `src/lib/worldData.ts`
+
+```typescript
+function pssToClass(pss: number): StarportClass {
+  if (pss < 3)  return 'X';
+  if (pss <= 4) return 'E';
+  if (pss <= 5) return 'D';
+  if (pss <= 6) return 'C';
+  if (pss <= 7) return 'B';
+  return 'A';
+}
+```
+
+Each +1 PSS now advances exactly one starport class (after E). A world needs ~10× more trade to climb one letter grade.
+
+#### Fix 5 — Goal mode now returns closest match
+
+**File:** `src/App.tsx`
+
+Instead of returning the first match or failing at 2,000 iterations, the goal-loop now:
+- Generates up to 2,000 candidates
+- Scores each by distance from goals (starport rank penalty, population log-ratio, habitability gap)
+- Sorts and returns the **best match**
+- Reports "Best match found after 2,000 generations (closest to goals)" if no exact match exists
+
+#### Fix 6 — `allowShipsAtXPort` defaults to `true`
+
+**Files:** `src/lib/optionsStorage.ts`, `src/components/GeneratorDashboard.tsx`
+
+- `DEFAULT_GENERATOR_OPTIONS` now sets `allowShipsAtXPort: true`
+- Dashboard `useState` default changed from `|| false` to `?? true`
+- Fixed missing dependency in `useEffect` so the toggle now auto-persists to `localStorage`
+
+---
+
+**Expected Results After Fix**
+
+| Scenario | Population | PSS | Class |
+|---|---|---|---|
+| CE TL 9, envHab 4, Mature/Average | ~360K | 2 | **E** |
+| CE TL 9, envHab 6, Mature/Average | ~36M | 4 | **E** |
+| CE TL 12, envHab 6, Developed/Prosperous | ~36M | 5 | **D** |
+| Mneme TL 11, envHab 4, Mature/Average | ~7.2M | 4 | **E** |
+| Mneme TL 11, envHab 6, Developed/Affluent | ~720M | 7 | **B** |
+| Mneme TL 16, envHab 6, Very Developed/Affluent | ~14.4T | 11 | **A** |
+
+---
+
+**Files Changed**
+
+- `src/lib/worldData.ts` — deleted dead tables, updated `pssToClass`, made `gdpPerDayOverride` required
+- `src/lib/generator.ts` — replaced `TL_POP_MOD` with productivity ratio, added `+1` exponent
+- `src/lib/dice.ts` — already had `rollExploding()`, now used in population block
+- `src/App.tsx` — goal-loop closest-match scoring
+- `src/lib/optionsStorage.ts` — `allowShipsAtXPort: true` default
+- `src/components/GeneratorDashboard.tsx` — toggle default ON, auto-save fix
+- `src/components/SystemViewer.tsx` — corrected Annual Port Trade tooltip
+- `QA.md` — this documentation
+
+---
+
+**Verification Checklist**
+
+- [x] CE world at TL 12 does **not** get artificial population boost from TL
+- [x] Mneme world at TL 16 scales population with income curve
+- [x] `GDP_PER_DAY_BY_TL` no longer exists in codebase
+- [x] `TL_POP_MOD` no longer exists in codebase
+- [x] `./node_modules/.bin/tsc -b` passes with 0 errors
+- [x] PSS thresholds advance one class per +1 point
+- [x] Goal mode returns best match after 2,000 iterations
+- [x] X-class ports show ships by default
 

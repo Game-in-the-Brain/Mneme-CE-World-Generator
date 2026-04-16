@@ -4,8 +4,8 @@ import type {
   StellarClass, StellarGrade, Zone, BodyType, GasWorldClass, LesserEarthType, ZoneBoundaries,
   WorldType, GeneratorOptions
 } from '../types';
-import { getGdpPerDayForWorld, CE_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS, MNEME_WEALTH_WEIGHTS } from './economicPresets';
-import { roll5D6, roll2D6, roll3D6, rollKeep, rollD6, rollTL } from './dice';
+import { getGdpPerDayForWorld, getSoc7MonthlyIncome, CE_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS, MNEME_WEALTH_WEIGHTS } from './economicPresets';
+import { roll5D6, roll2D6, roll3D6, rollExploding, rollKeep, rollD6, rollTL } from './dice';
 import {
   getClassFromRoll, getGradeFromRoll, getStellarMass, getStellarLuminosity,
   calculateZoneBoundaries, getCompanionTarget,
@@ -17,7 +17,7 @@ import {
   getDwarfDensity, getTerrestrialDensity, dwarfGravityToHab, terrestrialGravityToHab,
   getAtmosphere, getTemperatureModifier, getTemperature,
   getHazard, getHazardIntensity, getBiochemicalResources,
-  getTechLevel, calculatePopulation, getPopTLMod, calculateTotalHabitability,
+  getTechLevel, calculateTotalHabitability,
   getWealth, getPowerStructure, getDevelopment, getSourceOfPower,
   getGovernanceDM, calculateStarport, rollForBase, determineTravelZone,
   generateCultureTraits, POWER_CULTURE_CONFLICTS, getBodyCount, getGasWorldClass, calculateWorldPosition,
@@ -355,26 +355,29 @@ function generateInhabitants(
   // Use Tech Level from MainWorld (QA-009 fix) — TL affects habitability
   const techLevel = mainWorld.techLevel;
 
-  // EnvHab = habitability without TL display modifier (needed for new population formula)
+  // EnvHab = natural habitability without TL display modifier
   const tlDisplayMod = mainWorld.habitabilityComponents?.techLevel ?? Math.max(0, Math.min(9, techLevel - 7));
   const envHab = mainWorld.habitability - tlDisplayMod;
 
-  // Population fork: new formula uses envHab + TLmod lookup table
-  // Fork fires when (envHab + TLmod) ≤ 0 — extremely hostile worlds use artificial habitats
+  // Productivity multiplier = income improvement at this TL vs base TL
+  const preset = opts.tlProductivityPreset!;
+  const productivityMultiplier = getSoc7MonthlyIncome(techLevel, preset) / getSoc7MonthlyIncome(preset.baseTL, preset);
+
   let population: number;
   let habitatType: string | undefined;
 
-  const effectiveHab = envHab + getPopTLMod(techLevel);
-
-  if (effectiveHab <= 0) {
-    // Extremely hostile world: inhabitants live in an artificial habitat, not on the surface
+  if (envHab <= 0) {
+    // Hostile world: artificial habitats scaled by productivity
     const habitatRoll = roll2D6().value;
     const habitatResult = getHabitatSize(habitatRoll);
-    population = habitatResult.population;
+    population = Math.max(10, Math.floor(habitatResult.population * productivityMultiplier));
     habitatType = habitatResult.type;
   } else {
-    const popRoll = roll2D6().value;
-    population = calculatePopulation(envHab, techLevel, popRoll);
+    // Natural world: carrying capacity scaled by productivity and exploding 2d6
+    const carryingCapacityRoll = rollExploding(2, 6).value;
+    const maxPopulation = Math.pow(10, envHab + 1) * productivityMultiplier * carryingCapacityRoll;
+    const popRoll = roll3D6().value;
+    population = Math.max(10, Math.floor(popRoll * maxPopulation * 0.05));
   }
 
   const wealth = getWealth(undefined, mainWorld.biochemicalResources, opts.wealthWeights);

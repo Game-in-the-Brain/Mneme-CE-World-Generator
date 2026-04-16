@@ -337,28 +337,6 @@ export function getTechLevelDescription(tl: number): string {
 // Population
 // =====================
 
-// Productivity-derived TL population modifier table.
-// TL 8 and TL 9 share +6 — the Demographic Plateau (HC Constraint Era).
-// See: Mneme Productivity Index & Population Dynamics, April 2026.
-export const TL_POP_MOD: Record<number, number> = {
-  7: 5, 8: 6, 9: 6, 10: 7, 11: 8, 12: 9, 13: 10, 14: 11, 15: 12, 16: 13,
-};
-
-export function getPopTLMod(tl: number): number {
-  return TL_POP_MOD[tl] ?? Math.max(5, tl - 3);
-}
-
-/**
- * Calculate population from EnvHab (habitability without TL component) and tech level.
- * Formula: 10^max(0, envHab + TLmod) × roll
- * TLmod from productivity lookup table — NOT the display TL−7 modifier.
- */
-export function calculatePopulation(envHab: number, tl: number, roll: number): number {
-  const tlMod = getPopTLMod(tl);
-  const effectiveHab = Math.max(0, envHab + tlMod);
-  const basePopulation = Math.pow(10, effectiveHab);
-  return Math.max(10, Math.floor(basePopulation * roll));
-}
 
 // =====================
 // Wealth Table
@@ -474,25 +452,6 @@ export function getGovernanceDM(dev: DevelopmentLevel, wealth: WealthLevel): num
 // Starport (PSS v1.1 — GDP-based with TL capability cap)
 // =====================
 
-// GDP per person per day by TL (Credits/day; 2030 anchor: $1 = 1 Cr)
-// From Mneme Productivity Index & Population Dynamics document.
-export const GDP_PER_DAY_BY_TL: Record<number, number> = {
-  7:  205,
-  8:  552,
-  9:  1_486,
-  10: 4_000,
-  11: 29_000,
-  12: 210_000,
-  13: 1_500_000,
-  14: 11_000_000,
-  15: 80_000_000,
-  16: 578_000_000,
-};
-
-export function getGdpPerDay(tl: number): number {
-  return GDP_PER_DAY_BY_TL[tl] ?? (tl < 7 ? 100 : GDP_PER_DAY_BY_TL[16]);
-}
-
 /** Trade fraction of GDP that flows through the starport, by development level. */
 export function getTradeFraction(dev: DevelopmentLevel): number {
   switch (dev) {
@@ -529,11 +488,11 @@ const CLASS_ORDER: Record<StarportClass, number> = { X: 0, E: 1, D: 2, C: 3, B: 
 const ORDER_TO_CLASS: Record<number, StarportClass> = { 0: 'X', 1: 'E', 2: 'D', 3: 'C', 4: 'B', 5: 'A' };
 
 function pssToClass(pss: number): StarportClass {
-  if (pss < 4)  return 'X';
-  if (pss <= 5) return 'E';
-  if (pss <= 7) return 'D';
-  if (pss <= 9) return 'C';
-  if (pss <= 11) return 'B';
+  if (pss < 3)  return 'X';
+  if (pss <= 4) return 'E';
+  if (pss <= 5) return 'D';
+  if (pss <= 6) return 'C';
+  if (pss <= 7) return 'B';
   return 'A';
 }
 
@@ -543,10 +502,10 @@ function minClass(a: StarportClass, b: StarportClass): StarportClass {
 
 /**
  * Calculate starport class and throughput.
- * Step 1 — GDP × trade fraction × wealth multiplier → Annual Port Trade → PSS → raw class
+ * Step 1 — GDP × trade fraction → Annual Port Trade → PSS → raw class
  * Step 2 — TL capability cap
  * Step 3 — Final class = min(rawClass, tlCap)
- * Weekly throughput: annualTrade ÷ 364 × weeklyRoll (3D6)
+ * Weekly throughput: annualTrade ÷ 52 × weeklyRoll (3D6)
  */
 export function calculateStarport(
   population: number,
@@ -554,7 +513,7 @@ export function calculateStarport(
   _wealth: WealthLevel,
   dev: DevelopmentLevel,
   weeklyRoll: number,
-  gdpPerDayOverride?: number,
+  gdpPerDayOverride: number,
 ): {
   class: StarportClass;
   pss: number;
@@ -564,7 +523,7 @@ export function calculateStarport(
   weeklyBase: number;
   weeklyActivity: number;
 } {
-  const gdpPerDay   = gdpPerDayOverride ?? getGdpPerDay(tl);
+  const gdpPerDay   = gdpPerDayOverride;
   // QA-057: removed wealth multiplier to avoid double-counting (Wealth is now baked into GDP/day via SOC)
   const annualTrade = population * gdpPerDay * 365 * getTradeFraction(dev);
 

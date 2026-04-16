@@ -14,6 +14,7 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   developmentWeights: DEFAULT_DEVELOPMENT_WEIGHTS,
   powerWeights: DEFAULT_POWER_WEIGHTS,
   govWeights: DEFAULT_GOV_WEIGHTS,
+  allowShipsAtXPort: true,
 };
 
 function isValidPreset(value: unknown): value is TLProductivityPreset {

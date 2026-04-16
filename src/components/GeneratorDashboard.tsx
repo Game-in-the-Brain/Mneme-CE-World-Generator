@@ -71,7 +71,7 @@ export function GeneratorDashboard({
   const [goalStarportMin, setGoalStarportMin] = useState<import('../types').StarportClass | ''>(defaults.goalStarportMin || '');
   const [goalMinPopulation, setGoalMinPopulation] = useState<string>(defaults.goalMinPopulation?.toString() || '');
   const [goalHabitable, setGoalHabitable] = useState<boolean>(defaults.goalHabitable || false);
-  const [allowShipsAtXPort, setAllowShipsAtXPort] = useState<boolean>(defaults.allowShipsAtXPort || false);
+  const [allowShipsAtXPort, setAllowShipsAtXPort] = useState<boolean>(defaults.allowShipsAtXPort ?? true);
   const [goalModeOpen, setGoalModeOpen] = useState(false);
 
   const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
@@ -91,7 +91,7 @@ export function GeneratorDashboard({
       goalHabitable: goalHabitable || undefined,
       allowShipsAtXPort: allowShipsAtXPort || undefined,
     });
-  }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable]);
+  }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, allowShipsAtXPort]);
 
   function handlePresetChange(id: string) {
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
@@ -263,7 +263,7 @@ export function GeneratorDashboard({
             {goalModeOpen && (
               <div className="text-left space-y-3">
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Set optional targets. The generator will loop up to 2,000 times and return the first matching world.
+                  Set optional targets. The generator will loop up to 2,000 times and return the closest matching world.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>

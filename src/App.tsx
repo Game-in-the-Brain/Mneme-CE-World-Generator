@@ -80,14 +80,42 @@ function App() {
 
       if (hasGoals) {
         const starportRanks: Record<string, number> = { X: 0, E: 1, D: 2, C: 3, B: 4, A: 5 };
-        while (iterations < maxIterations) {
-          const matchStarport = !options.goalStarportMin || (starportRanks[system.inhabitants.starport.class] >= starportRanks[options.goalStarportMin]);
-          const matchPop = !options.goalMinPopulation || (system.inhabitants.population >= options.goalMinPopulation);
-          const matchHab = !options.goalHabitable || (system.mainWorld.habitability > 0);
-          if (matchStarport && matchPop && matchHab) break;
-          system = generateStarSystem(options);
-          iterations++;
+        const candidates: { system: StarSystem; score: number }[] = [];
+        let exactMatch = false;
+
+        for (let i = 0; i < maxIterations; i++) {
+          const s = i === 0 ? system : generateStarSystem(options);
+          let score = 0;
+
+          if (options.goalStarportMin) {
+            const actualRank = starportRanks[s.inhabitants.starport.class];
+            const goalRank = starportRanks[options.goalStarportMin];
+            score += Math.max(0, goalRank - actualRank) * 10;
+          }
+
+          if (options.goalMinPopulation) {
+            if (s.inhabitants.population < options.goalMinPopulation) {
+              score += Math.log10(options.goalMinPopulation / s.inhabitants.population);
+            }
+          }
+
+          if (options.goalHabitable) {
+            if (s.mainWorld.habitability <= 0) {
+              score += Math.abs(s.mainWorld.habitability) + 1;
+            }
+          }
+
+          candidates.push({ system: s, score });
+          if (score === 0) {
+            exactMatch = true;
+            iterations = i + 1;
+            break;
+          }
         }
+
+        candidates.sort((a, b) => a.score - b.score);
+        system = candidates[0].system;
+        if (!exactMatch) iterations = maxIterations;
       }
 
       setCurrentSystem(system);
@@ -96,7 +124,7 @@ function App() {
       setView('system');
 
       if (hasGoals && iterations >= maxIterations) {
-        showNotification(`No matching world found after ${iterations.toLocaleString()} generations`);
+        showNotification(`Best match found after ${maxIterations.toLocaleString()} generations (closest to goals)`);
       } else if (hasGoals) {
         showNotification(`Found matching world after ${iterations.toLocaleString()} generation${iterations === 1 ? '' : 's'}`);
       } else {

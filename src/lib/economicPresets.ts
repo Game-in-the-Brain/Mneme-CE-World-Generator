@@ -286,7 +286,7 @@ export const STAGNANT_GOV_WEIGHTS: TableWeights = {
 // Built-in Presets
 // =====================
 
-/** Exact Mneme default — reproduces legacy GDP_PER_DAY_BY_TL behavior */
+/** Exact Mneme default — compounding productivity curve driven by MNEME_RATIOS */
 export const MNEME_PRESET: TLProductivityPreset = {
   id: 'mneme',
   name: 'Mneme',
