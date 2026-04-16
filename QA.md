@@ -51,7 +51,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **FR-034** | ✅ Fixed | Ships Price List modal — v1.3.98 |
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
 | **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — extracted to standalone repo; MWG links to it |
-| **QA-048** | 📋 Queued | Boat Years and SOC 7 Income should be independently fillable — Boat Years must independently scale ship scarcity |
+| **QA-048** | ✅ Fixed | Boat Years and SOC 7 Income should be independently fillable — v1.3.108 |
 | **QA-049** | 📋 Queued | Economic model toggle (Stable vs Compounding) — Settings, generator pipeline |
 | **QA-050** | 📋 Queued | Recent Systems should show Economic Assumptions used |
 
@@ -186,7 +186,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-044](#qa-044) | UI — System Viewer | Overview should display economic assumptions: "made with: CE / Traveller" | 🟠 Medium | ✅ Fixed |
 | [QA-046](#qa-046) | UI — Settings | Settings: Boat Years should be the editable primary calibration input | 🟠 Medium | ✅ Fixed |
 | [QA-047](#qa-047) | Engine — Ships | Ships in the Area should use visiting cost scaled by economic scarcity multiplier | 🟠 Medium | ✅ Fixed |
-| [QA-048](#qa-048) | Engine — Economy / Ships | Boat Years and SOC 7 Income should be decoupled | 🔴 High | 📋 Queued |
+| [QA-048](#qa-048) | Engine — Economy / Ships | Boat Years and SOC 7 Income should be decoupled | 🔴 High | ✅ Fixed |
 | [QA-049](#qa-049) | Engine — Economy / Population | Economic model toggle (Stable vs Compounding) | 🔴 High | 📋 Queued |
 | [QA-050](#qa-050) | UI — Recent Systems | Recent Systems should show Economic Assumptions used | 🟠 Medium | 📋 Queued |
 
@@ -2126,39 +2126,27 @@ Even after QA-030 (X/E hard gates) and FR-032 (economic presets), CE/Traveller w
 **Title:** Economic Assumptions — Boat Years and SOC 7 Income should be independently fillable
 **Area:** Engine — Economy / Ships
 **Priority:** 🔴 High  
-**Status:** 📋 Queued  
-**Datetime:** 260416  
+**Status:** ✅ Fixed  
+**Datetime:** 260416 | Fixed: 260416  
 
 **Problem Statement**  
-In the Settings preset editor, **Boat Years at TL 9** is the primary editable input, and **Derived TL 9 SOC 7 Income** is shown as a read-only derived value. The two are mathematically coupled:
+In the Settings preset editor, **Boat Years at TL 9** was the primary editable input, and **Derived TL 9 SOC 7 Income** was shown as a read-only derived value. The two were mathematically coupled:
 ```
 baseIncome = BOAT_PRICE_CR / (boatYears × 12)
 ```
-This means a world builder cannot set them independently. If they want:
-- A *high-income* world where ships are still *scarce* (e.g. a rich guild-monopoly culture), or
-- A *low-income* world where ships are *common* (e.g. a post-scarcity automated shipyard planet),
-...the current model makes this impossible.
+This meant a world builder could not set them independently.
 
-**Expected Behaviour**  
-1. **SOC 7 Income (`baseIncome`)** should drive GDP per capita, starport trade budgets, and the SOC-income grid.  
-2. **Boat Years (`boatYears`)** should be an *independent* scarcity dial that controls how many ships appear in the area, regardless of `baseIncome`.  
-3. Both fields should be editable in Settings. If the user only edits one, the other should *not* auto-override.  
-4. The scarcity multiplier in `shipsInArea.ts` should use the preset's stored `boatYears` directly, not a value derived from `baseIncome`.
+**Fix Applied (v1.3.108)**
+1. `src/components/Settings.tsx`: both **Boat Years** and **SOC 7 Income (Cr/mo)** are now independently editable. Changing one no longer overwrites the other.
+2. `src/lib/economicPresets.ts`: added `getBoatYearsAtTL(tl, preset)` which uses `preset.boatYears` when available, otherwise falls back to `getBoatYears(preset.baseIncome)`. `getIncomeYears()` now computes affordability via boat-years directly.
+3. `src/lib/shipsInArea.ts`: scarcity multiplier reads `preset.boatYears` directly, so ship generation is decoupled from GDP.
+4. `src/components/GeneratorDashboard.tsx`: read-only summary displays the stored `boatYears` value.
+5. Backward compatibility preserved: old presets without an explicit `boatYears` field still derive it from `baseIncome`.
 
-**Current Code Path**
-- `src/components/Settings.tsx`: `handleBoatYearsChange()` calls `getBaseIncomeFromBoatYears()`, which overwrites `baseIncome`.
-- `src/lib/shipsInArea.ts`: `scarcityMultiplier = max(1, getBoatYears(preset.baseIncome) / 10.1)` — derives boat-years from income.
-
-**Proposed Fix**
-1. Store `boatYears` as a *separate* primary field in `TLProductivityPreset` (it already exists, but is treated as derived).
-2. Make `baseIncome` directly editable again in Settings, side-by-side with Boat Years.
-3. Remove `getBaseIncomeFromBoatYears()` as the single source of truth; instead allow both to diverge.
-4. Update `shipsInArea.ts` to read `preset.boatYears ?? getBoatYears(preset.baseIncome)` for backward compatibility.
-5. Update Ships Price List and Income-Years displays to use `boatYears` for the affordability calculation, not `baseIncome`.
-
-**Backward Compatibility**
-- Existing presets that only store `baseIncome` should continue to work by falling back to `getBoatYears(baseIncome)`.
-- Old saved systems should use their snapshot `boatYears` if present, otherwise derive it.
+**Result**
+- A high-income world can now have scarce ships (high `baseIncome`, high `boatYears`).
+- A low-income world can now have common ships (low `baseIncome`, low `boatYears`).
+- The two dials control separate concerns: **income** → GDP/port budgets; **boat-years** → ship scarcity & affordability.
 
 ---
 
