@@ -60,6 +60,8 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-054** | 📋 Queued | Terraforming Terraton Structures — megastructure lore umbrella |
 | **QA-055** | ✅ Fixed | Table Weights UI: per-outcome editable rows with live bars and percentages |
 | **QA-056** | 📋 Queued | GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7 |
+| **QA-057** | 📋 Queued | Impact Analysis: Annual Trade after GDP fix — resolve wealthMultiplier redundancy |
+| **QA-058** | 📋 Queued | Ships in the Area rework — remove Boat Years scarcity, X-port toggle, Credit display |
 
 
 ### Key Files
@@ -201,6 +203,8 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-054](#qa-054) | Lore — Megastructures | Terraforming Terraton Structures | 🟢 Lore | 📋 Queued |
 | [QA-055](#qa-055) | UI — Settings | Table Weights UI: per-outcome editable rows | 🔴 High | ✅ Fixed |
 | [QA-056](#qa-056) | Engine — Economy | GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7 | 🔴 High | 📋 Queued |
+| [QA-057](#qa-057) | Engine — Economy | Impact Analysis: Annual Trade after GDP fix | 🔴 High | 📋 Queued |
+| [QA-058](#qa-058) | Engine — Ships | Ships in the Area rework | 🔴 High | 📋 Queued |
 
 ---
 
@@ -2896,4 +2900,128 @@ With this fix, Development and Wealth are embedded in GDP/day. Two options:
 - `src/lib/economicPresets.ts` — new SOC tables and helpers
 - `src/lib/worldData.ts` — update `annualTrade` calculation
 - `src/lib/generator.ts` — switch to `getGdpPerDayForWorld`
+
+
+---
+
+---
+
+### QA-057
+
+**Title:** Impact Analysis: Annual Trade after GDP fix — resolve wealthMultiplier redundancy  
+**Area:** Engine — Economy  
+**Priority:** 🔴 High  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+
+**Problem Statement**  
+After implementing QA-056 (GDP/day derived from Development + Wealth), `annualTrade` still multiplies by both `tradeFraction[dev]` and `wealthMult[wealth]`. Since Development and Wealth are now already embedded in `gdpPerDay` via average SOC, this creates double-counting.
+
+**The redundancy**
+
+| Factor | Old gdpPerDay | New gdpPerDay | tradeFraction | wealthMult |
+|--------|--------------|--------------|---------------|------------|
+| TL | ✅ | ✅ | — | — |
+| Development | ❌ | ✅ | ✅ | — |
+| Wealth | ❌ | ✅ | — | ✅ |
+
+Development now appears **twice** (in `gdpPerDay` and `tradeFraction`). Wealth now appears **twice** (in `gdpPerDay` and `wealthMult`).
+
+**Quantified impact** (TL 9, Mneme preset, same population):
+
+| Development | Old Combined | New Combined (both redundancies) |
+|---|---|---|
+| UnderDeveloped (SOC 3.5) | 74 | 3 |
+| Developed (SOC 8) | 297 | 2,980 |
+| Very Developed (SOC 10) | 446 | 22,290 |
+
+Ratio UnderDeveloped → Very Developed goes from **6×** to **~7,430×**. Adding Wealth double-count (Average → Affluent = 20×) pushes total swing to ~148,600× — about **5 PSS points**, enough to drive X→A purely from development and wealth regardless of population.
+
+**Recommended Resolution**
+1. **Drop `wealthMult` entirely** from `annualTrade`. Wealth is now fully expressed through avg SOC → income.
+2. **Keep `tradeFraction[dev]`** but reframe it as "economic openness" rather than productivity proxy.
+3. **Optionally compress `tradeFraction`** range (e.g. 8–22% instead of 5–30%) to soften development's double-count if testing shows starport distribution collapses to extremes.
+
+**Files**
+- `src/lib/worldData.ts` — `annualTrade` formula and multiplier tables
+- `src/lib/economicPresets.ts` — SOC-to-income helpers (QA-056 dependency)
+- `src/lib/generator.ts` — call site wiring
+
+---
+
+---
+
+### QA-058
+
+**Title:** Ships in the Area rework — remove Boat Years scarcity, X-port toggle, Credit display  
+**Area:** Engine — Ships  
+**Priority:** 🔴 High  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+
+**Problem Statement**  
+The Ships in the Area system needs three targeted fixes: (1) the Boat Years scarcity multiplier is redundant after the GDP fix, (2) X-class ports need a user-configurable override, and (3) the display should show raw Credit values instead of income-years.
+
+---
+
+#### Fix 1 — Remove Boat Years scarcity multiplier
+
+**File:** `src/lib/shipsInArea.ts`
+
+The `scarcityMultiplier` based on `boatYears / mnemeReference` deflates the budget artificially. After QA-056, CE worlds already produce lower `weeklyTradeValue` because `gdpPerDay` is lower. The budget is naturally smaller.
+
+**Action:** Remove these lines and use `const budget = rawBudget;`:
+```typescript
+const boatYears = preset?.boatYears ?? (preset?.baseIncome ? getBoatYears(preset.baseIncome) : MNEME_PRESET.boatYears ?? 10);
+const mnemeReference = MNEME_PRESET.boatYears ?? 10;
+const scarcityMultiplier = Math.max(1, boatYears / mnemeReference);
+const budget = rawBudget / scarcityMultiplier;
+```
+
+---
+
+#### Fix 2 — X-class hard gate → generation option
+
+**Files:** `src/types/index.ts`, `src/components/SystemViewer.tsx`, `src/components/GeneratorDashboard.tsx`
+
+**Action:**
+1. Add `allowShipsAtXPort?: boolean` to `GeneratorOptions` (default `false`).
+2. In `SystemViewer.tsx`, change the X-port skip from unconditional to:
+   ```typescript
+   if (starportClass === 'X' && !generatorOptions.allowShipsAtXPort) { /* skip */ }
+   ```
+3. In `GeneratorDashboard.tsx`, add a checkbox:
+   ```
+   ☐ Allow ships at X-class ports (e.g. uncharted worlds with informal traffic)
+   ```
+   Default unchecked.
+
+The existing E-class gate (10% budget cap, small craft only, max 5 ships) is **unchanged**.
+
+---
+
+#### Fix 3 — Display Credit value and monthly operating cost
+
+**Files:** `src/lib/shipsInArea.ts`, `src/components/SystemViewer.tsx`
+
+**Action:**
+1. Ensure each ship in the pool exposes `visiting_cost_cr` and `monthly_operating_cost_cr`. If `monthly_operating_cost_cr` is missing, derive it as `Math.round(visiting_cost_cr * 0.001)` (0.1% of value per month, CE standard).
+2. Update the Ships in the Area table in `SystemViewer.tsx` to show:
+   - **Credit Value** — `formatCredits(ship.visiting_cost_cr)`
+   - **Monthly Op. Cost** — `formatCredits(ship.monthly_operating_cost_cr)`
+3. Remove any "years" / "income-years" display from this table.
+
+**Verification checklist**
+- [ ] CE TL 9 world shows fewer ships than Mneme TL 9 world purely from lower trade value
+- [ ] X-class port with toggle off → zero ships
+- [ ] X-class port with toggle on → ships appear
+- [ ] E-class port caps still apply regardless of toggle
+- [ ] Table shows Credit Value and Monthly Op. Cost, no years
+- [ ] `tsc -b` passes with 0 errors
+
+**Files**
+- `src/lib/shipsInArea.ts` — budget calculation, ship pool fields
+- `src/components/SystemViewer.tsx` — display table, X-port gate
+- `src/components/GeneratorDashboard.tsx` — X-port toggle
+- `src/types/index.ts` — `GeneratorOptions` extension
 
