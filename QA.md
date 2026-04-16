@@ -168,6 +168,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-038](#qa-038) | Lore — Megastructures | Great Serpent (formerly Bakunawa Coil) — MTL 12 antimatter ring | 🟢 Lore | ✅ Documented |
 | [QA-039](#qa-039) | Lore — Megastructures | Celestials — self-directed solar swarm for terraforming | 🟢 Lore | ✅ Documented |
 | [QA-040](#qa-040) | Lore — Megastructures | Great Trees — space elevator megastructures | 🟢 Lore | ✅ Documented |
+| [QA-041](#qa-041) | UI — Generate | Economic assumptions selectable in generation; recent systems show preset used | 🟠 Medium | ✅ Fixed |
 
 ---
 
@@ -2017,6 +2018,27 @@ Cultural terms vary; **Great Trees** is one of many names used across human cult
 
 **Autonomy & Mobility**  
 Become **self-directed by MTL 16**, capable of **jumping between star systems**.
+
+---
+
+### QA-041
+
+**Title:** Economic assumptions selectable in generation; recent systems show which preset was used  
+**Area:** UI — Generate / Recent Systems  
+**Priority:** 🟠 Medium  
+**Status:** ✅ Fixed  
+**Datetime:** 260416
+
+**Description**  
+Worlds generated with different economic assumptions (Mneme vs CE/Traveller) are intentionally incompatible because the underlying GDP tables and productivity curves differ. Users need to know which economic model a saved or recent world was built with.
+
+**Fix Applied**
+- `src/components/GeneratorDashboard.tsx`: the **Generation Options** panel now includes an **Economic Assumptions** selector (Mneme / CE / Custom). The active preset name is displayed above the Generate button.
+- `src/lib/generator.ts`: every generated `StarSystem` **snapshots** the active `TLProductivityPreset` into `system.generationOptions.tlProductivityPreset`.
+- `src/components/SystemViewer.tsx`: the **Ships in the Area** card uses the world's stored preset to compute **Income-Years** per ship.
+- Recent / saved systems therefore carry their economic assumption with them; loading an old world preserves the exact GDP curve it was generated under.
+
+**Commit:** `v1.3.85` (bundled with FR-032)
 
 ---
 
