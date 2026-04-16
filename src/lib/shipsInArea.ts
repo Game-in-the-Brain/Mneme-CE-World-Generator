@@ -15,33 +15,31 @@ interface ShipRef {
   minTL: number;
 }
 
-/** QA-059: Jump-capable ships require MTL 12+; everything else is intra-system (MTL 9) */
-const JUMP_SHIPS = new Set<string>([
-  'Courier Ship',
-  'Yacht',
-  'Merchant Trader',
-  'Merchant Liner',
-  'Frontier Trader',
-  'Merchant Freighter',
-  "'Bosco' Merchant Freighter",
-  'Patrol Frigate',
-  'Corvette',
-  'Exploration Vessel',
-  'Missile Frigate',
-  'Escort Frigate',
-  'Raider',
-  'Passenger Ship',
-  'Passenger Liner (400DT)',
-  'Frontier Passenger',
-  'Passenger Liner (1000DT)',
-  'Research Vessel',
-  'Survey Vessel',
+/** QA-060: Three-tier TL gate for ship pool */
+const BASIC_SHIPS = new Set<string>([
+  'Boat (10DT)',
+  'Boat (20DT)',
+  "Ship's Boat (30DT)",
+  "Ship's Boat (50DT)",
+  "Ship's Boat (70DT)",
+  "Ship's Boat (95DT)",
+  'Armed Gig',
+  'Shuttle',
 ]);
 
-const SHIPS: ShipRef[] = (shipReference.ships as Omit<ShipRef, 'minTL'>[]).map(s => ({
-  ...s,
-  minTL: JUMP_SHIPS.has(s.name) ? 12 : 9,
-}));
+const ADVANCED_SHIPS = new Set<string>([
+  'Fighter (1BL/2M)',
+  'Escort Fighter',
+  'Fighter (3M)',
+  'Medium Fighter',
+  'System Defense Boat',
+]);
+
+const SHIPS: ShipRef[] = (shipReference.ships as Omit<ShipRef, 'minTL'>[]).map(s => {
+  if (BASIC_SHIPS.has(s.name)) return { ...s, minTL: 9 };
+  if (ADVANCED_SHIPS.has(s.name)) return { ...s, minTL: 11 };
+  return { ...s, minTL: 12 };
+});
 
 /** 1D6 × 10% distribution table for Small/Civilian/Warship budget split */
 const DISTRIBUTION_TABLE: Record<number, { small: number; civilian: number; warship: number }> = {
