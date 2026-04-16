@@ -295,7 +295,7 @@ function OverviewTab({ system }: { system: StarSystem }) {
                 : `Class ${system.inhabitants.starport.class}`
             }
           />
-          <DataRow label="This week"   value={formatCredits(system.inhabitants.starport.weeklyActivity)} />
+          <DataRow label="Port Activity" value={formatCredits(system.inhabitants.starport.weeklyActivity)} />
           <DataRow label="Bases"       value={[
             system.inhabitants.starport.hasNavalBase  && 'Naval',
             system.inhabitants.starport.hasScoutBase  && 'Scout',
@@ -825,7 +825,8 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
             Roll 3D6
           </button>
           <FootnoteBlock>
-            <strong>What this means:</strong> Weekly throughput = (Annual Port Trade ÷ 364) × 3D6.
+            <strong>What this means:</strong> Port Activity is a snapshot, not a steady income: (Annual Port Trade ÷ 52) × 3D6. It varies each visit.
+            Weekly Base = Annual Port Trade ÷ 52.
             Annual Port Trade = Population × GDP/person/day × 365 × Trade Fraction × Wealth Multiplier.
             PSS = floor(log₁₀(Annual Trade)) − 10. Final class = min(PSS class, TL capability cap).
             TL sets the capability ceiling — no amount of money lets a TL 9 world build jump drives.

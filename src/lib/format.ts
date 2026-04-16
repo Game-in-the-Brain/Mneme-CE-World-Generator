@@ -53,23 +53,9 @@ export function formatLuminosity(value: number): string {
   return value.toExponential(2);
 }
 
-/** Format a large credit value with scale abbreviations (K/M/B/T/Qa/Qi/Sx). */
+/** Format a large credit value with full comma-separated numbers (unambiguous across locales). */
 export function formatCreditScale(value: number): string {
   if (!isFinite(value) || value === 0) return '0 Cr';
-  const abs = Math.abs(value);
-  const tiers: [number, string][] = [
-    [1e21, 'Sx'], [1e18, 'Qi'], [1e15, 'Qa'], [1e12, 'T'],
-    [1e9, 'B'], [1e6, 'M'], [1e3, 'K'],
-  ];
-  for (const [threshold, suffix] of tiers) {
-    if (abs >= threshold) {
-      const scaled = value / threshold;
-      const formatted = scaled >= 100
-        ? Math.round(scaled).toLocaleString('en-US')
-        : parseFloat(scaled.toPrecision(3)).toString();
-      return `${formatted} ${suffix} Cr`;
-    }
-  }
   return `${new Intl.NumberFormat('en-US').format(Math.round(value))} Cr`;
 }
 

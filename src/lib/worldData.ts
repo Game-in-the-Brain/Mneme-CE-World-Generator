@@ -550,7 +550,7 @@ export function calculateStarport(
   const tlCap     = getTLCapClass(tl);
   const finalClass = minClass(rawClass, tlCap);
 
-  const weeklyBase     = annualTrade / 364;
+  const weeklyBase     = annualTrade / 52;
   const weeklyActivity = weeklyBase * weeklyRoll;
 
   return { class: finalClass, pss, rawClass, tlCap, annualTrade, weeklyBase, weeklyActivity };

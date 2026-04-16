@@ -98,7 +98,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
 | [QA-025](#qa-025) | Engine — Inhabitants | Low Population Terminology Override | 🟡 Low | 📋 Proposed |
 | [QA-026](#qa-026) | Engine — Inhabitants | Depression Penalty for Low Population Worlds | 🟠 Medium | ✅ Fixed |
-| [QA-027](#qa-027) | UI — Economy | Income "B cr" notation ambiguous; weekly × 52 ≠ annual total shown | 🔴 High | 🔴 Open |
+| [QA-027](#qa-027) | UI — Economy | Income "B cr" notation ambiguous; weekly × 52 ≠ annual total shown | 🔴 High | ✅ Fixed |
 | [QA-028](#qa-028) | UI — Economy | Wealth display contradicts World Development section | 🟠 Medium | 🔴 Open |
 | [QA-029](#qa-029) | Engine — Government | Anarchy government type disproportionately dominant | 🔴 High | 📋 Investigated — Table Design |
 | [QA-030](#qa-030) | Engine — Ships (FR-030) | Ships at X/E-class starport too numerous for port class | 🔴 High | 🔴 Open |
@@ -109,6 +109,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | 📋 Proposed |
 | [QA-035](#qa-035) | UI — 2D Map | Main world missing from 2D map — buildSceneGraph never adds it (only marks) | 🔴 High | ✅ Fixed |
 | [QA-036](#qa-036) | UI — Planetary System Tab | Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one | 🟠 Medium | ✅ Fixed |
+| [QA-037](#qa-037) | UI — Settings | localStorage `mneme_generator_options` backward compatibility for new fields | 🟠 Medium | 🔴 Open |
 | [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | 📋 Proposed |
 
 ---
@@ -123,8 +124,8 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 **Title:** Income display "B cr" notation ambiguous; weekly × 52 ≠ annual total shown  
 **Area:** UI — Economy  
 **Priority:** 🔴 High  
-**Status:** 🔴 Open  
-**Datetime:** 260415-120000  
+**Status:** ✅ Fixed  
+**Datetime:** 260415-120000 | Fixed: 260416  
 **Reported by:** Neil Lucock (email 2026-04-15)
 
 **Problem Statement**  
@@ -135,16 +136,16 @@ Neil reports two interrelated issues with the income/credits display:
 3. **US vs UK billion:** "B" is ambiguous — US billion = 10⁹, UK (traditional) billion = 10¹². Neil is UK-based. This will confuse international users.
 4. **Plausibility concern:** Neil notes 400,000 people (comparable to Leicester, UK) generating 1.79 B cr/week seems implausibly high, regardless of TL.
 
-**Expected Behaviour**
-- Display full unabbreviated numbers, or use explicit notation: `1,790,000,000 cr/week` or `1.79 × 10⁹ cr/week`.
-- Reconcile the weekly income figure with the annual total shown (check formula — are there multiple partial-year income sources being summed, or a period mismatch?).
-- Add a tooltip or label clarifying the unit if abbreviation is kept.
+**Fixes Applied**
+- **Bug A (formula):** `src/lib/worldData.ts` — `weeklyBase = annualTrade / 364` changed to `annualTrade / 52`. Weekly Base is now a true weekly rate.
+- **Bug B (snapshot label):** `src/components/SystemViewer.tsx` — Overview tab label changed from "This week" to "Port Activity". Starport card tooltip rewritten to explain that Port Activity = (Annual Port Trade ÷ 52) × 3D6 and varies per visit.
+- **Bug C (notation):** `src/lib/format.ts` — `formatCreditScale()` now outputs full comma-separated numbers (e.g. `1,790,000,000 Cr`) instead of ambiguous `B`/`M` abbreviations.
 
 **Working Document**  
 [260415-claude-open-qa027-income-notation.md](./260415-claude-open-qa027-income-notation.md) — full root cause analysis, code trace, and proposed fixes.
 
 **Notes**  
-Justin response: income UI will be redesigned (see FR-032). The math inconsistency may be a separate calculation bug that should be verified independently.
+Justin response: income UI will be redesigned (see FR-032). The underlying plausibility concern is addressed by FR-032's configurable productivity curves.
 
 ---
 
@@ -167,6 +168,37 @@ Wealth and World Development descriptors should tell a coherent story. If a worl
 
 **Notes**  
 May be a display/wording issue rather than a calculation bug. Review what each panel sources its descriptors from and ensure they are contextually aware of each other.
+
+---
+
+---
+
+### QA-037
+
+**Title:** localStorage `mneme_generator_options` backward compatibility for new fields  
+**Area:** UI — Settings  
+**Priority:** 🟠 Medium  
+**Status:** 🔴 Open  
+**Datetime:** 260416  
+
+**Problem Statement**  
+`GeneratorDashboard.tsx` and `Settings.tsx` read `mneme_generator_options` from `localStorage`. Older stored objects only contain `starClass`, `starGrade`, `mainWorldType`, and `populated`. When FR-032 adds `tlProductivityPreset`, `developmentWeights`, `powerWeights`, and `govWeights`, naive destructuring or missing-field access will cause runtime errors or `undefined` values propagating into the UI.
+
+**Expected Behaviour**
+- Loading an old `mneme_generator_options` object must gracefully merge with the new default values.
+- No runtime errors when old users upgrade.
+- New fields must be independently validate-able (e.g. unknown preset ID → fallback to Mneme default).
+
+**Fix Required**
+- Create a central `loadGeneratorOptions()` helper that:
+  1. Reads raw `localStorage` item
+  2. Deep-merges with a `DEFAULT_GENERATOR_OPTIONS` object
+  3. Validates each field (e.g. `VALID_CLASSES.has(opts.starClass)`)
+  4. Returns a fully populated, type-safe `GeneratorOptions`
+- Update `GeneratorDashboard.tsx` and `Settings.tsx` to use this helper.
+
+**Files**  
+`src/lib/optionsStorage.ts` (new), `src/components/GeneratorDashboard.tsx`, `src/components/Settings.tsx`
 
 ---
 

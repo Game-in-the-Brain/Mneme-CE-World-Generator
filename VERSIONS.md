@@ -4,6 +4,16 @@
 
 ---
 
+## v1.3.81 — QA-027 Income Notation & Math Fix (2026-04-16)
+
+### Fixes
+- **QA-027 Bug A:** `src/lib/worldData.ts` — corrected `weeklyBase` from `annualTrade / 364` (daily rate) to `annualTrade / 52` (true weekly rate)
+- **QA-027 Bug B:** `src/components/SystemViewer.tsx` — relabelled "This week" → "Port Activity"; updated tooltip to explain snapshot nature and new ÷52 formula
+- **QA-027 Bug C:** `src/lib/format.ts` — `formatCreditScale()` now outputs full comma-separated numbers (e.g. `1,790,000,000 Cr`) instead of ambiguous `B`/`M` abbreviations
+- `QA.md`: marked QA-027 as ✅ Fixed; added QA-037 (localStorage backward compatibility) as a prerequisite for FR-032
+
+---
+
 ## v1.3.80 — FR-032/FR-033 Spec + FRD Economic Settings Section (2026-04-16)
 
 ### Documentation
