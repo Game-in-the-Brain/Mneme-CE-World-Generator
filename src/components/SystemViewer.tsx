@@ -105,6 +105,22 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
             </span>
             <span style={{ color: 'var(--text-secondary)' }}>Primary Star</span>
           </div>
+          <div className="flex items-center gap-2 mb-1">
+            <input
+              type="text"
+              value={system.name || ''}
+              onChange={(e) => {
+                if (!onUpdateSystem) return;
+                onUpdateSystem({ ...system, name: e.target.value });
+              }}
+              placeholder={getSystemCode(system)}
+              className="text-sm bg-transparent border-b border-transparent hover:border-[var(--border-color)] focus:border-[var(--accent-red)] outline-none px-1 py-0.5 transition-colors"
+              style={{ color: 'var(--text-primary)', minWidth: '8rem' }}
+            />
+            <span className="text-xs text-[var(--text-secondary)]">
+              {system.name ? 'System name' : `Code: ${getSystemCode(system)}`}
+            </span>
+          </div>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             Generated {new Date(system.createdAt).toLocaleString()}
           </p>
@@ -1264,4 +1280,20 @@ function getEconomicModelLabel(system: StarSystem): string {
   if (preset.id === 'mneme') return 'Mneme';
   if (preset.id === 'ce') return 'CE / Traveller';
   return preset.id;
+}
+
+function getSystemCode(system: StarSystem): string {
+  const typeInitial = system.mainWorld.type.charAt(0);
+  const hab = system.mainWorld.habitability >= 0 ? `+${system.mainWorld.habitability}` : `${system.mainWorld.habitability}`;
+  const pop = system.inhabitants.populated !== false
+    ? formatCompactNumber(system.inhabitants.population)
+    : '0';
+  return `${system.inhabitants.starport.class}${typeInitial}${hab}-TL${system.mainWorld.techLevel}-Pop${pop}`;
+}
+
+function formatCompactNumber(n: number): string {
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
 }

@@ -363,7 +363,7 @@ export function GeneratorDashboard({
                   </span>
                   <div>
                     <div className="font-medium">
-                      {system.mainWorld.type} World
+                      {system.name || getSystemCode(system)}
                       {system.inhabitants.populated === false && (
                         <span className="ml-2 text-xs px-1.5 py-0.5 rounded"
                               style={{ backgroundColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
@@ -372,9 +372,9 @@ export function GeneratorDashboard({
                       )}
                     </div>
                     <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      Hab: {system.mainWorld.habitability}
+                      {system.mainWorld.type} World
                       {system.inhabitants.populated !== false && (
-                        <> | TL: {system.inhabitants.techLevel} | Pop: {formatPopulation(system.inhabitants.population)}</>
+                        <> | Hab: {system.mainWorld.habitability} | TL: {system.inhabitants.techLevel} | Pop: {formatPopulation(system.inhabitants.population)}</>
                       )}
                     </div>
                   </div>
@@ -726,6 +726,15 @@ function formatPopulation(pop: number): string {
 function formatCredits(value: number): string {
   if (!isFinite(value)) return '— Cr';
   return `${new Intl.NumberFormat('en-US').format(Math.round(value))} Cr`;
+}
+
+function getSystemCode(system: import('../types').StarSystem): string {
+  const typeInitial = system.mainWorld.type.charAt(0);
+  const hab = system.mainWorld.habitability >= 0 ? `+${system.mainWorld.habitability}` : `${system.mainWorld.habitability}`;
+  const pop = system.inhabitants.populated !== false
+    ? formatPopulation(system.inhabitants.population)
+    : '0';
+  return `${system.inhabitants.starport.class}${typeInitial}${hab}-TL${system.mainWorld.techLevel}-Pop${pop}`;
 }
 
 
