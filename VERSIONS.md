@@ -4,6 +4,23 @@
 
 ---
 
+## v1.3.79 — QA-034 Canonical Depression Penalty + Economy Docs (2026-04-15)
+
+### Code Changes
+- **QA-034**: Removed the `depressionPenaltyTiming` generator option; after-starport recalculation is now the only behavior
+- `GeneratorDashboard.tsx`: removed timing selector UI and `localStorage` persistence
+- `generator.ts`: hardcoded after-starport depression penalty flow (calculate founding starport with base TL, then recalculate with `effectiveTL` if depressed)
+- `types/index.ts`: removed `depressionPenaltyTiming` from `GeneratorOptions`
+
+### Documentation
+- `QA.md`: added Root Cause Analysis for economy engine cluster (QA-027, QA-028, QA-030)
+- `QA.md`: marked QA-031 through QA-036 and FR-031 statuses; added detailed FR-031 Phase 0–5 completion notes
+- Added `260415-claude-open-qa027-income-notation.md` and `260415-claude-open-fr032-income-assumptions.md` specs
+- `260410-Update.md` renamed to `260410-Changes.md` with expanded Section 12 (Density-Derived Gravity)
+- `260409-v02 Mneme-CE-World-Generator-FRD.md`: added §7.2.2 Low Population Terminology & Depression Penalty
+
+---
+
 ## v1.3.62 — Depression Penalty & After-Starport Recalculation (2026-04-15)
 
 ### Major Feature: QA-026 — Low Population Depression Penalty

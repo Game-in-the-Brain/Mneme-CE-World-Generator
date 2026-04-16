@@ -185,7 +185,7 @@ Entry: `generateStarSystem(options?)` in `src/lib/generator.ts`
    │   NOTE: Adv/Dis modifiers apply to BOTH count rolls AND mass
    │   rolls. Original book applied modifier to mass rolls only.
    │   v1.1 extends same modifier to count rolls (house rule).
-   │   See 260410-Update.md Section 1 for rationale.
+   │   See 260410-Changes.md Section 1 for rationale.
    ├── generateBody() for each type
    │   └── calculatePhysicalProperties() — density → radius/gravity/escape velocity
    ├── applyHotJupiterMigration() — QA-011: clear zones with Class III/IV/V gas

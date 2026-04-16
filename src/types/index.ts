@@ -224,7 +224,6 @@ export interface GeneratorOptions {
   starGrade: StellarGrade | 'random';
   mainWorldType: WorldType | 'random';
   populated: boolean;
-  depressionPenaltyTiming?: 'before-starport' | 'after-starport';
 }
 
 export type BodyAnnotations = Record<string, { name: string; notes: string }>;

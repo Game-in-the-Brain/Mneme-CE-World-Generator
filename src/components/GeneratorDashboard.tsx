@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
 import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType } from '../types';
-
-type DepressionPenaltyTiming = 'before-starport' | 'after-starport';
-
-const DEPRESSION_TIMING_OPTIONS: { value: DepressionPenaltyTiming; label: string }[] = [
-  { value: 'before-starport', label: 'Before Starport (default)' },
-  { value: 'after-starport', label: 'After Starport (recalculate)' },
-];
 import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
 
@@ -52,7 +45,7 @@ export function GeneratorDashboard({
   const VALID_CLASSES  = new Set(['random','O','B','A','F','G','K','M']);
   const VALID_GRADES   = new Set(['random','0','1','2','3','4','5','6','7','8','9']);
   const VALID_TYPES    = new Set(['random','Terrestrial','Dwarf','Habitat']);
-  const VALID_TIMINGS  = new Set(['before-starport','after-starport']);
+
 
   const [starClass, setStarClass] = useState<StellarClass | 'random'>(() => {
     try {
@@ -79,25 +72,17 @@ export function GeneratorDashboard({
       return typeof s.populated === 'boolean' ? s.populated : true;
     } catch { return true; }
   });
-  const [depressionPenaltyTiming, setDepressionPenaltyTiming] = useState<DepressionPenaltyTiming>(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem('mneme_generator_options') ?? '{}');
-      return VALID_TIMINGS.has(s.depressionPenaltyTiming) ? s.depressionPenaltyTiming : 'before-starport';
-    } catch { return 'before-starport'; }
-  });
-
   useEffect(() => {
     localStorage.setItem('mneme_generator_options', JSON.stringify({
       starClass,
       starGrade,
       mainWorldType,
       populated,
-      depressionPenaltyTiming,
     }));
-  }, [starClass, starGrade, mainWorldType, populated, depressionPenaltyTiming]);
+  }, [starClass, starGrade, mainWorldType, populated]);
 
   function handleGenerate() {
-    onGenerate({ starClass, starGrade, mainWorldType, populated, depressionPenaltyTiming });
+    onGenerate({ starClass, starGrade, mainWorldType, populated });
   }
 
   return (
@@ -229,33 +214,6 @@ export function GeneratorDashboard({
               </p>
             )}
           </div>
-
-          {/* Depression Penalty Timing (QA-026) */}
-          {populated && (
-            <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
-              <label className="block text-xs mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Population Depression Penalty Timing
-              </label>
-              <select
-                value={depressionPenaltyTiming}
-                onChange={e => setDepressionPenaltyTiming(e.target.value as DepressionPenaltyTiming)}
-                className="w-full rounded px-2 py-2 text-sm border"
-                style={{
-                  backgroundColor: 'var(--bg-primary)',
-                  borderColor: 'var(--border-color)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {DEPRESSION_TIMING_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                Low-population worlds can suffer a TL depression that reduces starport class.
-                “Before Starport” applies the penalty during generation; “After Starport” treats the port as degraded from a higher founding TL.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Generate button */}

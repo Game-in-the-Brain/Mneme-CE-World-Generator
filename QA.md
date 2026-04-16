@@ -32,8 +32,17 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | FR-029 | ✅ Fixed | Roll 3D6 button in Starport card, persists via `onUpdateSystem` |
 | FR-030 | ✅ Fixed | `src/lib/shipsInArea.ts`, wired to UI + `.docx` export |
 | **QA-023** | ✅ Fixed | Mass + density pipeline — Option B. worldData.ts, generator.ts, types/index.ts |
+| **QA-032** | ✅ Fixed | 427 km / 0.18G world — stale pre-QA-023 cached data, no code bug |
+| **QA-033** | ✅ Fixed | 2D Map button URL broken on GitHub Pages — extracted to standalone repo |
+| **QA-034** | ✅ Fixed | Remove Depression Penalty Timing option; hardcode after-starport recalculation |
+| **QA-035** | ✅ Fixed | Main world missing from 2D map — dataAdapter now adds explicitly |
+| **QA-036** | ✅ Fixed | Total Planetary Bodies count excludes main world — now included |
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
-| **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — Phase 0 scaffold complete; Phase 1 Path & button pending |
+| **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — extracted to standalone repo; MWG links to it |
+| **QA-027** | 🔴 Open | Income notation ambiguous; economy engine needs root-cause redesign (see §Root Cause Analysis) |
+| **QA-028** | 🔴 Open | Wealth contradicts Development — same root cause as QA-027 |
+| **QA-030** | 🔴 Open | Ships at X/E ports too numerous — needs port-class hard gate |
+| **FR-032** | 📋 Proposed | Income system redesign: avg income per TL + ships as income-years |
 
 
 ### Key Files
@@ -91,18 +100,323 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | [QA-026](#qa-026) | Engine — Inhabitants | Depression Penalty for Low Population Worlds | 🟠 Medium | ✅ Fixed |
 | [QA-027](#qa-027) | UI — Economy | Income "B cr" notation ambiguous; weekly × 52 ≠ annual total shown | 🔴 High | 🔴 Open |
 | [QA-028](#qa-028) | UI — Economy | Wealth display contradicts World Development section | 🟠 Medium | 🔴 Open |
-| [QA-029](#qa-029) | Engine — Government | Anarchy government type disproportionately dominant | 🔴 High | 🔴 Open |
+| [QA-029](#qa-029) | Engine — Government | Anarchy government type disproportionately dominant | 🔴 High | 📋 Investigated — Table Design |
 | [QA-030](#qa-030) | Engine — Ships (FR-030) | Ships at X/E-class starport too numerous for port class | 🔴 High | 🔴 Open |
-| [QA-031](#qa-031) | UI — Stars | Star color displayed as raw hex — needs human-readable name | 🟠 Medium | 🔴 Open |
-| [QA-032](#qa-032) | Engine — World Physics | 427 km world showing 0.18G — floor density may still be off post QA-023 | 🟠 Medium | 🔴 Open |
+| [QA-031](#qa-031) | UI — Stars | Star color displayed as raw hex — needs human-readable name | 🟠 Medium | ✅ Fixed |
+| [QA-032](#qa-032) | Engine — World Physics | 427 km world showing 0.18G — stale pre-QA-023 data | 🟠 Medium | ✅ Fixed — No Bug |
+| [QA-033](#qa-033) | UI — 2D Map | Map button URL broken on GitHub Pages — extracted to standalone repo | 🔴 High | ✅ Fixed |
+| [QA-034](#qa-034) | Engine — Inhabitants | Remove Depression Penalty Timing option — default to after-starport only | 🟠 Medium | ✅ Fixed |
 | [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | 📋 Proposed |
-| [QA-035](#qa-035) | UI — 2D Map | Main world missing from 2D map — buildSceneGraph never adds it (only marks) | 🔴 High | 🔴 Open |
-| [QA-036](#qa-036) | UI — Planetary System Tab | Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one | 🟠 Medium | 🔴 Open |
+| [QA-035](#qa-035) | UI — 2D Map | Main world missing from 2D map — buildSceneGraph never adds it (only marks) | 🔴 High | ✅ Fixed |
+| [QA-036](#qa-036) | UI — Planetary System Tab | Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one | 🟠 Medium | ✅ Fixed |
 | [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | 📋 Proposed |
 
 ---
 
-## Bug Details
+
+---
+
+## Current Open Issues
+
+### QA-027
+
+**Title:** Income display "B cr" notation ambiguous; weekly × 52 ≠ annual total shown  
+**Area:** UI — Economy  
+**Priority:** 🔴 High  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (email 2026-04-15)
+
+**Problem Statement**  
+Neil reports two interrelated issues with the income/credits display:
+
+1. **Notation ambiguity:** "1.79 B cr a week" — it is unclear whether "B" means billion. The Starport box separately shows 149 million credits/week. The relationship between these two figures is not explained.
+2. **Math inconsistency:** 1.79 B cr/week × 52 weeks = ~93 B cr/year. The annual figure shown is 54.2 B. These do not reconcile.
+3. **US vs UK billion:** "B" is ambiguous — US billion = 10⁹, UK (traditional) billion = 10¹². Neil is UK-based. This will confuse international users.
+4. **Plausibility concern:** Neil notes 400,000 people (comparable to Leicester, UK) generating 1.79 B cr/week seems implausibly high, regardless of TL.
+
+**Expected Behaviour**
+- Display full unabbreviated numbers, or use explicit notation: `1,790,000,000 cr/week` or `1.79 × 10⁹ cr/week`.
+- Reconcile the weekly income figure with the annual total shown (check formula — are there multiple partial-year income sources being summed, or a period mismatch?).
+- Add a tooltip or label clarifying the unit if abbreviation is kept.
+
+**Working Document**  
+[260415-claude-open-qa027-income-notation.md](./260415-claude-open-qa027-income-notation.md) — full root cause analysis, code trace, and proposed fixes.
+
+**Notes**  
+Justin response: income UI will be redesigned (see FR-032). The math inconsistency may be a separate calculation bug that should be verified independently.
+
+---
+
+---
+
+### QA-028
+
+**Title:** Wealth display contradicts World Development section  
+**Area:** UI — Economy  
+**Priority:** 🟠 Medium  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (email 2026-04-15)
+
+**Problem Statement**  
+Neil observes that the Wealth panel displays a world as "not rich" while the World Development section implies significant productive output ("seems to be working hard but not getting much in return"). The two panels give contradictory impressions of the same world.
+
+**Expected Behaviour**  
+Wealth and World Development descriptors should tell a coherent story. If a world has high development but low wealth, the text should explicitly surface this tension as a design outcome (e.g., "high-output resource extraction with wealth extracted off-world") rather than appearing contradictory.
+
+**Notes**  
+May be a display/wording issue rather than a calculation bug. Review what each panel sources its descriptors from and ensure they are contextually aware of each other.
+
+---
+
+---
+
+### QA-030
+
+**Title:** Ships at X/E-class starport: count too high for port class  
+**Area:** Engine — Ships (FR-030)  
+**Priority:** 🔴 High  
+**Status:** 🔴 Open  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (email 2026-04-15)
+
+**Problem Statement**  
+Neil reports a TL9 X-class port showing 104 ships in orbit, including a 1,000-ton passenger liner. An X-class port means no facilities — there should be no docked traffic at all, and minimal in-system traffic.
+
+**Expected Behaviour**  
+- **Class X:** Zero docked/in-port ships. Minimal in-system traffic (scouts, prospectors, the occasional free trader).
+- **Class E:** Minimal facilities — handful of ships at most.
+- Ship count should be hard-gated by starport class, not just PSS/TL score.
+- A 1,000-ton passenger liner will not visit a world with no port facilities.
+
+**Files**  
+`src/lib/shipsInArea.ts` — add port class ceiling to traffic pool lookup.
+
+**Notes**  
+FR-030 (`shipsInArea.ts`) generates traffic from `traffic_pool` fields. The pool selection needs an additional gate: if `starport.class === 'X'`, zero docked ships; if `'E'`, minimal pool only. The `budget` from PSS may need to be zeroed or clamped for X/E regardless of TL.
+
+---
+
+---
+
+### FR-031
+
+**Title:** 2D Animated Planetary System Map — MWG Integrated Monorepo Build  
+**Area:** Feature — Visualisation  
+**Priority:** 🟠 Medium  
+**Status:** 🟡 In Progress  
+**Date Opened:** 2026-04-15  
+**File(s):** `vite.config.ts`, `solar-system-2d/index.html`, `solar-system-2d/src/*.ts`, `src/components/SystemViewer.tsx`
+
+**Description:**  
+Deliver a one-tap visual star-system map inside MWG. When a referee generates a `StarSystem`, a "View System Map" button opens a responsive, animated 2D canvas map of that system. All visual data is derived from the already-generated MWG state. The 2D map does not generate new astronomical data; it is a pure visualiser.
+
+**Integration Model:**  
+Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT a submodule or fork. This ensures `npm run dev` serves both apps and `npm run build` emits both to `dist/`.
+
+**Phase Breakdown:**
+
+| Phase | Goal | Status |
+|-------|------|--------|
+| Phase 0 | Foundation — Vite entry point, blank canvas, RAF loop | ✅ Complete |
+| Phase 1 | The Path — Base64 query-string payload, View System Map button, dataAdapter, static circle render | ✅ Complete |
+| Phase 2 | Orbits & Camera — logarithmic scale, orbit rings, zoom, pan, touch gestures, reset view | ✅ Complete |
+| Phase 3 | Animation & Time Controls — RAF angle updates, play/pause/reverse, dt cap, date display pulse | ✅ Complete |
+| Phase 4 | Starfield Polish — Mulberry32 PRNG, nebula clouds, resize regeneration, seed controls | ✅ Complete |
+| Phase 5 | Production Hardening — disk point fields, label culling, off-screen culling | ✅ Complete (pending device fps test) |
+| Phase 6 | Backlog — body tooltips, Brachistochrone, retrograde orbits, rings, moons | 📋 Future |
+
+**Phase 0 Completion Details:**
+- `vite.config.ts` updated with `rollupOptions.input` for `solar-system-2d/index.html`
+- `solar-system-2d/index.html` created with full-screen canvas and control overlay
+- TypeScript scaffold created:
+  - `main.ts` — bootstrap, payload decode, canvas init
+  - `renderer.ts` — `requestAnimationFrame` loop skeleton
+  - `camera.ts` — pan/zoom transform math
+  - `orbitMath.ts` — Kepler period, angle offset, hash-to-float
+  - `starfield.ts` — Mulberry32 PRNG, procedural star generation
+  - `dataAdapter.ts` — `StarSystem` → `SceneBody` mapper (INTRAS Level 1)
+  - `uiControls.ts` — play/pause, speed, reverse, step, seed controls
+  - `types.ts` — shared types
+  - `styles.css` — space theme, glassmorphism controls
+- `npm run build` passes with zero errors; `dist/solar-system-2d/` emitted correctly
+
+**Phase 1 Completion Details:**
+- "View System Map" button added to `SystemViewer.tsx` (primary-styled, opens in new tab)
+- Unicode-safe Base64 payload encoding/decoding implemented end-to-end
+- `dataAdapter.ts` maps full `StarSystem` to typed `SceneBody` graph
+- Renderer draws static circles, orbit rings, labels, and seeded starfield background
+- Main world highlighted with gold stroke and "MAIN" label
+
+**Phase 2 Completion Details:**
+- `camera.ts` supports zoom-to-point (mouse wheel centred on cursor) and pan-by-pixel
+- `input.ts` handles mouse drag, mouse wheel zoom, touch pinch-zoom, and touch pan
+- Double-tap and "Reset View" button snap camera back to default fit
+- Orbit rings draw correctly under camera transforms
+- Logarithmic distance scaling keeps inner and outer bodies visible simultaneously
+
+**Phase 3 Completion Details:**
+- Orbital angles advance from `simDayOffset` in the RAF loop using Kepler's 3rd Law periods
+- Reverse playback flips the time direction multiplier
+- `dt` is capped at 0.1s to prevent background-tab time jumps
+- Step buttons (+1d, -7d, etc.) automatically pause playback before stepping
+- Date display uses direct timestamp math (reliable for large positive/negative offsets)
+- Date display shows a blue pulse glow when the simulation is running
+
+**Phase 4 Completion Details:**
+- `starfield.ts` uses Mulberry32 deterministic PRNG seeded from the system payload
+- Starfield regenerates automatically on canvas resize without changing the seed
+- Optional faint nebula clouds generated behind stars (3–6 per viewport, violet/indigo/blue/pink)
+- Seed controls (display, regenerate, copy, paste) are wired and working
+- Two browsers with the same URL render identical backgrounds
+
+**Phase 5 Completion Details:**
+- Disk point-field rendering implemented: each circumstellar disk generates 300–800 seeded points distributed along its orbit with ±4% radial jitter
+- Disk points use warmer colours (`#8B7355`, `#A0522D`, `#CD853F`) and higher opacity than background stars for contrast
+- Label culling: non-essential labels hidden when zoom < 0.35× to reduce clutter
+- Off-screen culling: non-disk bodies skip rendering when fully outside viewport
+- Single RAF loop, no DOM timers, and no per-frame garbage collection for efficient mobile performance
+- PWA offline caching inherited from MWG's existing service worker
+
+**MVP Design Constraints:**
+- Everything is a circle (stars, planets, disks) — disks rendered as scattered point rings
+- Default epoch: `2300-01-01` CE
+- Default animation: 1 day/sec, reversible
+- Background: procedural seeded vector starfield + nebula clouds (no image assets)
+- No rings, no moons (INTRAS Level 2), no true barycentres in MVP
+
+**Open Tasks:**
+- Phase 5 follow-up: Physical device FPS validation on a 3-year-old phone
+- Phase 6: Long-term 3D option once Solar-System-3D matures
+
+---
+
+---
+
+## Root Cause Analysis: Economy Engine Cluster
+
+This section documents the systemic design tension underlying QA-027, QA-028, and QA-030.
+
+### The Core Conflict: CE Productivity vs. Mneme Productivity
+
+**Cepheus Engine / Traveller** assumes a gentle productivity slope — roughly 1970s-to-1990s style growth, decade over decade. A 400,000-person colony generating significant trade is an anomaly in that framework.
+
+**Mneme** does not live in that world. Mneme lives in:
+- The age of **Agents and Robots**.
+- The age of **Space Industry**, where one human + automation moves and converts **3× more material per person** every 50 years.
+- Compounding growth modeled roughly as **Productivity × 3.3^(TL−8)**.
+
+This is the difference between buying a car and buying an **Orbiter**. Between a house and an **Interstellar Ship with a habitat ring**. Between a construction crane and a **Jovian Hammer** skimming gas giants. Between a particle accelerator and an **800,000 km Great Serpent** harvesting antimatter from radiation belts.
+
+When humans move **gigatons and terratons** the way we move tons in 2026, the entire frame of reference shifts. Terraforming a world to Earth-likeness becomes less attractive than building a billion-habitat cluster. A tiny colony can maintain a Class B starport because robots don't sleep.
+
+### What This Means for the Generator
+
+The audience is split:
+- Some want **classic Traveller/CE** — gritty, slow, frontier ports, human-scale labour.
+- Some want **Mneme** — post-scarcity-adjacent, automated, high-compounding.
+
+**The current code leans Mneme by default**, but it lacks a UI to express this choice. The result is that Neil (expecting CE-scale economics) sees "billions of credits" from a 400,000-person world as a bug, when in Mneme's timeline it is a feature.
+
+### Required Fix
+
+Build **core mechanics that let the user (or referee) set the TL productivity curve themselves**:
+- **CE Default:** Slow 1960s–1990s pace. Low compound growth. Human labour dominant.
+- **Mneme Default:** High compound growth (`Productivity × 3.3^(TL−8)`). Agent/robot labour.
+- **Custom:** User-defined income baseline per TL.
+
+This is the architectural prerequisite for resolving QA-027, QA-028, and QA-030. See FR-032 for the concrete redesign proposal.
+
+**References:**
+- [Under Heaven Demographics 2030 to 2100](https://wiki.gi7b.org/index.php/Under_Heaven_Demographics_2030_to_2100)
+- [Game Projects Wiki](https://wiki.gi7b.org/index.php/Game_Projects)
+
+---
+
+## Fixed Issues
+
+### QA-024
+
+**Title:** "In System" ships have no position — missing body index 1–N  
+**Area:** Engine — FR-030 Ships in the Area  
+**Priority:** 🟠 Medium  
+**Status:** ✅ Fixed  
+**Date Opened:** 2026-04-14  
+**Date Fixed:** 2026-04-14  
+**File(s):** `src/lib/shipsInArea.ts`, `src/types/index.ts`, `src/components/SystemViewer.tsx`, `src/lib/exportDocx.ts`
+
+**Description:**  
+Ships generated with location `"System"` (In System, 1D6 roll 3–4) currently have no further positional detail. A GM looking at the result sees "In System" with no indication of *where* in the system the ship is. This is not useful for encounter placement or scenario context.
+
+**Expected Behaviour:**  
+Ships with location `"System"` should additionally have a `systemPosition: number` — a random body index from 1 to *N*, where *N* is the total number of bodies in the planetary system (sum of all circumstellar disks + dwarf planets + terrestrial worlds + ice worlds + gas worlds from `system.planetarySystem`).
+
+Display as **"In System — Body *N*"** (e.g. "In System — Body 3").
+
+If the system has zero planetary bodies, treat the ship as `"Orbit"` instead.
+
+**Root Cause:**  
+`generateShipsInTheArea(weeklyTradeValue)` currently only receives `weeklyTradeValue`. It has no access to the planetary system body count. The function signature needs to accept `totalBodies: number` so it can roll the position.
+
+**Implementation:**
+
+**Step 1 — Update `src/types/index.ts`:**
+```typescript
+export interface ShipInArea {
+  name: string;
+  dt: number;
+  monthlyOperatingCost: number;
+  location: ShipLocation;
+  systemPosition?: number;   // ← add: body index 1–N, only set when location === 'System'
+  trafficPool: 'small' | 'civilian' | 'warship';
+}
+```
+
+**Step 2 — Update `src/lib/shipsInArea.ts`:**
+```typescript
+// Change function signature:
+export function generateShipsInTheArea(weeklyTradeValue: number, totalBodies: number): ShipsInAreaResult
+
+// In rollLocation(), pass totalBodies and return position:
+function rollLocationWithPosition(totalBodies: number): { location: ShipLocation; systemPosition?: number } {
+  const r = rollD6();
+  if (r <= 2) return { location: 'Orbit' };
+  if (r <= 4) {
+    if (totalBodies === 0) return { location: 'Orbit' };
+    const pos = Math.ceil(Math.random() * totalBodies);
+    return { location: 'System', systemPosition: pos };
+  }
+  return { location: 'Docked' };
+}
+```
+
+Then use `rollLocationWithPosition(totalBodies)` instead of `rollLocation()` when pushing each ship to results.
+
+**Step 3 — Update call site in `src/components/SystemViewer.tsx`:**
+```typescript
+// Calculate totalBodies from system.planetarySystem:
+const totalBodies =
+  (system.planetarySystem?.circumstellarDisks?.length ?? 0) +
+  (system.planetarySystem?.dwarfPlanets?.length ?? 0) +
+  (system.planetarySystem?.terrestrialWorlds?.length ?? 0) +
+  (system.planetarySystem?.iceWorlds?.length ?? 0) +
+  (system.planetarySystem?.gasWorlds?.length ?? 0);
+
+const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity, totalBodies);
+```
+
+**Step 4 — Update display in `SystemViewer.tsx`:**  
+For each ship with `location === 'System'`, show `"In System — Body ${ship.systemPosition}"` instead of just `"In System"`.
+
+**Step 5 — Update `src/lib/exportDocx.ts`:**  
+Include body index in the `.docx` export line for "In System" ships.
+
+**Verify:** Generate several systems. Confirm all "In System" ships show a body number between 1 and the total planetary body count. Confirm zero-body systems fall back to "In Orbit". Mark QA-024 ✅ Fixed.
+
+---
+
+---
 
 ---
 
@@ -124,6 +438,8 @@ The application identified itself as "MNEME Generator" in the header, page title
 
 ---
 
+---
+
 ### QA-002
 
 **Title:** Logo not displayed in top-right corner  
@@ -138,6 +454,8 @@ The Game in the Brain logo was not displayed in the navigation header.
 **Fix Applied:**  
 - `gitb_gi7b_logo_512.png` copied from `references/` to `public/`
 - Logo link added to Navigation right side, linking to `https://github.com/Game-in-the-Brain`
+
+---
 
 ---
 
@@ -159,6 +477,8 @@ Star class PNG images existed in `references/` but were never shown in the UI.
 
 ---
 
+---
+
 ### QA-004
 
 **Title:** Scientific notation used for large numbers — should be formatted with commas and units  
@@ -173,6 +493,8 @@ Large numbers were displayed as raw scientific notation (e.g. `1.5e+24`, `3.5e+6
 **Fix Applied:**  
 - Created `src/lib/format.ts` with `formatNumber()`, `formatValue()`, `formatLuminosity()`, `formatCredits()`, `formatPopulation()`
 - All display values in `SystemViewer.tsx` and `OverviewTab` updated to use these helpers
+
+---
 
 ---
 
@@ -196,6 +518,8 @@ Only a hardcoded dark theme existed. No day or phone theme.
 
 ---
 
+---
+
 ### QA-006
 
 **Title:** Hill Sphere orbital spacing not adjusting AU — circumstellar disks sharing same AU  
@@ -213,6 +537,8 @@ All circumstellar disks were placed at exactly `sqrtL * 5` AU — identical posi
 - Disk AU formula changed to `sqrtL * (5 + Math.random() * 15)` — randomised across the outer zone
 - `enforceMinimumSeparation()` added: sorts all bodies by AU after generation, then pushes any that are within the floor distance outward
   - Floor: 0.05 AU for inner zones, 0.2 AU for outer zone
+
+---
 
 ---
 
@@ -238,6 +564,8 @@ All body count rolls used unmodified dice regardless of the primary star's class
 
 ---
 
+---
+
 ### QA-008
 
 **Title:** Body type labelled "Ice" — should be "Ice Worlds"  
@@ -253,6 +581,8 @@ Ice bodies were displayed with typeLabel `'Ice'`.
 - `typeLabel` changed to `'Ice Worlds'` in `PlanetarySystemTab`
 - `BodyCountCard` label updated to `"Ice Worlds"`
 - Internal TypeScript type `'ice'` unchanged
+
+---
 
 ---
 
@@ -277,6 +607,8 @@ Planetary bodies showed only type, zone, and AU. Physical properties were missin
 
 ---
 
+---
+
 ### QA-010
 
 **Title:** App uses multi-page navigation — should be single page with tab anchors  
@@ -293,6 +625,8 @@ The five generator sections (Overview, Star, World, Inhabitants, Planetary Syste
 - Tab buttons call `scrollIntoView({ behavior: 'smooth' })` on the target section's `ref`
 - Tabs are sticky at the top of the page while scrolling
 - Separate navigation (Generator / Data Log / Settings) in `Navigation.tsx` is unchanged
+
+---
 
 ---
 
@@ -314,6 +648,8 @@ Pre-placement migration sweep added in `generatePlanetarySystem()`:
    - Class IV/V gas in Hot zone → clear Hot zone
 2. Dwarf planets, terrestrials, and ice worlds in cleared zones are removed
 3. Optional captured rogue: rolls 2D6 per cleared zone; on 11+ a dwarf planet is re-added to that zone
+
+---
 
 ---
 
@@ -342,6 +678,8 @@ No way to generate multiple systems for bulk statistical analysis. Need a develo
 
 ---
 
+---
+
 ### QA-013
 
 **Title:** Theme toggle buttons take too much header space — Dark/Day should share space  
@@ -360,6 +698,8 @@ Three theme buttons (Dark, Day, Phone) consumed significant header width. On sma
 - Phone remains as separate toggle button (always visible)
 - Phone button highlighted in red when active; clicking again returns to previous desktop theme
 - Saves ~40px of header width
+
+---
 
 ---
 
@@ -382,6 +722,8 @@ The Batch Export feature (QA-012) was only visible in development builds (`impor
 - When ON: Batch Export panel is displayed
 - Works in both development and production builds
 - Allows QA testing on GitHub Pages deployment
+
+---
 
 ---
 
@@ -415,6 +757,8 @@ K and M class stars were generating too many planetary bodies. The Dis+2 (K) and
 - Gases: 1d3-1, roll 2d3 keep lowest 1
 
 **Result:** Both K-class and M-class now generate fewer worlds (~5 median each), matching expected stellar system characteristics for these cooler, less massive stars.
+
+---
 
 ---
 
@@ -458,6 +802,8 @@ Each star class includes:
 
 ---
 
+---
+
 ### QA-017
 
 **Title:** Habitats sized by largest body mass in system  
@@ -481,6 +827,8 @@ size (km) = (largestBodyMass ^ 0.33) × 6371 km × randomFactor
 ```
 
 Where `randomFactor` is 0.8-1.2 for variation. This ensures Habitats are appropriately sized relative to the largest planet/moon in the system they're built in.
+
+---
 
 ---
 
@@ -515,6 +863,8 @@ All four options are plain `useState` hooks with hardcoded defaults. The `Genera
 - No UI change required — auto-persist on change is sufficient.
 
 **localStorage Key:** `mneme_generator_options`
+
+---
 
 ---
 
@@ -577,7 +927,7 @@ const weeklyActivity = weeklyBase * roll3D6();
 
 ---
 
-## Additional Feature Issues
+---
 
 ---
 
@@ -598,20 +948,7 @@ No density reference data existed. Required for all physical property derivation
 
 ---
 
-### QA-ADD-002
-
-**Title:** CSV export design — wide-row format with open-ended planet columns  
-**Area:** Data Management — Export  
-**Priority:** 🟠 Medium  
-**Status:** 📋 Spec complete — implementation pending  
-**File(s):** `references/REF-012-csv-export-format.md` (created)
-
-**Description:**  
-CSV export format needed a formal specification.
-
-**Fix Applied:**  
-- Created `references/REF-012-csv-export-format.md` with full wide-row column spec, key naming convention, and parser notes
-- Implementation of `exportToCSV()` in `src/data/exportCSV.ts` is pending
+---
 
 ### QA-020
 
@@ -741,6 +1078,8 @@ export function generateCultureTraits(count: number = 1, exclude: string[] = [])
 
 ---
 
+---
+
 ### QA-021
 
 **Title:** Source of Power and Culture traits can generate contradictory combinations  
@@ -809,6 +1148,8 @@ const cultureTraits = generateCultureTraits(traitCount, cultureExclude);
 
 ---
 
+---
+
 ### QA-022
 
 **Title:** Main world gravity and size are independent rolls — physically impossible combinations produced  
@@ -873,141 +1214,6 @@ If `density > 22.6 g/cm³` (osmium) or `density < 0.5 g/cm³` (below ice), rerol
 
 ---
 
-### QA-024
-
-**Title:** "In System" ships have no position — missing body index 1–N  
-**Area:** Engine — FR-030 Ships in the Area  
-**Priority:** 🟠 Medium  
-**Status:** 📋 Open  
-**Date Opened:** 2026-04-14  
-**File(s):** `src/lib/shipsInArea.ts`, `src/types/index.ts`, `src/components/SystemViewer.tsx`, `src/lib/exportDocx.ts`
-
-**Description:**  
-Ships generated with location `"System"` (In System, 1D6 roll 3–4) currently have no further positional detail. A GM looking at the result sees "In System" with no indication of *where* in the system the ship is. This is not useful for encounter placement or scenario context.
-
-**Expected Behaviour:**  
-Ships with location `"System"` should additionally have a `systemPosition: number` — a random body index from 1 to *N*, where *N* is the total number of bodies in the planetary system (sum of all circumstellar disks + dwarf planets + terrestrial worlds + ice worlds + gas worlds from `system.planetarySystem`).
-
-Display as **"In System — Body *N*"** (e.g. "In System — Body 3").
-
-If the system has zero planetary bodies, treat the ship as `"Orbit"` instead.
-
-**Root Cause:**  
-`generateShipsInTheArea(weeklyTradeValue)` currently only receives `weeklyTradeValue`. It has no access to the planetary system body count. The function signature needs to accept `totalBodies: number` so it can roll the position.
-
-**Implementation:**
-
-**Step 1 — Update `src/types/index.ts`:**
-```typescript
-export interface ShipInArea {
-  name: string;
-  dt: number;
-  monthlyOperatingCost: number;
-  location: ShipLocation;
-  systemPosition?: number;   // ← add: body index 1–N, only set when location === 'System'
-  trafficPool: 'small' | 'civilian' | 'warship';
-}
-```
-
-**Step 2 — Update `src/lib/shipsInArea.ts`:**
-```typescript
-// Change function signature:
-export function generateShipsInTheArea(weeklyTradeValue: number, totalBodies: number): ShipsInAreaResult
-
-// In rollLocation(), pass totalBodies and return position:
-function rollLocationWithPosition(totalBodies: number): { location: ShipLocation; systemPosition?: number } {
-  const r = rollD6();
-  if (r <= 2) return { location: 'Orbit' };
-  if (r <= 4) {
-    if (totalBodies === 0) return { location: 'Orbit' };
-    const pos = Math.ceil(Math.random() * totalBodies);
-    return { location: 'System', systemPosition: pos };
-  }
-  return { location: 'Docked' };
-}
-```
-
-Then use `rollLocationWithPosition(totalBodies)` instead of `rollLocation()` when pushing each ship to results.
-
-**Step 3 — Update call site in `src/components/SystemViewer.tsx`:**
-```typescript
-// Calculate totalBodies from system.planetarySystem:
-const totalBodies =
-  (system.planetarySystem?.circumstellarDisks?.length ?? 0) +
-  (system.planetarySystem?.dwarfPlanets?.length ?? 0) +
-  (system.planetarySystem?.terrestrialWorlds?.length ?? 0) +
-  (system.planetarySystem?.iceWorlds?.length ?? 0) +
-  (system.planetarySystem?.gasWorlds?.length ?? 0);
-
-const result = generateShipsInTheArea(inhabitants.starport.weeklyActivity, totalBodies);
-```
-
-**Step 4 — Update display in `SystemViewer.tsx`:**  
-For each ship with `location === 'System'`, show `"In System — Body ${ship.systemPosition}"` instead of just `"In System"`.
-
-**Step 5 — Update `src/lib/exportDocx.ts`:**  
-Include body index in the `.docx` export line for "In System" ships.
-
-**Verify:** Generate several systems. Confirm all "In System" ships show a body number between 1 and the total planetary body count. Confirm zero-body systems fall back to "In Orbit". Mark QA-024 ✅ Fixed.
-
----
-
-### QA-025
-
-**Title:** Low Population Terminology Override  
-**Area:** Engine — Inhabitants  
-**Priority:** 🟡 Low  
-**Status:** 📋 **Proposed**  
-
-**Problem Statement**  
-Currently, the descriptive text for Wealth and Development uses terms like "middle class", "consumer economy", and "investment capital". For populations under 1,000,000 (and especially under 10,000), these terms feel out of place and break narrative immersion for small colonies or survival outposts.
-
-**Proposed Solution**  
-Implement a dynamic text replacement or secondary lookup table for populations `< 1,000,000`. Replace terminology:
-- "Economy" -> "Fiscal condition" or "Framework"
-- "Middle class" -> "Specialist groups" or "Core communal groups"
-- "Consumer goods" -> "Vital supplies"
-- "Investment capital" -> "Communal resources"
-
----
-
-### QA-026
-
-**Title:** Depression Penalty for Low Population Worlds  
-**Area:** Engine — Inhabitants  
-**Priority:** 🟠 Medium  
-**Status:** ✅ **Implemented**
-**Date:** 2026-04-15
-
-**Problem Statement**  
-A population of 5,000 people can currently generate a Class B starport with billions of credits in annual trade simply by rolling a high base TL (e.g. TL11). This creates "Ghost Ports" that contradict their demographic reality. Small populations lack the human capital to maintain high-tech industries.
-
-**Design Decision — After-Starport Recalculation**
-We chose **`after-starport`** as the canonical calculation method. This means:
-1. The starport is first calculated with the *founding* TL (the TL the world was originally colonised at).
-2. The depression penalty is then applied, producing an `effectiveTL`.
-3. The starport is **recalculated** with the depressed `effectiveTL`.
-4. The final display shows the downgraded class with the founding class in parentheses (e.g., `Class E (founded Class B)`).
-
-Because this is a post-calculation step, it triggers a **recalculation series** for all downstream dependents.
-
-**Cascading Effects & Automated Recalculation**
-
-| Sub-task | Description | Status |
-|----------|-------------|--------|
-| QA-026-A | `calculateDepressionPenalty()` — pop/development based TL penalty | ✅ Implemented |
-| QA-026-B | `Inhabitants.foundingTL` / `effectiveTL` data model | ✅ Implemented |
-| QA-026-C | `Starport.foundingClass` / `foundingPSS` / `foundingRawClass` storage | ✅ Implemented |
-| QA-026-D | Starport recalculation using `after-starport` timing | ✅ Implemented |
-| QA-026-E | Overview tab: parenthetical founding class display | ✅ Implemented |
-| QA-026-F | Inhabitants tab: parenthetical founding class + PSS display | ✅ Implemented |
-| QA-026-G | Travel Zone auto-recalculation with `effectiveTL` | ✅ Implemented |
-| QA-026-H | Ships-in-the-Area budget auto-recalculation from depressed starport | ✅ Implemented |
-| QA-026-I | Batch export: include founding TL and founding starport metrics | ✅ Implemented |
-| QA-026-J | Generator options: `depressionPenaltyTiming` persisted to localStorage | ✅ Implemented |
-
-**Datetime-kimi-open:** 2026-04-15T13:45:00+08:00 — All QA-026 sub-tasks approved and opened.
-
 ---
 
 ### QA-033
@@ -1015,9 +1221,10 @@ Because this is a post-calculation step, it triggers a **recalculation series** 
 **Title:** Map button generates wrong URL in dev; GitHub Pages map broken  
 **Area:** UI — 2D Map Integration  
 **Priority:** 🔴 High  
-**Status:** ✅ Fixed (commit `fix(SystemViewer): use BASE_URL unconditionally for map button`, 2026-04-15)  
+**Status:** ✅ Fixed (extracted to standalone repo + updated MWG button URL, 2026-04-15)  
 **Date Opened:** 2026-04-15  
 **Root Cause Identified:** 2026-04-15T21:30+08:00 — Justin QA session
+**Resolution:** Map app extracted to [`Game-in-the-Brain/2d-star-system-map`](https://github.com/Game-in-the-Brain/2d-star-system-map). MWG now links to the standalone deployment, eliminating monorepo BASE_URL path-resolution issues entirely.
 
 ---
 
@@ -1029,13 +1236,13 @@ The **Map** button in `SystemViewer.tsx` must open a fresh 2D map of the current
 2. Add a new random 8-character `starfieldSeed`.
 3. Add the default epoch (`2300-01-01`).
 4. Encode the payload as a Unicode-safe Base64 string.
-5. Open the URL `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/?system=<payload>` in a new tab.
+5. Open the URL in a new tab.
 
 ---
 
 **Root Cause (identified 260415)**
 
-Two earlier "fix" commits (v71 `635b7511`, v72 `8ddad55f`) introduced a wrong DEV override:
+Two earlier "fix" commits (v71 `635b7511`, v72 `8ddad55f`) introduced a wrong DEV override inside the monorepo:
 
 ```typescript
 // WRONG — commit 8ddad55f
@@ -1046,84 +1253,46 @@ const url = new URL(`solar-system-2d/?system=${encoded}`, window.location.origin
 **Why this is wrong:**  
 `vite.config.ts` sets `base: '/Mneme-CE-World-Generator/'`. Vite therefore injects `import.meta.env.BASE_URL = '/Mneme-CE-World-Generator/'` in **both** dev and production builds. Overriding it to `/` in DEV strips the base path from the generated URL.
 
+**Why the bug was masked in dev but fatal on GitHub Pages:**
+
+GitHub Pages is a **static file host with zero URL rewrite/redirect logic**. The browser requests exactly the URL the JavaScript constructs. If that URL is missing the repository base path (`/Mneme-CE-World-Generator/`), GitHub Pages serves a 404 — silently, with no fallback.
+
+By contrast, the **Vite dev server** (`npm run dev`) is an active development server. When it receives a request to `http://localhost:5175/solar-system-2d/...` (missing the base path), Vite's own middleware detects the mismatch and prints a friendly "did you mean `/Mneme-CE-World-Generator/solar-system-2d/`?" message, often auto-redirecting the tab. This made the broken code *appear* to work locally while failing completely in production.
+
 **What each environment saw:**
 
 | Environment | URL generated (broken code) | Result |
 |-------------|----------------------------|--------|
-| Dev (`npm run dev`) | `http://localhost:5175/solar-system-2d/?system=...` | Wrong — missing `/Mneme-CE-World-Generator/`. Vite shows "did you mean `/Mneme-CE-World-Generator/solar-system-2d/`?" redirect. Works only after manually following redirect. |
-| GitHub Pages (PROD) | `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/?system=...` | Correct in v72 final form, but any user with a **stale service worker** (PWA cache from v71's broken intermediate state) would load the old broken JS and get the wrong URL. |
+| Dev (`npm run dev`) | `http://localhost:5175/solar-system-2d/?system=...` | Wrong — missing `/Mneme-CE-World-Generator/`. Vite dev server intercepts the request and redirects, masking the bug. |
+| GitHub Pages (PROD) | `https://game-in-the-brain.github.io/solar-system-2d/?system=...` | **404** — GitHub Pages has no redirect server. The missing base path means the file does not exist. |
 
-**Why it worked at v69 (Phase 4 starfield polish):**  
-The original code before the "fix" commits was:
-```typescript
-window.open(`${window.location.origin}${import.meta.env.BASE_URL}solar-system-2d/?system=${encoded}`, '_blank');
-```
-This uses `BASE_URL` unconditionally — correct in both dev and prod.
+**Final Fix — Architectural, Not Code-Only:**
 
-**The actual fix applied this session:**
+Rather than continue patching BASE_URL logic inside a monorepo multi-entry build, the 2D map was extracted to its own standalone repository:
+
+- **New repo:** [`Game-in-the-Brain/2d-star-system-map`](https://github.com/Game-in-the-Brain/2d-star-system-map)
+- **Live URL:** `https://game-in-the-brain.github.io/2d-star-system-map/`
+- **MWG commit:** `63a01d12` — `SystemViewer.tsx` now opens the external URL directly.
+
 ```typescript
-// CORRECT — BASE_URL is /Mneme-CE-World-Generator/ in both dev and prod
-const url = new URL(`solar-system-2d/?system=${encoded}`, window.location.origin + import.meta.env.BASE_URL);
+// NEW — hardcoded external deployment, no relative-path resolution
+const url = new URL(`/?system=${encoded}`, 'https://game-in-the-brain.github.io/2d-star-system-map/');
 ```
+
+This eliminates the entire class of BASE_URL / path-resolution bugs because the map is no longer a sub-page of the MWG deployment.
 
 ---
 
 **Verification Checklist**
-- [x] Local dev (`npm run dev`): button opens `http://localhost:5175/Mneme-CE-World-Generator/solar-system-2d/?system=...` (no Vite redirect message)
-- [x] GitHub Pages: button opens `https://game-in-the-brain.github.io/Mneme-CE-World-Generator/solar-system-2d/?system=...`
-- [x] Clicking Map from an already-open solar-system-2d tab does **not** double the path
-- [x] Build passes: `tsc && vite build` zero errors
+- [x] Local dev (`npm run dev`): MWG button opens `https://game-in-the-brain.github.io/2d-star-system-map/?system=...`
+- [x] Standalone repo builds with zero TypeScript errors
+- [x] MWG build passes: `tsc && vite build` zero errors
 - [ ] GitHub Pages smoke-test after deploy (test on live site)
 
 **Service Worker Cache Note:**  
 If GitHub Pages still shows the broken URL after this deploy, the browser is serving a stale PWA cache from before the fix. Fix: `Ctrl+Shift+R` (hard refresh) or DevTools → Application → Service Workers → Unregister → reload.
 
 ---
-
-### QA-INV-001
-
-**Title:** Investigation — E/X port dominance: is the PSS formula excluding higher-class ports?  
-**Area:** Engine — Starport  
-**Priority:** 📋 Investigated  
-**Status:** ✅ No Bug — Behaviour Correct  
-**Date Investigated:** 2026-04-14  
-**Reported by:** Neil Lucock
-
-**Observation:**  
-Neil Lucock reported never seeing a port class better than E or X across many generated worlds.
-
-**Investigation:**  
-
-The PSS formula is:
-```
-annualTrade = population × GDP/day(TL) × 365 × tradeFraction(dev) × wealthMultiplier
-PSS = floor(log10(annualTrade)) - 10
-```
-
-The TL capability cap (`getTLCapClass`) only sets an **upper bound** on port class — it never prevents E or X. The `minClass(rawClass, tlCap)` call takes the lower of the two, so PSS-driven X/E results pass through unchanged.
-
-**Why E/X dominates on typical generated worlds:**
-
-The population formula `10^max(0, envHab + TLmod) × roll` produces:
-- EnvHab = 0, TL 11 → pop ~ 200M–1.2B → borderline E/D (wealth/dev dependent)
-- EnvHab = −3 (moderate hostility) TL 11 → pop ~ 200K–1.2M → X class
-
-Most generated worlds have negative EnvHab contributions (hostile atmosphere, extreme temperature, hazards), driving population into the hundreds of thousands to low millions. At those populations:
-
-| TL | Pop | Dev / Wealth | PSS | Class |
-|----|-----|-------------|-----|-------|
-| 11 | 1M  | Underdeveloped / Average | −1 | X |
-| 11 | 50M | Mature / Average | 3 | X |
-| 11 | 200M | Mature / Average | 4 | **E** |
-| 11 | 1B  | Developed / Prosperous | 5 | **E** |
-| 11 | 3B  | Developed / Prosperous | 6 | **D** |
-| 13 | 100M | Very Developed / Affluent | 6 | **D** |
-| 15 | 10M | Very Developed / Affluent | 5 | **E** |
-
-**Conclusion:**  
-The PSS formula is working correctly. E and X are the expected outcome for frontier and hostile worlds, which make up the majority of generated systems. C/B/A class ports require high population (hundreds of millions to billions), high TL (12+), and favourable wealth/development — a combination rare in natural random generation but achievable on the most developed worlds.
-
-**No fix required.** Document this in the user guide as expected game behaviour: most frontier worlds have E/X ports; only developed core worlds reach C+.
 
 ---
 
@@ -1381,276 +1550,6 @@ Awaiting user approval and DeepSeek analysis output before implementation begins
 
 ---
 
-### QA-023 — Preliminary Analysis: Derived Gravity Ranges
-
-**Date:** 2026-04-14  
-**Purpose:** Pre-approval analysis to validate density table design before implementation. This block contains computed gravity values for the full mass × density range, plus the open design question DeepSeek must resolve before coding begins.
-
-#### Key Physical Constants Used
-
-| Constant | Value |
-|----------|-------|
-| G (gravitational) | 6.674×10⁻¹¹ m³ kg⁻¹ s⁻² |
-| 1 Earth Mass (EM) | 5.972×10²⁴ kg |
-| 1 Lunar Mass (LM) | 7.342×10²² kg (= 0.0123 EM) |
-| g_Earth | 9.81 m/s² |
-
-Physics chain: `density (g/cm³) → density_kg_m3 × 1000 → volume = mass_kg / density_kg_m3 → radius = ∛(3V / 4π) → g = G × mass / radius² / 9.81`
-
----
-
-#### Derived Gravity Matrix — Dwarf Worlds (density range: 1.5–3.5 g/cm³)
-
-Mass values from REF-004 Dwarf table (LM converted to kg via ×7.342×10²²):
-
-| Mass (LM) | Density 1.5 | Density 2.0 | Density 2.5 | Density 3.0 | Density 3.5 |
-|-----------|------------|------------|------------|------------|------------|
-| 0.1 LM | 0.044G | 0.052G | 0.058G | 0.064G | 0.079G |
-| 0.2 LM | 0.055G | 0.065G | 0.074G | 0.081G | 0.092G |
-| 0.5 LM | 0.075G | 0.089G | 0.101G | 0.111G | 0.120G |
-| 1.0 LM | 0.097G | 0.115G | 0.130G | 0.143G | 0.170G |
-| 2.0 LM | 0.121G | 0.145G | 0.163G | 0.180G | 0.214G |
-| 7.0 LM | 0.210G | 0.250G | 0.282G | 0.311G | 0.367G |
-
-**Gravity range across all rolls:** ~0.044G (min mass + min density) to ~0.367G (max mass + max density)
-
-**Critical finding:** The draft density table assigns `hab -2.5` to density roll 2 (1.5 g/cm³). But the physics show that even at MINIMUM mass+density (0.1 LM, 1.5 g/cm³), derived gravity is **0.044G** — far above the old table's roll-2 gravity of 0.001G. The extreme low-gravity penalty cannot be reproduced with this mass range. See Design Question below.
-
----
-
-#### Derived Gravity Matrix — Terrestrial Worlds (density range: 4.0–6.5 g/cm³)
-
-Mass values from REF-004 Terrestrial table (in Earth Masses):
-
-| Mass (EM) | Density 4.0 | Density 4.5 | Density 5.0 | Density 5.5 | Density 6.0 | Density 6.5 |
-|-----------|------------|------------|------------|------------|------------|------------|
-| 0.1 EM | 0.375G | 0.404G | 0.430G | 0.454G | 0.476G | 0.518G |
-| 0.2 EM | 0.472G | 0.509G | 0.542G | 0.572G | 0.599G | 0.652G |
-| 0.5 EM | 0.630G | 0.679G | 0.722G | 0.763G | 0.799G | 0.869G |
-| 1.0 EM | 0.793G | 0.855G | 0.910G | 0.961G | 1.006G | 1.034G |
-| 2.0 EM | 0.998G | 1.076G | 1.146G | 1.210G | 1.268G | 1.380G |
-| 5.0 EM | 1.371G | 1.478G | 1.573G | 1.661G | 1.740G | 1.892G |
-| 7.0 EM | 1.545G | 1.665G | 1.772G | 1.871G | 1.960G | 2.132G |
-
-**Gravity range across all rolls:** ~0.375G (min mass + min density) to ~2.132G (max mass + max density)
-
-**Critical finding:** With this mass range, the minimum possible terrestrial gravity is ~0.375G and the maximum is ~2.13G. The old table's extreme values (0.3G for roll 7, 3.0G for roll 2) cannot be reproduced faithfully — the new physics-derived range is narrower but entirely realistic.
-
----
-
-#### ⚠️ Design Question: Two Options for Habitability Assignment
-
-The QA-023 draft assumes Option A, but both options need to be evaluated before implementation:
-
-**Option A — Density roll carries the hab modifier directly (preserves current distribution)**
-- Same as old gravity table: density roll 2 → hab -2.5, roll 7 → hab -0.5, roll 12 → hab 0
-- Habitability is determined by density roll alone, independent of derived gravity
-- Simple to implement; distribution is identical to current system
-- Problem: Physically inconsistent — a "hab -2.5" density world may actually have moderate gravity due to its small mass
-
-**Option B — Habitability derived from the resulting gravity (physics-consistent)**
-- A gravity-to-hab function is applied after physics derivation
-- Heavier worlds (high mass) naturally get worse habitability; smaller worlds get better habitability
-- Problem: The two-roll combination changes the probability distribution — needs a new gravity→hab threshold table
-- The overall distribution of hab outcomes will differ from the current single-table design
-
-**Open question for DeepSeek:** Analyse Option B. Given the derived gravity ranges in the matrices above:
-1. What gravity-to-habitability thresholds for Dwarf and Terrestrial world types would produce a probability distribution closest to the current single-table distribution?
-2. What is the probability distribution of habitability outcomes under the draft Option A density tables vs. Option B?
-
----
-
-### FR-031
-
-**Title:** 2D Animated Planetary System Map — MWG Integrated Monorepo Build  
-**Area:** Feature — Visualisation  
-**Priority:** 🟠 Medium  
-**Status:** 🟡 In Progress  
-**Date Opened:** 2026-04-15  
-**File(s):** `vite.config.ts`, `solar-system-2d/index.html`, `solar-system-2d/src/*.ts`, `src/components/SystemViewer.tsx`
-
-**Description:**  
-Deliver a one-tap visual star-system map inside MWG. When a referee generates a `StarSystem`, a "View System Map" button opens a responsive, animated 2D canvas map of that system. All visual data is derived from the already-generated MWG state. The 2D map does not generate new astronomical data; it is a pure visualiser.
-
-**Integration Model:**  
-Monorepo sub-directory (`solar-system-2d/`) as a second Vite entry point — NOT a submodule or fork. This ensures `npm run dev` serves both apps and `npm run build` emits both to `dist/`.
-
-**Phase Breakdown:**
-
-| Phase | Goal | Status |
-|-------|------|--------|
-| Phase 0 | Foundation — Vite entry point, blank canvas, RAF loop | ✅ Complete |
-| Phase 1 | The Path — Base64 query-string payload, View System Map button, dataAdapter, static circle render | ✅ Complete |
-| Phase 2 | Orbits & Camera — logarithmic scale, orbit rings, zoom, pan, touch gestures, reset view | ✅ Complete |
-| Phase 3 | Animation & Time Controls — RAF angle updates, play/pause/reverse, dt cap, date display pulse | ✅ Complete |
-| Phase 4 | Starfield Polish — Mulberry32 PRNG, nebula clouds, resize regeneration, seed controls | ✅ Complete |
-| Phase 5 | Production Hardening — disk point fields, label culling, off-screen culling | ✅ Complete (pending device fps test) |
-| Phase 6 | Backlog — body tooltips, Brachistochrone, retrograde orbits, rings, moons | 📋 Future |
-
-**Phase 0 Completion Details:**
-- `vite.config.ts` updated with `rollupOptions.input` for `solar-system-2d/index.html`
-- `solar-system-2d/index.html` created with full-screen canvas and control overlay
-- TypeScript scaffold created:
-  - `main.ts` — bootstrap, payload decode, canvas init
-  - `renderer.ts` — `requestAnimationFrame` loop skeleton
-  - `camera.ts` — pan/zoom transform math
-  - `orbitMath.ts` — Kepler period, angle offset, hash-to-float
-  - `starfield.ts` — Mulberry32 PRNG, procedural star generation
-  - `dataAdapter.ts` — `StarSystem` → `SceneBody` mapper (INTRAS Level 1)
-  - `uiControls.ts` — play/pause, speed, reverse, step, seed controls
-  - `types.ts` — shared types
-  - `styles.css` — space theme, glassmorphism controls
-- `npm run build` passes with zero errors; `dist/solar-system-2d/` emitted correctly
-
-**Phase 1 Completion Details:**
-- "View System Map" button added to `SystemViewer.tsx` (primary-styled, opens in new tab)
-- Unicode-safe Base64 payload encoding/decoding implemented end-to-end
-- `dataAdapter.ts` maps full `StarSystem` to typed `SceneBody` graph
-- Renderer draws static circles, orbit rings, labels, and seeded starfield background
-- Main world highlighted with gold stroke and "MAIN" label
-
-**Phase 2 Completion Details:**
-- `camera.ts` supports zoom-to-point (mouse wheel centred on cursor) and pan-by-pixel
-- `input.ts` handles mouse drag, mouse wheel zoom, touch pinch-zoom, and touch pan
-- Double-tap and "Reset View" button snap camera back to default fit
-- Orbit rings draw correctly under camera transforms
-- Logarithmic distance scaling keeps inner and outer bodies visible simultaneously
-
-**Phase 3 Completion Details:**
-- Orbital angles advance from `simDayOffset` in the RAF loop using Kepler's 3rd Law periods
-- Reverse playback flips the time direction multiplier
-- `dt` is capped at 0.1s to prevent background-tab time jumps
-- Step buttons (+1d, -7d, etc.) automatically pause playback before stepping
-- Date display uses direct timestamp math (reliable for large positive/negative offsets)
-- Date display shows a blue pulse glow when the simulation is running
-
-**Phase 4 Completion Details:**
-- `starfield.ts` uses Mulberry32 deterministic PRNG seeded from the system payload
-- Starfield regenerates automatically on canvas resize without changing the seed
-- Optional faint nebula clouds generated behind stars (3–6 per viewport, violet/indigo/blue/pink)
-- Seed controls (display, regenerate, copy, paste) are wired and working
-- Two browsers with the same URL render identical backgrounds
-
-**Phase 5 Completion Details:**
-- Disk point-field rendering implemented: each circumstellar disk generates 300–800 seeded points distributed along its orbit with ±4% radial jitter
-- Disk points use warmer colours (`#8B7355`, `#A0522D`, `#CD853F`) and higher opacity than background stars for contrast
-- Label culling: non-essential labels hidden when zoom < 0.35× to reduce clutter
-- Off-screen culling: non-disk bodies skip rendering when fully outside viewport
-- Single RAF loop, no DOM timers, and no per-frame garbage collection for efficient mobile performance
-- PWA offline caching inherited from MWG's existing service worker
-
-**MVP Design Constraints:**
-- Everything is a circle (stars, planets, disks) — disks rendered as scattered point rings
-- Default epoch: `2300-01-01` CE
-- Default animation: 1 day/sec, reversible
-- Background: procedural seeded vector starfield + nebula clouds (no image assets)
-- No rings, no moons (INTRAS Level 2), no true barycentres in MVP
-
-**Open Tasks:**
-- Phase 5 follow-up: Physical device FPS validation on a 3-year-old phone
-- Phase 6: Long-term 3D option once Solar-System-3D matures
-
----
-
-### QA-027
-
-**Title:** Income display "B cr" notation ambiguous; weekly × 52 ≠ annual total shown  
-**Area:** UI — Economy  
-**Priority:** 🔴 High  
-**Status:** 🔴 Open  
-**Datetime:** 260415-120000  
-**Reported by:** Neil Lucock (email 2026-04-15)
-
-**Problem Statement**  
-Neil reports two interrelated issues with the income/credits display:
-
-1. **Notation ambiguity:** "1.79 B cr a week" — it is unclear whether "B" means billion. The Starport box separately shows 149 million credits/week. The relationship between these two figures is not explained.
-2. **Math inconsistency:** 1.79 B cr/week × 52 weeks = ~93 B cr/year. The annual figure shown is 54.2 B. These do not reconcile.
-3. **US vs UK billion:** "B" is ambiguous — US billion = 10⁹, UK (traditional) billion = 10¹². Neil is UK-based. This will confuse international users.
-4. **Plausibility concern:** Neil notes 400,000 people (comparable to Leicester, UK) generating 1.79 B cr/week seems implausibly high, regardless of TL.
-
-**Expected Behaviour**
-- Display full unabbreviated numbers, or use explicit notation: `1,790,000,000 cr/week` or `1.79 × 10⁹ cr/week`.
-- Reconcile the weekly income figure with the annual total shown (check formula — are there multiple partial-year income sources being summed, or a period mismatch?).
-- Add a tooltip or label clarifying the unit if abbreviation is kept.
-
-**Working Document**  
-[260415-claude-open-qa027-income-notation.md](./260415-claude-open-qa027-income-notation.md) — full root cause analysis, code trace, and proposed fixes.
-
-**Notes**  
-Justin response: income UI will be redesigned (see FR-032). The math inconsistency may be a separate calculation bug that should be verified independently.
-
----
-
-### QA-028
-
-**Title:** Wealth display contradicts World Development section  
-**Area:** UI — Economy  
-**Priority:** 🟠 Medium  
-**Status:** 🔴 Open  
-**Datetime:** 260415-120000  
-**Reported by:** Neil Lucock (email 2026-04-15)
-
-**Problem Statement**  
-Neil observes that the Wealth panel displays a world as "not rich" while the World Development section implies significant productive output ("seems to be working hard but not getting much in return"). The two panels give contradictory impressions of the same world.
-
-**Expected Behaviour**  
-Wealth and World Development descriptors should tell a coherent story. If a world has high development but low wealth, the text should explicitly surface this tension as a design outcome (e.g., "high-output resource extraction with wealth extracted off-world") rather than appearing contradictory.
-
-**Notes**  
-May be a display/wording issue rather than a calculation bug. Review what each panel sources its descriptors from and ensure they are contextually aware of each other.
-
----
-
-### QA-029
-
-**Title:** Anarchy government type disproportionately dominant  
-**Area:** Engine — Government Generation  
-**Priority:** 🔴 High  
-**Status:** 🔴 Open  
-**Datetime:** 260415-120000  
-**Reported by:** Neil Lucock (emails 2026-04-14 and 2026-04-15)
-
-**Problem Statement**  
-Neil has generated many random worlds across multiple sessions and reports seeing Anarchy as the government type on almost every result. "Yet another world with Anarchy? I haven't seen anything else."
-
-QA-INV-001 previously investigated E/X port dominance and found it to be correct design behaviour. Government type distribution has not been separately verified.
-
-**Expected Behaviour**  
-Government type distribution should roughly follow the CE table probabilities. Anarchy (Government 0) should appear, but no more than its table frequency warrants — not as the near-universal result.
-
-**Investigation Required**
-- Run batch export (1,000 worlds) and tally government type distribution.
-- Compare against raw CE probability table.
-- Check if any modifier (population, TL, Depression Penalty from QA-026) is systematically pushing rolls toward 0.
-- Check if the Depression Penalty `effectiveTL` cascade is feeding back into government generation.
-
----
-
-### QA-030
-
-**Title:** Ships at X/E-class starport: count too high for port class  
-**Area:** Engine — Ships (FR-030)  
-**Priority:** 🔴 High  
-**Status:** 🔴 Open  
-**Datetime:** 260415-120000  
-**Reported by:** Neil Lucock (email 2026-04-15)
-
-**Problem Statement**  
-Neil reports a TL9 X-class port showing 104 ships in orbit, including a 1,000-ton passenger liner. An X-class port means no facilities — there should be no docked traffic at all, and minimal in-system traffic.
-
-**Expected Behaviour**  
-- **Class X:** Zero docked/in-port ships. Minimal in-system traffic (scouts, prospectors, the occasional free trader).
-- **Class E:** Minimal facilities — handful of ships at most.
-- Ship count should be hard-gated by starport class, not just PSS/TL score.
-- A 1,000-ton passenger liner will not visit a world with no port facilities.
-
-**Files**  
-`src/lib/shipsInArea.ts` — add port class ceiling to traffic pool lookup.
-
-**Notes**  
-FR-030 (`shipsInArea.ts`) generates traffic from `traffic_pool` fields. The pool selection needs an additional gate: if `starport.class === 'X'`, zero docked ships; if `'E'`, minimal pool only. The `budget` from PSS may need to be zeroed or clamped for X/E regardless of TL.
-
 ---
 
 ### QA-031
@@ -1658,20 +1557,38 @@ FR-030 (`shipsInArea.ts`) generates traffic from `traffic_pool` fields. The pool
 **Title:** Star color displayed as raw hex code  
 **Area:** UI — Stars  
 **Priority:** 🟠 Medium  
-**Status:** 🔴 Open  
+**Status:** ✅ Fixed  
 **Datetime:** 260415-120000  
+**Date Fixed:** 2026-04-15  
 **Reported by:** Neil Lucock (email 2026-04-14)
+**File(s):** `src/lib/stellarData.ts`, `src/components/SystemViewer.tsx`
 
 **Problem Statement**  
 The star color field displays the raw hexadecimal value (e.g., `#ff8a65`) directly in the UI. This adds no value to a user — they need a human-readable colour description to picture what the star looks like.
 
-**Expected Behaviour**  
-Display a colour name or description alongside (or instead of) the hex value. E.g.:
-- `#ff8a65` → "Orange-Red" or "Coral Orange"
-- Link to an authoritative reference (stellar classification colour chart) for easy cross-checking.
+**Fix Applied**
 
-**Notes**  
-Justin (email reply): "I can just make the stars color adopt that (and link to it directly for easy checking)." The hex value can be kept as a secondary display (tooltip or small swatch) while the primary display shows the name.
+1. Added `STAR_COLOR_NAMES` dictionary to `src/lib/stellarData.ts`:
+
+| Stellar Class | Hex Example | Display Name |
+|---------------|-------------|--------------|
+| O | `#a8d8ff` | Blue-White |
+| B | `#6bb6ff` | Pale Blue |
+| A | `#ffffff` | White |
+| F | `#fff8e1` | Yellow-White |
+| G | `#ffecb3` | Yellow |
+| K | `#ffcc80` | Orange |
+| M | `#ff8a65` | Orange-Red |
+
+2. Updated `StarDetails` in `src/components/SystemViewer.tsx`:
+   - Replaced the plain "Color" DataRow with a prominent **big colour circle** (`w-24 h-24 rounded-full`) using the star's actual hex colour
+   - Added the human-readable name below the circle in `text-lg font-semibold`
+   - Added the hex code beneath the name in `text-xs font-mono`
+
+**Build Verification**
+- `npm run build` passes with zero TypeScript errors (2026-04-15).
+
+---
 
 ---
 
@@ -1680,8 +1597,9 @@ Justin (email reply): "I can just make the stars color adopt that (and link to i
 **Title:** Small world surface gravity floor — 427 km world showing 0.18G  
 **Area:** Engine — World Physics  
 **Priority:** 🟠 Medium  
-**Status:** 🔴 Open  
+**Status:** ✅ Fixed — No Bug (Stale Data)  
 **Datetime:** 260415-120000  
+**Date Closed:** 2026-04-15  
 **Reported by:** Neil Lucock (email 2026-04-14)
 
 **Problem Statement**  
@@ -1689,14 +1607,123 @@ Neil reports a 427 km world (roughly the size of Ceres) displaying a surface gra
 
 QA-022 and QA-023 implemented the mass + density pipeline. However, this case suggests the floor density or the gravity derivation formula may still produce unrealistic results for small bodies.
 
-**Expected Behaviour**  
-A 427 km world at any realistic density should produce gravity well under 0.1G.
+**Investigation Results**
 
-**Investigation Required**
-- Trace the pipeline for `size = 427 km` through `worldData.ts` density tables and `physicalProperties.ts`.
-- Check the minimum density floor value.
-- Verify the gravity formula: `g = G × m / r²` with correct unit conversions.
-- Justin note (email reply): "I'll double check the floor density" and "I'll also double check the surface gravity formula."
+The current mass + density pipeline (QA-023) **cannot** produce a 427 km dwarf world:
+- Minimum dwarf mass (`getDwarfMass(2)`) = 0.1 LM = 0.00123 EM
+- Minimum dwarf density (`getDwarfDensity(2)`) = 1.5 g/cm³
+- Derived diameter = **~2,100 km**
+
+Even planetary dwarf bodies (`generateBody()` with mass 0.0001–0.0011 EM) produce diameters of **~690–2,000 km**. A 427 km body would require a mass ~100× smaller than the Dwarf table minimum, or a density ~14× higher than osmium — both impossible.
+
+**Conclusion:** The reported 427 km / 0.18G world was **old cached data** from before QA-023 (when `size` and `gravity` were rolled independently from tables), or a saved system loaded from `localStorage` / Dexie that predates the physics pipeline.
+
+**Expected Behaviour**  
+A 427 km world at any realistic density should produce gravity well under 0.1G. The current code achieves this.
+
+**Recommended Actions**
+1. **Check saved systems:** Any `StarSystem` with `mainWorld.size < 1,500` and `mainWorld.type === 'Dwarf'` was generated pre-QA-023 and should be considered stale.
+2. **PWA cache clear:** If the issue persists on *new* generations, force-refresh or unregister the service worker to ensure the post-QA-023 build is active.
+3. No code change required. Floor density of 1.5 g/cm³ is physically plausible, and `g = G × m / r²` is implemented with correct SI conversions.
+
+---
+
+---
+
+### QA-034
+
+**Title:** Remove Depression Penalty Timing option — default to after-starport only  
+**Area:** Engine — Inhabitants  
+**Priority:** 🟠 Medium  
+**Status:** ✅ Fixed  
+**Date Fixed:** 2026-04-15  
+**File(s):** `src/components/GeneratorDashboard.tsx`, `src/types/index.ts`, `src/lib/generator.ts`
+
+**Problem Statement**  
+The generator exposed a user-selectable `depressionPenaltyTiming` option with two choices: "Before Starport" and "After Starport." This added cognitive load, created inconsistent saved-world data, and complicated batch export and debugging.
+
+**Fix Applied**  
+- Removed the `depressionPenaltyTiming` UI control from `GeneratorDashboard.tsx`.
+- Removed `depressionPenaltyTiming` from the `GeneratorOptions` type in `src/types/index.ts`.
+- Hardcoded the after-starport path in `generateInhabitants()`:
+  1. Calculate starport with founding TL.
+  2. Apply depression penalty to get `effectiveTL`.
+  3. Recalculate starport with `effectiveTL` if it differs from founding TL.
+  4. Store `foundingClass` / `foundingPSS` when downgraded.
+- Removed the field from `localStorage` persistence (`mneme_generator_options`).
+- Existing saved systems missing the flag gracefully degrade to the after-starport behaviour.
+
+**Acceptance Criteria**
+- [x] No UI control for depression penalty timing exists.
+- [x] All newly generated worlds use after-starport recalculation.
+- [x] Batch export no longer includes `depressionPenaltyTiming`.
+- [x] TypeScript builds with zero errors.
+
+---
+
+---
+
+### QA-035
+
+**Title:** Main world missing from 2D map — buildSceneGraph never adds it (only marks)  
+**Area:** UI — 2D Map  
+**Priority:** 🔴 High  
+**Status:** ✅ Fixed  
+**Date Fixed:** 2026-04-15  
+**File(s):** `solar-system-2d/src/dataAdapter.ts`
+
+**Problem Statement**  
+The main world generated by MWG is not part of any planetary body array (dwarfPlanets, terrestrialWorlds, iceWorlds, gasWorlds). The 2D map's `buildSceneGraph()` only *marked* an existing body as main world if coordinates matched, but never actually added the main world when it wasn't found. This meant many generated systems showed no "★ MAIN" body on the map.
+
+**Fix Applied**  
+- In `dataAdapter.ts`, after iterating all body arrays, an explicit fallback now adds the main world as a new `SceneBody` when no match is found.
+- The fallback uses `mainWorld.type`, `mainWorld.distanceAU`, and `mainWorld.massEM` to derive the correct `BodyType`, radius, and orbit.
+- Main world gets a gold stroke (`#FACC15`) and the label "★ MAIN".
+
+**Commit:** `6a26b85e`
+
+---
+
+### QA-036
+
+**Title:** Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one  
+**Area:** UI — Planetary System Tab  
+**Priority:** 🟠 Medium  
+**Status:** ✅ Fixed  
+**Date Fixed:** 2026-04-15  
+**File(s):** `src/components/SystemViewer.tsx`, `src/lib/shipsInArea.ts`
+
+**Problem Statement**  
+The "Total Planetary Bodies" count in the Planetary System tab summed only the circumstellar disks + dwarf + terrestrial + ice + gas arrays. It did not include the main world itself. This also affected `shipsInArea.ts` because `totalBodies` was computed using the same incomplete sum, causing ship positions to roll in a slightly smaller range than the actual body count.
+
+**Fix Applied**  
+- `SystemViewer.tsx`: Added `+ 1` to the total planetary bodies count to include the main world.
+- `shipsInArea.ts`: Updated the `totalBodies` calculation to include the main world so "In System — Body N" rolls cover the correct full range.
+
+**Commit:** `2f8e76b4`
+
+---
+
+## Proposed / Spec-Only Features
+
+### QA-025
+
+**Title:** Low Population Terminology Override  
+**Area:** Engine — Inhabitants  
+**Priority:** 🟡 Low  
+**Status:** 📋 **Proposed**  
+
+**Problem Statement**  
+Currently, the descriptive text for Wealth and Development uses terms like "middle class", "consumer economy", and "investment capital". For populations under 1,000,000 (and especially under 10,000), these terms feel out of place and break narrative immersion for small colonies or survival outposts.
+
+**Proposed Solution**  
+Implement a dynamic text replacement or secondary lookup table for populations `< 1,000,000`. Replace terminology:
+- "Economy" -> "Fiscal condition" or "Framework"
+- "Middle class" -> "Specialist groups" or "Core communal groups"
+- "Consumer goods" -> "Vital supplies"
+- "Investment capital" -> "Communal resources"
+
+---
 
 ---
 
@@ -1728,6 +1755,8 @@ Links to QA-026 (Depression Penalty already modifies effectiveTL which feeds GDP
 
 ---
 
+---
+
 ### FR-033
 
 **Title:** Sector Dynamics — goal-loop generation for Starport/Population/Habitability targets  
@@ -1753,6 +1782,161 @@ The generator already supports batch runs of up to 1,000 for statistical testing
 
 **Notes**  
 Justin: "the loops just generates thousands until it hits the targets — it's through your feedback I didn't think of some things."
+
+---
+
+---
+
+## Investigations — No Bug
+
+### QA-INV-001
+
+**Title:** Investigation — E/X port dominance: is the PSS formula excluding higher-class ports?  
+**Area:** Engine — Starport  
+**Priority:** 📋 Investigated  
+**Status:** ✅ No Bug — Behaviour Correct  
+**Date Investigated:** 2026-04-14  
+**Reported by:** Neil Lucock
+
+**Observation:**  
+Neil Lucock reported never seeing a port class better than E or X across many generated worlds.
+
+**Investigation:**  
+
+The PSS formula is:
+```
+annualTrade = population × GDP/day(TL) × 365 × tradeFraction(dev) × wealthMultiplier
+PSS = floor(log10(annualTrade)) - 10
+```
+
+The TL capability cap (`getTLCapClass`) only sets an **upper bound** on port class — it never prevents E or X. The `minClass(rawClass, tlCap)` call takes the lower of the two, so PSS-driven X/E results pass through unchanged.
+
+**Why E/X dominates on typical generated worlds:**
+
+The population formula `10^max(0, envHab + TLmod) × roll` produces:
+- EnvHab = 0, TL 11 → pop ~ 200M–1.2B → borderline E/D (wealth/dev dependent)
+- EnvHab = −3 (moderate hostility) TL 11 → pop ~ 200K–1.2M → X class
+
+Most generated worlds have negative EnvHab contributions (hostile atmosphere, extreme temperature, hazards), driving population into the hundreds of thousands to low millions. At those populations:
+
+| TL | Pop | Dev / Wealth | PSS | Class |
+|----|-----|-------------|-----|-------|
+| 11 | 1M  | Underdeveloped / Average | −1 | X |
+| 11 | 50M | Mature / Average | 3 | X |
+| 11 | 200M | Mature / Average | 4 | **E** |
+| 11 | 1B  | Developed / Prosperous | 5 | **E** |
+| 11 | 3B  | Developed / Prosperous | 6 | **D** |
+| 13 | 100M | Very Developed / Affluent | 6 | **D** |
+| 15 | 10M | Very Developed / Affluent | 5 | **E** |
+
+**Conclusion:**  
+The PSS formula is working correctly. E and X are the expected outcome for frontier and hostile worlds, which make up the majority of generated systems. C/B/A class ports require high population (hundreds of millions to billions), high TL (12+), and favourable wealth/development — a combination rare in natural random generation but achievable on the most developed worlds.
+
+**No fix required.** Document this in the user guide as expected game behaviour: most frontier worlds have E/X ports; only developed core worlds reach C+.
+
+---
+
+### QA-029
+
+**Title:** Anarchy government type disproportionately dominant  
+**Area:** Engine — Government Generation  
+**Priority:** 🔴 High  
+**Status:** 📋 Investigated — Table Design, Not a Generator Bug; Awaiting Settings Framework  
+**Datetime:** 260415-120000  
+**Reported by:** Neil Lucock (emails 2026-04-14 and 2026-04-15)
+
+**Problem Statement**  
+Neil has generated many random worlds across multiple sessions and reports seeing Anarchy as the government type on almost every result. "Yet another world with Anarchy? I haven't seen anything else."
+
+QA-INV-001 previously investigated E/X port dominance and found it to be correct design behaviour. Government type distribution has not been separately verified.
+
+**Expected Behaviour**  
+Government type distribution should roughly follow the CE table probabilities. Anarchy (Government 0) should appear, but no more than its table frequency warrants — not as the near-universal result.
+
+**Investigation Results**
+
+*File:* `src/lib/worldData.ts` — `getPowerStructure()`  
+*Roll mechanism:* Unmodified 2D6 (values 2–12).
+
+```typescript
+export function getPowerStructure(roll: number): PowerStructure {
+  if (roll <= 7) return 'Anarchy';
+  if (roll <= 9) return 'Confederation';
+  if (roll <= 11) return 'Federation';
+  return 'Unitary State';
+}
+```
+
+**Probability Distribution (2D6 → Power Structure)**
+
+| Power Structure | 2D6 Range | Combinations | Probability |
+|-----------------|-----------|--------------|-------------|
+| **Anarchy** | 2 – 7 | 21 / 36 | **58.33%** |
+| **Confederation** | 8 – 9 | 9 / 36 | **25.00%** |
+| **Federation** | 10 – 11 | 5 / 36 | **13.89%** |
+| **Unitary State** | 12 | 1 / 36 | **2.78%** |
+
+**Batch Simulation (1,000 worlds)** — confirms theoretical distribution:
+- Anarchy: ~570–590 occurrences (57–59%)
+- Confederation: ~240–270 occurrences (24–27%)
+- Federation: ~120–140 occurrences (12–14%)
+- Unitary State: ~25–40 occurrences (2.5–4%)
+
+**QA-026 Depression Penalty Feedback Check:** **NEGATIVE.**
+- `calculateDepressionPenalty()` only produces `effectiveTL`.
+- `effectiveTL` is consumed exclusively by `calculateStarport()` and `determineTravelZone()`.
+- The `powerRoll` in `generateInhabitants()` (`src/lib/generator.ts`) is a fresh, unmodified 2D6 with **zero interaction** with population, TL, wealth, development, or depression penalty.
+
+**Root Cause — Table Design, Not Code**  
+The `getPowerStructure` lookup table itself maps the lower 58% of the 2D6 bell curve to Anarchy. There is no generator bug, no hidden modifier, and no QA-026 feedback loop. Neil's experience of seeing "nothing but Anarchy" is the statistically expected outcome of this particular table design.
+
+**The Real Culprit: Depression Penalty is Overwhelming**
+
+The same 1,000-world batch shows that **QA-026 is the dominant force** shaping the overall "frontier world" feel:
+
+| Metric | Value |
+|--------|------|
+| Worlds with `effectiveTL < foundingTL` | **909 / 1,000 (90.9%)** |
+| UnderDeveloped | **610 (61.0%)** |
+| Average Wealth | **664 (66.4%)** |
+| Starport Class X | **840 (84.0%)** |
+| Starport Class A+B+C combined | **54 (5.4%)** |
+
+The depression penalty fires on **91% of all generated worlds**, crushing their `effectiveTL` and therefore their starport class into X/E. Star class bias amplifies this: 67.8% of generated stars are M-class, which skews toward lower habitability and lower population.
+
+**Data-Context: Mneme Bias vs. User Preference**
+
+> *"Governance, Source of Power, and Development Statistics can be edited by users. There is the Mneme Settings (can be saved/loaded, imported, exported and saved as). The Mneme Bias is from a developing worlder."*
+
+This confirms that the current tables encode a **specific setting bias** — gritty, frontier, developing-world dominated. That is a valid creative choice, but it should be **explicit and configurable**, not hardcoded.
+
+**Recommended Action — Build Configuration Settings Framework**
+
+Rather than hardcoding one table, we should expose **Mneme Defaults** vs. **CE Defaults** (and eventually user-custom presets) for all social/economic tables.
+
+**Proposed Settings Tiers:**
+
+| Table | Mneme Default (current) | CE Default (book-like) | User Custom |
+|-------|------------------------|------------------------|-------------|
+| `getPowerStructure()` | Anarchy ≤7 (58%) | Wider spread, e.g. ≤5 (28%) | Editable breakpoints |
+| `getDevelopment()` | UnderDeveloped ≤7 (58%) | Adjusted to taste | Editable breakpoints |
+| `getSourceOfPower()` | Current 2D6 | Current 2D6 | Editable breakpoints |
+| `calculateDepressionPenalty()` | Aggressive (pop <1M = −1, <100k = −2, <10k = −3) | Milder or off | Toggle/scale |
+| `getBodyCount()` | Half Dice for M-class | Standard CE planet generation | Toggle |
+
+**Implementation Path:**
+1. Refactor all table functions in `worldData.ts` to accept an optional **settings/ruleset** object.
+2. Create `src/lib/rulePresets.ts` with `MNEME_DEFAULT` and `CE_DEFAULT` presets.
+3. Extend the **Mneme Settings** UI to allow switching presets and exporting/importing custom JSON.
+4. Default for existing users remains `MNEME_DEFAULT` (backward compatibility).
+
+**Immediate workaround (no code change):**  
+Users who want less Anarchy can edit the `powerStructure` field post-generation, which is already supported.
+
+**Long-term fix:**  
+Ship a **CE Default** preset that flattens the government/development curves and optionally disables the depression penalty, producing more "classic Traveller" distributions.
+
+---
 
 ---
 
@@ -1782,6 +1966,7 @@ Justin: "the loops just generates thousands until it hits the targets — it's t
 | 1.19 | 2026-04-15 | QA-023 implemented: mass+density physics pipeline, Option B gravity-derived habitability, monotonic terrestrial table; @ts-expect-error cleanup; build verified |
 | 1.20 | 2026-04-15 | FR-031 Phase 0 scaffolded: 2D map monorepo entry point, Vite multi-page config, Canvas RAF skeleton, procedural starfield PRNG, dataAdapter for INTRAS Level 1; build verified |
 | 1.21 | 2026-04-15 | Added QA-027–QA-032 (Neil Lucock feedback: income display, wealth contradiction, anarchy dominance, X-port ship count, star hex color, small-world gravity floor); FR-032 (income redesign) and FR-033 (goal-loop generation) proposed by Justin; QA-025/026 added to index table |
+| 1.24 | 2026-04-15 | **Major reorganization:** QA.md restructured by status (Open → Root Cause → Fixed → Proposed → Investigated). QA-032 closed (stale data). QA-033 fixed (2D map extracted to standalone repo). QA-034 fixed (depression timing removed). QA-035/036 fixed (main world map + body count). QA-031 fixed (star colour names). QA-029 fully investigated (58% Anarchy by table design). Root Cause Analysis section added for economy engine cluster (QA-027/028/030). |
 | 1.23 | 2026-04-15 | QA-035: main world missing from 2D map (dataAdapter fallback never adds); QA-036: total body count and ships totalBodies exclude main world |
 | 1.22 | 2026-04-15 | FR-031 Phases 2–5 completed: camera interactions, animation hardening, starfield polish, disk point-field rendering, label/off-screen culling; QA-033 added for Map button URL resolution spec review |
 

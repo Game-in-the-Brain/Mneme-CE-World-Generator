@@ -583,6 +583,28 @@ If `effectiveHab = max(0, EnvHab + TLmod)` resolves to 0 (i.e. the raw sum is �
 | 11 | City Habitat | 1,000,000–10,000,000 |
 | 12 | Megastructure | 10,000,000–100,000,000 |
 
+#### 7.2.2 Low Population Terminology & Depression Penalty (QA-025/QA-026)
+
+When a world's population is critically low, it struggles to maintain its technological base and economic complexity.
+
+**1. Terminology Overrides (<1,000,000 population):**
+- Text descriptions for Wealth and Development replace large-scale systemic terms with communal terms.
+- "Economy" becomes "fiscal condition" or "framework".
+- "Middle class" becomes "specialist groups" or "core communal groups".
+- "Consumer goods" becomes "vital supplies".
+
+**2. Depression Penalty (Effective TL):**
+Worlds with critically low populations suffer a temporary penalty to their functional Tech Level. This penalty models the loss of complex supply chains and industrial capacity.
+* Base Penalty:
+  * Population < 1,000,000: **-1 TL**
+  * Population < 100,000: **-2 TL**
+  * Population < 10,000: **-3 TL**
+* Development Penalty: If Development is *UnderDeveloped* or *Developing*, apply an additional **-1 TL** penalty.
+* **Effective TL = max(0, Base TL − Total Penalty)**
+* TL10 is the minimum baseline for surviving low habitability. If the effective TL drops below the survival threshold, the colony enters a state of collapse.
+
+The `effectiveTL` replaces the base TL in Starport generation (crashing the local economy and PSS) and triggers Travel Zone overrides (see 7.8 and 7.9).
+
 ### 7.3 Wealth
 
 | Function | Inputs | Output |

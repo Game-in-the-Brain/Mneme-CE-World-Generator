@@ -175,7 +175,7 @@ export function terrestrialGravityToHab(gravityG: number): number {
 ### Trade-offs:
 1. **Distribution shift** — ~9% more hab 0 worlds (positive for gameplay)
 2. **Implementation complexity** — requires gravity calculation and threshold mapping
-3. **Break from exact book distribution** — requires documentation in 260410-Update.md
+3. **Break from exact book distribution** — requires documentation in 260410-Changes.md
 
 **Recommendation:** Accept the distribution shift as correction for physically impossible extremes.
 
@@ -234,7 +234,7 @@ Update Sections 6.1 and 6.3 with the following changes:
 **Game Design Note:** The increased percentage of habitable worlds (hab 0) improves gameplay variety while maintaining overall challenge. The old extremes (0.001G, 3.0G) were unrealistic and rarely contributed meaningful gameplay.
 ```
 
-### Summary Table Rows for 260410-Update.md
+### Summary Table Rows for 260410-Changes.md
 | Feature | Book | Implementation | 2026 Recommendation |
 |---------|------|----------------|---------------------|
 | Main world size | Random km (2D6) | Mass in LM/EM from REF-004 | Replace §6.1 with mass tables |
@@ -251,7 +251,7 @@ Update Sections 6.1 and 6.3 with the following changes:
 3. **`src/types/index.ts`** — Add `massEM` and `densityGcm3` to `MainWorld` interface
 4. **`src/components/SystemViewer.tsx`** — Display mass, density, and derived gravity
 5. **`260409-v02 Mneme-CE-World-Generator-FRD.md`** — Update Sections 6.1, 6.3, 6.9
-6. **`260410-Update.md`** — Add Section 12 (above) and update Summary Table
+6. **`260410-Changes.md`** — Add Section 12 (above) and update Summary Table
 
 **Approval Required:** Yes — user must approve the probability distribution shift before implementation.
 

@@ -337,15 +337,15 @@ Please provide:
 3. **Gravity-to-hab threshold function** for each world type (Option B) OR confirmation that Option A baked-in hab values are internally consistent
 4. **Probability distribution table** comparing current habitability distribution vs. proposed new distribution
 5. **Design recommendation**: Option A, Option B, or hybrid, with rationale
-6. **Update document entry** for `260410-Update.md` — see Task 5 below
+6. **Update document entry** for `260410-Changes.md` — see Task 5 below
 
 Format density tables and threshold functions in TypeScript syntax ready to paste into `src/lib/worldData.ts`.
 
 ---
 
-## Task 5 — Write the `260410-Update.md` Entry
+## Task 5 — Write the `260410-Changes.md` Entry
 
-`260410-Update.md` is the rules-deviation tracking document. It records every place where the implementation intentionally departs from the original Cepheus Engine book rules. Every QA fix that changes book mechanics gets a numbered section in this document.
+`260410-Changes.md` is the rules-deviation tracking document. It records every place where the implementation intentionally departs from the original Cepheus Engine book rules. Every QA fix that changes book mechanics gets a numbered section in this document.
 
 The document follows a strict format. Here is a representative example (Section 11.2) for reference:
 
@@ -361,7 +361,7 @@ The following Source of Power values exclude specific culture traits: [table]
 Add Section 7.10.1: Culture Trait Rerolls and Power/Culture Conflicts.
 ```
 
-The Summary Table at the bottom of `260410-Update.md` also needs a new row for this change. Current last rows in the table are:
+The Summary Table at the bottom of `260410-Changes.md` also needs a new row for this change. Current last rows in the table are:
 
 ```
 | Culture opposing pairs | Mentioned but not listed | Explicit 32-pair table | Add Section 7.10.1 |
@@ -393,7 +393,7 @@ Include:
 [what section of the book should be updated, and what to add — e.g., replace §6.1 size tables with mass tables, replace §6.3 gravity tables with density tables + physics formula]
 ```
 
-**B. Two new rows** to append to the Summary Table in `260410-Update.md`:
+**B. Two new rows** to append to the Summary Table in `260410-Changes.md`:
 
 | Feature | Book | Implementation | 2026 Recommendation |
 |---------|------|----------------|---------------------|
@@ -402,7 +402,7 @@ Include:
 
 Adjust column values based on your final recommendation (Option A/B). The Summary Table entry should match the section body.
 
-Output the complete Section 12 block and two Summary Table rows as a separate block in your response, clearly labelled "**Update Document Entry**", ready to paste into `260410-Update.md`.
+Output the complete Section 12 block and two Summary Table rows as a separate block in your response, clearly labelled "**Update Document Entry**", ready to paste into `260410-Changes.md`.
 
 ---
 

@@ -55,7 +55,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
   const mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
 
   // Generate inhabitants
-  const inhabitants = generateInhabitants(mainWorld, opts.populated, opts.depressionPenaltyTiming);
+  const inhabitants = generateInhabitants(mainWorld, opts.populated);
 
   return {
     id,
@@ -323,8 +323,7 @@ function generateMainWorld(
 
 function generateInhabitants(
   mainWorld: MainWorld,
-  populated: boolean,
-  depressionPenaltyTiming: 'before-starport' | 'after-starport' = 'before-starport'
+  populated: boolean
 ): Inhabitants {
   if (!populated) {
     return {
@@ -386,18 +385,11 @@ function generateInhabitants(
 
   const weeklyRoll = roll3D6().value;
 
-  // QA-026: option to apply depression penalty before or after starport calculation
-  let starportTL = techLevel;
-  if (depressionPenaltyTiming === 'before-starport') {
-    starportTL = effectiveTL;
-  }
+  // QA-034: depression penalty is always applied after starport calculation
+  let foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll);
+  let starportResult = foundingStarportResult;
 
-  let starportResult = calculateStarport(population, starportTL, wealth, devResult.level, weeklyRoll);
-  let foundingStarportResult = starportResult;
-
-  // If after-starport: calculate with founding TL first, then recalculate with effective TL
-  if (depressionPenaltyTiming === 'after-starport' && effectiveTL !== techLevel) {
-    foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll);
+  if (effectiveTL !== techLevel) {
     starportResult = calculateStarport(population, effectiveTL, wealth, devResult.level, weeklyRoll);
   }
 
