@@ -165,6 +165,9 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-037](#qa-037) | UI — Settings | localStorage `mneme_generator_options` backward compatibility for new fields | 🟠 Medium | ✅ Fixed |
 | [FR-034](#fr-034) | Feature — Ships | Ships Price List page reflecting economic assumptions | 🟠 Medium | 📋 Proposed |
 | [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | 📋 Proposed |
+| [QA-038](#qa-038) | Lore — Megastructures | Great Serpent (formerly Bakunawa Coil) — MTL 12 antimatter ring | 🟢 Lore | ✅ Documented |
+| [QA-039](#qa-039) | Lore — Megastructures | Celestials — self-directed solar swarm for terraforming | 🟢 Lore | ✅ Documented |
+| [QA-040](#qa-040) | Lore — Megastructures | Great Trees — space elevator megastructures | 🟢 Lore | ✅ Documented |
 
 ---
 
@@ -1937,6 +1940,83 @@ The generator already supports batch runs of up to 1,000 for statistical testing
 Justin: "the loops just generates thousands until it hits the targets — it's through your feedback I didn't think of some things."
 
 ---
+
+---
+
+## Lore — Megastructures & Terraforming
+
+These structures are necessary in the ever-compounding growth of technology and the self-directed growth of humans. The Great Serpents, Great Trees, Celestials, and Jump Gates are all necessary for trade and growth. Just as the Space Race, Earth's Recovery, and the Transition to Green Energy propelled civilisation forward, without such projects of science and engineering humans regress to infighting, capital hoarding, and enslaving each other. These infrastructures compound growth by harnessing a star's massive resources to propel humans to more stars.
+
+---
+
+### QA-038
+
+**Title:** Megastructure — Great Serpent (Bakunawa Coil rename)  
+**Area:** Lore — Megastructures  
+**Priority:** 🟢 Lore  
+**Status:** ✅ Documented  
+**Datetime:** 260416
+
+**Description**  
+**MTL 12** megastructure. A particle accelerator **898,394 km** in circumference (approximately the Sun's circumference). This is a ring built around a gas giant's radiation belt — powered by thousands of fusion plants — whose magnets capture and channel particles to generate **antimatter**.
+
+**Nomenclature**  
+Named after mythological world serpents. Examples:
+- **Bakunawa Coil** — around Jupiter
+- **Jörmungandr** — around Earth
+
+**Manufacture**  
+Produced with the same process as space elevators:
+- Carbon nanotubes manufactured at **Lagrange points**
+- Reinforced in **Jovian Forges**
+
+**Role**  
+They create the necessary power infrastructure for **FTL travel**.
+
+---
+
+### QA-039
+
+**Title:** Megastructure — Celestials (Solar swarm)  
+**Area:** Lore — Megastructures  
+**Priority:** 🟢 Lore  
+**Status:** ✅ Documented  
+**Datetime:** 260416
+
+**Description**  
+**MTL 13** self-directed solar swarm megastructures that sail on light and gravity in the inner system (e.g. Venus, Mars, Mercury orbits).
+
+**Capabilities**
+- Harvest **trace atmospheres**
+- **Reflect or concentrate light** for terraforming
+
+**Nomenclature**  
+Named after celestial beings from various cultures.
+
+**Autonomy**  
+Become **fully autonomous by MTL 16**.
+
+**Role**  
+Essential in making any **Hot** or **Cool** world terraformable. The swarm becomes self-sustaining when a **Great Tree** is configured to extract resources for its maintenance.
+
+---
+
+### QA-040
+
+**Title:** Megastructure — Great Trees (Space elevators)  
+**Area:** Lore — Megastructures  
+**Priority:** 🟢 Lore  
+**Status:** ✅ Documented  
+**Datetime:** 260416
+
+**Description**  
+**MTL 13** fixed space elevator megastructures that grow to enormous scale. Based on **Bradley C. Edwards' designs** — only viable for >1G world escape by the 24th century.
+
+**Nomenclature**  
+Cultural terms vary; **Great Trees** is one of many names used across human cultures.
+
+**Autonomy & Mobility**  
+Become **self-directed by MTL 16**, capable of **jumping between star systems**.
 
 ---
 
