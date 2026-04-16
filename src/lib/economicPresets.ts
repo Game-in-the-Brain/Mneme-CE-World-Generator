@@ -10,6 +10,20 @@ export const BOAT_PRICE_CR = 5_320_400;
 /** Default number of days in a standard year */
 export const DAYS_PER_YEAR = 365;
 
+/** Legacy Mneme GDP ratios relative to TL7 baseline */
+export const MNEME_RATIOS: Record<number, number> = {
+  7: 1,
+  8: 552 / 205,
+  9: 1_486 / 205,
+  10: 4_000 / 205,
+  11: 29_000 / 205,
+  12: 210_000 / 205,
+  13: 1_500_000 / 205,
+  14: 11_000_000 / 205,
+  15: 80_000_000 / 205,
+  16: 578_000_000 / 205,
+};
+
 // =====================
 // Built-in Presets
 // =====================
@@ -19,21 +33,10 @@ export const MNEME_PRESET: TLProductivityPreset = {
   id: 'mneme',
   name: 'Mneme',
   description: 'Compounding productivity growth per TL. High automation, post-scarcity-adjacent economics.',
-  boatYears: 71, // calibrated so that TL7 SOC7 monthly income matches legacy ~6,235 Cr
-  referenceTL: 7,
-  curve: 'custom',
-  soc7IncomeByTL: {
-    7: 6_235,      // 205 Cr/day × 365 / 12
-    8: 16_790,     // 552 Cr/day × 365 / 12
-    9: 45_199,     // 1,486 Cr/day × 365 / 12
-    10: 121_667,   // 4,000 Cr/day × 365 / 12
-    11: 882_083,   // 29,000 Cr/day × 365 / 12
-    12: 6_387_500, // 210,000 Cr/day × 365 / 12
-    13: 45_625_000, // 1,500,000 Cr/day × 365 / 12
-    14: 334_583_333, // 11,000,000 Cr/day × 365 / 12
-    15: 2_433_333_333, // 80,000,000 Cr/day × 365 / 12
-    16: 17_580_833_333, // 578,000,000 Cr/day × 365 / 12
-  },
+  baseIncome: 45_199, // TL 9 SOC 7 monthly income (legacy 1,486 Cr/day × 365 / 12)
+  baseTL: 9,
+  curve: 'mneme',
+  boatYears: 10, // derived: 5,320,400 / (45,199 × 12) ≈ 9.8
 };
 
 /** CE / Traveller stagnant preset — flat 2,000 Cr/month SOC 7 at every TL */
@@ -41,9 +44,10 @@ export const CE_PRESET: TLProductivityPreset = {
   id: 'ce',
   name: 'CE / Traveller',
   description: 'Flat income across all TLs. Human-labour-dominant, low-compound stagnation model.',
-  boatYears: 222, // 5,320,400 / (2,000 × 12)
-  referenceTL: 9,
+  baseIncome: 2_000, // TL 9 SOC 7 monthly income
+  baseTL: 9,
   curve: 'flat',
+  boatYears: 222, // derived: 5,320,400 / (2,000 × 12) ≈ 222
 };
 
 export const BUILT_IN_PRESETS: TLProductivityPreset[] = [MNEME_PRESET, CE_PRESET];
@@ -53,45 +57,37 @@ export const BUILT_IN_PRESETS: TLProductivityPreset[] = [MNEME_PRESET, CE_PRESET
 // =====================
 
 /**
+ * Derive boat-years from a given SOC 7 monthly income.
+ */
+export function getBoatYears(monthlyIncome: number): number {
+  if (!monthlyIncome || monthlyIncome <= 0) return Infinity;
+  return BOAT_PRICE_CR / (monthlyIncome * 12);
+}
+
+/**
  * Compute SOC 7 monthly income for a given TL using a preset.
  */
 export function getSoc7MonthlyIncome(tl: number, preset: TLProductivityPreset): number {
   if (preset.curve === 'custom' && preset.soc7IncomeByTL) {
-    return preset.soc7IncomeByTL[tl] ?? preset.soc7IncomeByTL[preset.referenceTL] ?? 0;
+    return preset.soc7IncomeByTL[tl] ?? preset.soc7IncomeByTL[preset.baseTL] ?? preset.baseIncome;
   }
 
-  const baseAnnual = BOAT_PRICE_CR / preset.boatYears;
-  const baseMonthly = baseAnnual / 12;
-
   if (preset.curve === 'flat') {
-    return baseMonthly;
+    return preset.baseIncome;
   }
 
   if (preset.curve === 'mneme') {
-    // Scale from the reference TL using Mneme ratios
-    const ratios: Record<number, number> = {
-      7: 1,
-      8: 552 / 205,
-      9: 1_486 / 205,
-      10: 4_000 / 205,
-      11: 29_000 / 205,
-      12: 210_000 / 205,
-      13: 1_500_000 / 205,
-      14: 11_000_000 / 205,
-      15: 80_000_000 / 205,
-      16: 578_000_000 / 205,
-    };
-    const ratio = ratios[tl] ?? ratios[preset.referenceTL] ?? 1;
-    const refRatio = ratios[preset.referenceTL] ?? 1;
-    return baseMonthly * (ratio / refRatio);
+    const baseRatio = MNEME_RATIOS[preset.baseTL] ?? 1;
+    const tlRatio = MNEME_RATIOS[tl] ?? baseRatio;
+    return preset.baseIncome * (tlRatio / baseRatio);
   }
 
   if (preset.curve === 'linear' && preset.linearMultiplier) {
-    const steps = tl - preset.referenceTL;
-    return baseMonthly * Math.pow(preset.linearMultiplier, steps);
+    const steps = tl - preset.baseTL;
+    return preset.baseIncome * Math.pow(preset.linearMultiplier, steps);
   }
 
-  return baseMonthly;
+  return preset.baseIncome;
 }
 
 /**
@@ -121,6 +117,33 @@ export function getIncomeYears(shipPriceCr: number, tl: number, preset: TLProduc
   if (!monthly || monthly <= 0) return Infinity;
   const annual = monthly * 12;
   return shipPriceCr / annual;
+}
+
+// =====================
+// Preset builder
+// =====================
+
+export function buildPresetFromBase(
+  id: string,
+  name: string,
+  description: string,
+  baseIncome: number,
+  baseTL: number,
+  curve: TLProductivityPreset['curve'],
+  linearMultiplier?: number,
+  soc7IncomeByTL?: Record<number, number>
+): TLProductivityPreset {
+  return {
+    id,
+    name,
+    description,
+    baseIncome,
+    baseTL,
+    curve,
+    linearMultiplier,
+    soc7IncomeByTL,
+    boatYears: getBoatYears(baseIncome),
+  };
 }
 
 // =====================
@@ -155,8 +178,8 @@ export function importPresetFromJSON(json: string): TLProductivityPreset | null 
       typeof parsed === 'object' &&
       typeof parsed.id === 'string' &&
       typeof parsed.name === 'string' &&
-      typeof parsed.boatYears === 'number' &&
-      typeof parsed.referenceTL === 'number' &&
+      typeof parsed.baseIncome === 'number' &&
+      typeof parsed.baseTL === 'number' &&
       ['mneme', 'flat', 'linear', 'custom'].includes(parsed.curve)
     ) {
       return parsed as TLProductivityPreset;

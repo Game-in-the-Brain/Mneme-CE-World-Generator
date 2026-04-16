@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType } from '../types';
+import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType, TLProductivityPreset } from '../types';
 import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
 import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
+import { BUILT_IN_PRESETS, MNEME_PRESET, getBoatYears, getSoc7MonthlyIncome } from '../lib/economicPresets';
 
 // Import generator for batch export
 import { generateStarSystem } from '../lib/generator';
@@ -49,6 +50,7 @@ export function GeneratorDashboard({
   const [starGrade, setStarGrade] = useState<StellarGrade | 'random'>(defaults.starGrade);
   const [mainWorldType, setMainWorldType] = useState<WorldType | 'random'>(defaults.mainWorldType);
   const [populated, setPopulated] = useState<boolean>(defaults.populated);
+  const [activePreset, setActivePreset] = useState<TLProductivityPreset>(defaults.tlProductivityPreset || MNEME_PRESET);
 
   useEffect(() => {
     const current = loadGeneratorOptions();
@@ -58,8 +60,34 @@ export function GeneratorDashboard({
       starGrade,
       mainWorldType,
       populated,
+      tlProductivityPreset: activePreset,
     });
-  }, [starClass, starGrade, mainWorldType, populated]);
+  }, [starClass, starGrade, mainWorldType, populated, activePreset]);
+
+  function handlePresetChange(id: string) {
+    const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
+    if (builtIn) setActivePreset(builtIn);
+  }
+
+  function handleBaseIncomeChange(val: number) {
+    const baseIncome = Math.max(1, Math.min(1e9, val));
+    setActivePreset((prev) => ({
+      ...prev,
+      id: 'custom',
+      name: 'Custom',
+      baseIncome,
+      boatYears: getBoatYears(baseIncome),
+    }));
+  }
+
+  function handleCurveChange(curve: string) {
+    setActivePreset((prev) => ({
+      ...prev,
+      id: 'custom',
+      name: 'Custom',
+      curve: curve as TLProductivityPreset['curve'],
+    }));
+  }
 
   function handleGenerate() {
     const current = loadGeneratorOptions();
@@ -69,6 +97,7 @@ export function GeneratorDashboard({
       starGrade,
       mainWorldType,
       populated,
+      tlProductivityPreset: activePreset,
     });
   }
 
@@ -200,6 +229,86 @@ export function GeneratorDashboard({
                 If Hab ≤ 0: inhabitants live in an artificial habitat (MVT/GVT table).
               </p>
             )}
+          </div>
+
+          {/* Economic Assumptions (FR-032) */}
+          <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+            <label className="block text-xs mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Economic Assumptions
+            </label>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+              <div>
+                <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                  Preset
+                </label>
+                <select
+                  value={BUILT_IN_PRESETS.some((p) => p.id === activePreset.id) ? activePreset.id : ''}
+                  onChange={(e) => handlePresetChange(e.target.value)}
+                  className="w-full rounded px-2 py-2 text-sm border"
+                  style={{
+                    backgroundColor: 'var(--bg-primary)',
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <option value="" disabled={BUILT_IN_PRESETS.some((p) => p.id === activePreset.id)}>
+                    Select preset...
+                  </option>
+                  {BUILT_IN_PRESETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                  TL 9 SOC 7 Income (Cr/mo)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={1000000000}
+                  value={Math.round(activePreset.baseIncome)}
+                  onChange={(e) => handleBaseIncomeChange(Number(e.target.value))}
+                  className="w-full rounded px-2 py-2 text-sm border"
+                  style={{
+                    backgroundColor: 'var(--bg-primary)',
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                  Growth Curve
+                </label>
+                <select
+                  value={activePreset.curve}
+                  onChange={(e) => handleCurveChange(e.target.value)}
+                  className="w-full rounded px-2 py-2 text-sm border"
+                  style={{
+                    backgroundColor: 'var(--bg-primary)',
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <option value="mneme">Mneme — compounding</option>
+                  <option value="flat">Flat — stagnant</option>
+                  <option value="linear">Linear — fixed %</option>
+                  <option value="custom">Custom — per-TL</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4 text-xs" style={{ color: 'var(--text-secondary)' }}>
+              <span>Boat (10DT) = {formatCreditsCompact(5_320_400)}</span>
+              <span>→ {Math.round(getBoatYears(activePreset.baseIncome))} years at TL 9</span>
+              <span>→ {formatCreditsCompact(Math.round(getSoc7MonthlyIncome(7, activePreset)))}/mo at TL 7</span>
+            </div>
           </div>
         </div>
 
@@ -619,4 +728,14 @@ function formatPopulation(pop: number): string {
   if (pop >= 1_000_000)     return `${(pop / 1_000_000).toFixed(1)}M`;
   if (pop >= 1_000)         return `${(pop / 1_000).toFixed(1)}K`;
   return pop.toString();
+}
+
+function formatCreditsCompact(value: number): string {
+  if (!isFinite(value) || value === 0) return '0 Cr';
+  const abs = Math.abs(value);
+  if (abs >= 1e12) return `${(value / 1e12).toFixed(2)} T Cr`;
+  if (abs >= 1e9) return `${(value / 1e9).toFixed(2)} B Cr`;
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(2)} M Cr`;
+  if (abs >= 1e3) return `${(value / 1e3).toFixed(2)} K Cr`;
+  return `${new Intl.NumberFormat('en-US').format(Math.round(value))} Cr`;
 }

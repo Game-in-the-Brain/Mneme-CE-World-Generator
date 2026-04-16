@@ -41,8 +41,8 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — extracted to standalone repo; MWG links to it |
 | **QA-027** | 🔴 Open | Income notation ambiguous; economy engine needs root-cause redesign (see §Root Cause Analysis) |
 | **QA-028** | 🔴 Open | Wealth contradicts Development — same root cause as QA-027 |
-| **QA-030** | 🔴 Open | Ships at X/E ports too numerous — needs port-class hard gate |
-| **FR-032** | 📋 Proposed | Income system redesign: avg income per TL + ships as income-years |
+| **QA-030** | ✅ Fixed | Ships at X/E ports too numerous — needs port-class hard gate |
+| **FR-032** | ✅ Fixed | Income system redesign: avg income per TL + ships as income-years |
 
 
 ### Key Files
@@ -154,15 +154,16 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-027](#qa-027) | UI — Economy | Income "B cr" notation ambiguous; weekly × 52 ≠ annual total shown | 🔴 High | ✅ Fixed |
 | [QA-028](#qa-028) | UI — Economy | Wealth display contradicts World Development section | 🟠 Medium | 🔴 Open |
 | [QA-029](#qa-029) | Engine — Government | Anarchy government type disproportionately dominant | 🔴 High | 📋 Investigated — Table Design |
-| [QA-030](#qa-030) | Engine — Ships (FR-030) | Ships at X/E-class starport too numerous for port class | 🔴 High | 🔴 Open |
+| [QA-030](#qa-030) | Engine — Ships (FR-030) | Ships at X/E-class starport too numerous for port class | 🔴 High | ✅ Fixed |
 | [QA-031](#qa-031) | UI — Stars | Star color displayed as raw hex — needs human-readable name | 🟠 Medium | ✅ Fixed |
 | [QA-032](#qa-032) | Engine — World Physics | 427 km world showing 0.18G — stale pre-QA-023 data | 🟠 Medium | ✅ Fixed — No Bug |
 | [QA-033](#qa-033) | UI — 2D Map | Map button URL broken on GitHub Pages — extracted to standalone repo | 🔴 High | ✅ Fixed |
 | [QA-034](#qa-034) | Engine — Inhabitants | Remove Depression Penalty Timing option — default to after-starport only | 🟠 Medium | ✅ Fixed |
-| [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | 🟡 In Progress |
+| [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | ✅ Fixed |
 | [QA-035](#qa-035) | UI — 2D Map | Main world missing from 2D map — buildSceneGraph never adds it (only marks) | 🔴 High | ✅ Fixed |
 | [QA-036](#qa-036) | UI — Planetary System Tab | Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one | 🟠 Medium | ✅ Fixed |
 | [QA-037](#qa-037) | UI — Settings | localStorage `mneme_generator_options` backward compatibility for new fields | 🟠 Medium | ✅ Fixed |
+| [FR-034](#fr-034) | Feature — Ships | Ships Price List page reflecting economic assumptions | 🟠 Medium | 📋 Proposed |
 | [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | 📋 Proposed |
 
 ---
@@ -261,8 +262,8 @@ May be a display/wording issue rather than a calculation bug. Review what each p
 **Title:** Ships at X/E-class starport: count too high for port class  
 **Area:** Engine — Ships (FR-030)  
 **Priority:** 🔴 High  
-**Status:** 🔴 Open  
-**Datetime:** 260415-120000  
+**Status:** ✅ Fixed  
+**Datetime:** 260415-120000 | Fixed: 260416  
 **Reported by:** Neil Lucock (email 2026-04-15)
 
 **Problem Statement**  
@@ -274,11 +275,13 @@ Neil reports a TL9 X-class port showing 104 ships in orbit, including a 1,000-to
 - Ship count should be hard-gated by starport class, not just PSS/TL score.
 - A 1,000-ton passenger liner will not visit a world with no port facilities.
 
-**Files**  
-`src/lib/shipsInArea.ts` — add port class ceiling to traffic pool lookup.
+**Fix Applied**  
+- `src/lib/shipsInArea.ts`: added early-return hard gates based on `starport.class`.
+  - **Class X:** returns `{ budget: 0, ships: [], shipsInPort: [], shipsInSystem: [], totalShips: 0 }`.
+  - **Class E:** caps budget to 10% of computed value, limits pool to small craft only, and enforces `maxShips = 5`.
+- Ships display in `SystemViewer.tsx` already handles empty arrays gracefully.
 
-**Notes**  
-FR-030 (`shipsInArea.ts`) generates traffic from `traffic_pool` fields. The pool selection needs an additional gate: if `starport.class === 'X'`, zero docked ships; if `'E'`, minimal pool only. The `budget` from PSS may need to be zeroed or clamped for X/E regardless of TL.
+**Commit:** `v1.3.85` (bundled with FR-032 Phase 3–4)
 
 ---
 
@@ -1816,8 +1819,8 @@ Implement a dynamic text replacement or secondary lookup table for populations `
 **Title:** Income system redesign — average income per TL + ships as income-years  
 **Area:** Feature — Economy  
 **Priority:** 🟠 Medium  
-**Status:** 🟡 In Progress  
-**Datetime:** 260415-120000 | Phase 1: 260416  
+**Status:** ✅ Fixed  
+**Datetime:** 260415-120000 | Phase 1–4: 260416  
 **Proposed by:** Justin (email reply 2026-04-15)
 
 **Proposal**  
@@ -1844,19 +1847,66 @@ Justin's expanded economic engine redesign:
 - `src/lib/generator.ts`: passes preset GDP into `calculateStarport()` and weights into table rolls
 
 **Phase 2 Completed (260416)**
-- `src/components/Settings.tsx`: added full "Economic Assumptions" panel
+- `src/components/GeneratorDashboard.tsx`: added "Economic Assumptions" directly into **Generation Options**
   - Preset selector with built-in Mneme / CE presets
-  - Save, Save As, Load, Import, Export actions for custom presets
-  - Boat-Years calibration input + Reference TL + Growth curve selector
-  - Derived readouts: SOC 7 annual/monthly income and GDP per capita/day
-  - Expandable SOC-Income grid showing SOC 1–60 for selected TL (7–16)
-  - Collapsible "Why do these numbers matter?" explanatory note
+  - **TL 9 SOC 7 Income** as the primary calibration input (Cr/month)
+  - Growth curve selector (Mneme / Flat / Linear / Custom)
+  - Boat-Years displayed as a derived value (e.g. Boat = 5,320,400 Cr → 10 yrs at TL 9 in Mneme, 222 yrs in CE)
+  - Generated worlds **snapshot** the active preset into `StarSystem.economicPreset`
+- `src/components/Settings.tsx`: moved detailed preset editor + SOC-Income grid here for advanced world-building
+- `src/components/SystemViewer.tsx`: Ships in the Area now displays **Income-Years** per ship using the world's stored preset
+
+**Phase 3–4 Completed (260416)**
+- Refactored preset model from `boatYears`/`referenceTL` → `baseIncome`/`baseTL` for clearer world-builder UX.
+- `src/lib/shipsInArea.ts`: hard-gated ship counts by starport class (QA-030) — X-class returns zero ships; E-class returns ≤5 small craft only.
+- `src/components/SystemViewer.tsx`: added "Income-Years" column to ship display and explanatory tooltip.
+- `src/lib/generator.ts` & `src/lib/worldData.ts`: fully wired economic preset and optional table weights into all world generation paths.
+- `src/lib/optionsStorage.ts`: added migration for old `boatYears`/`referenceTL` stored presets to `baseIncome`/`baseTL`.
+
+**Reference Prices (from `mneme_ship_reference.json`)**
+| Ship | Purchase Price |
+|---|---|
+| Boat (10DT) | 5,320,400 Cr |
+| Courier Ship | 44,175,000 Cr |
+| Merchant Trader | 43,070,000 Cr |
+| Raider | 288,500,000 Cr |
+| Passenger Liner (1000DT) | 379,156,000 Cr |
+
+**Commit:** `v1.3.85`
 
 **Dependencies**  
 QA-027 ✅ (fixed as prerequisite).  
+QA-030 ✅ (fixed as part of Phase 3–4).  
 QA-037 ✅ (localStorage backward compatibility).
 
 ---
+
+---
+
+### FR-034
+
+**Title:** Ships Price List — dynamic page reflecting Economic Assumptions  
+**Area:** Feature — Ships / Economy  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Proposed  
+**Datetime:** 260416  
+
+**Proposal**  
+A dedicated **Ships Price List** view (or modal/page) that displays the full `mneme_ship_reference.json` catalogue through the lens of the current economic preset.
+
+**Key behaviour:**
+- **CE/Traveller mode:** prices are shown in raw Credits. Incomes are low, so ships appear enormously expensive in human terms (hundreds of income-years). This matches the stagnant model where only collectives, corporations, or governments can afford spacecraft.
+- **Mneme mode:** prices are still shown in raw Credits, but the SOC-income grid makes them affordable. A 10DT Boat costs ~10 years of TL 9 average income — equivalent to buying a car or a modest house in 2026. A Courier (~80 years) is like a mortgage. A Raider (~500 years) is like a small business loan or a collective investment.
+
+**Columns to display:**
+| Ship | DT | Purchase Price (Cr) | Income-Years at TL 9 | Monthly Upkeep |
+|---|---|---|---|---|
+
+The page should be accessible from:
+- The **System Viewer** Ships card ("Open Price List" link)
+- The **Generator Dashboard** Economic Assumptions section ("View Ships Price List" link)
+
+**Design note:** The raw Credit prices from CE are kept unchanged. What changes is the *affordability* — driven entirely by the income curve the user selects.
 
 ---
 

@@ -13,6 +13,7 @@ import {
 } from '../lib/worldData';
 import { generateShipsInTheArea } from '../lib/shipsInArea';
 import { STAR_COLOR_NAMES } from '../lib/stellarData';
+import { getIncomeYears, MNEME_PRESET } from '../lib/economicPresets';
 
 interface SystemViewerProps {
   system: StarSystem;
@@ -859,12 +860,13 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
               <ShipLocationGroup
                 label="In Orbit"
                 ships={shipsResult.ships.filter(s => s.location === 'Orbit')}
+                system={system}
               />
               {/* QA-024: "In System" ships shown per body position */}
               {(() => {
                 const systemShips = shipsResult.ships.filter(s => s.location === 'System');
                 if (systemShips.length === 0) return (
-                  <ShipLocationGroup label="In System" ships={[]} />
+                  <ShipLocationGroup label="In System" ships={[]} system={system} />
                 );
                 const byBody = new Map<number, typeof systemShips>();
                 for (const ship of systemShips) {
@@ -879,12 +881,14 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
                       key={`system-${pos}`}
                       label={`In System — Body ${pos}`}
                       ships={ships}
+                      system={system}
                     />
                   ));
               })()}
               <ShipLocationGroup
                 label="Docked at Starport"
                 ships={shipsResult.ships.filter(s => s.location === 'Docked')}
+                system={system}
               />
             </div>
           </div>
@@ -912,7 +916,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
   );
 }
 
-function ShipLocationGroup({ label, ships }: { label: string; ships: { name: string; dt: number; monthlyOperatingCost: number; location: ShipLocation; systemPosition?: number; trafficPool: 'small' | 'civilian' | 'warship' }[] }) {
+function ShipLocationGroup({ label, ships, system }: { label: string; ships: { name: string; dt: number; monthlyOperatingCost: number; purchasePrice: number; location: ShipLocation; systemPosition?: number; trafficPool: 'small' | 'civilian' | 'warship' }[]; system: StarSystem }) {
   if (ships.length === 0) {
     return (
       <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
@@ -922,18 +926,21 @@ function ShipLocationGroup({ label, ships }: { label: string; ships: { name: str
     );
   }
 
-  const counts = new Map<string, { count: number; dt: number; cost: number }>();
+  const counts = new Map<string, { count: number; dt: number; cost: number; purchasePrice: number }>();
   for (const s of ships) {
     const existing = counts.get(s.name);
     if (existing) {
       existing.count++;
       existing.cost += s.monthlyOperatingCost;
+      existing.purchasePrice = s.purchasePrice;
     } else {
-      counts.set(s.name, { count: 1, dt: s.dt, cost: s.monthlyOperatingCost });
+      counts.set(s.name, { count: 1, dt: s.dt, cost: s.monthlyOperatingCost, purchasePrice: s.purchasePrice });
     }
   }
 
   const totalCost = ships.reduce((sum, s) => sum + s.monthlyOperatingCost, 0);
+  const preset = system.economicPreset || MNEME_PRESET;
+  const tl = system.inhabitants.effectiveTL ?? system.inhabitants.techLevel;
 
   return (
     <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
@@ -942,11 +949,17 @@ function ShipLocationGroup({ label, ships }: { label: string; ships: { name: str
         <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{ships.length} ship{ships.length === 1 ? '' : 's'}</span>
       </div>
       <div className="space-y-1">
-        {Array.from(counts.entries()).map(([name, info]) => (
-          <div key={name} className="flex items-baseline justify-between text-sm">
-            <span>{info.count > 1 ? `${info.count}× ` : ''}{name} ({info.dt} DT)</span>
-          </div>
-        ))}
+        {Array.from(counts.entries()).map(([name, info]) => {
+          const incomeYears = getIncomeYears(info.purchasePrice, tl, preset);
+          return (
+            <div key={name} className="flex items-baseline justify-between text-sm">
+              <span>{info.count > 1 ? `${info.count}× ` : ''}{name} ({info.dt} DT)</span>
+              <span className="text-xs text-[#9e9e9e]">
+                {incomeYears === Infinity ? '—' : `${Math.round(incomeYears)} yr${Math.round(incomeYears) === 1 ? '' : 's'}`}
+              </span>
+            </div>
+          );
+        })}
       </div>
       <div className="text-xs mt-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
         Total operating cost: {formatCredits(totalCost)}

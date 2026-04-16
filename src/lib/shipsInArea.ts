@@ -68,6 +68,7 @@ function generatePoolShips(pool: ShipRef[], budget: number, totalBodies: number)
         name: ship.name,
         dt: ship.dt,
         monthlyOperatingCost: ship.monthly_operating_cost_cr,
+        purchasePrice: ship.total_cost_cr,
         location,
         systemPosition,
         trafficPool: ship.traffic_pool,

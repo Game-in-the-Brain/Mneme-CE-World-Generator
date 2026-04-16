@@ -12,6 +12,7 @@ import {
   getSoc7MonthlyIncome,
   getIncomeForSoc,
   getGdpPerDayFromPreset,
+  getBoatYears,
   exportPresetToJSON,
   importPresetFromJSON,
   BOAT_PRICE_CR,
@@ -97,23 +98,24 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
     }
   }
 
-  function handleBoatYearsChange(val: number) {
-    const boatYears = Math.max(1, Math.min(10000, val));
+  function handleBaseIncomeChange(val: number) {
+    const baseIncome = Math.max(1, Math.min(1e9, val));
     setActivePreset((prev) => ({
       ...prev,
       id: 'custom',
       name: 'Custom',
-      boatYears,
+      baseIncome,
+      boatYears: getBoatYears(baseIncome),
     }));
   }
 
-  function handleReferenceTLChange(val: number) {
-    const referenceTL = Math.max(7, Math.min(16, val));
+  function handleBaseTLChange(val: number) {
+    const baseTL = Math.max(7, Math.min(16, val));
     setActivePreset((prev) => ({
       ...prev,
       id: 'custom',
       name: 'Custom',
-      referenceTL,
+      baseTL,
     }));
   }
 
@@ -545,27 +547,27 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">
-                Years for SOC 7 to buy the Boat (10DT)
+                TL {activePreset.baseTL} SOC 7 Income (Cr/mo)
               </label>
               <input
                 type="number"
                 min={1}
-                max={10000}
-                value={Math.round(activePreset.boatYears)}
-                onChange={(e) => handleBoatYearsChange(Number(e.target.value))}
+                max={1000000000}
+                value={Math.round(activePreset.baseIncome)}
+                onChange={(e) => handleBaseIncomeChange(Number(e.target.value))}
                 className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
               />
               <p className="text-xs text-[#9e9e9e] mt-1">Boat price: {formatNumber(BOAT_PRICE_CR)} Cr</p>
             </div>
 
             <div>
-              <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Reference TL</label>
+              <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Base TL</label>
               <input
                 type="number"
                 min={7}
                 max={16}
-                value={activePreset.referenceTL}
-                onChange={(e) => handleReferenceTLChange(Number(e.target.value))}
+                value={activePreset.baseTL}
+                onChange={(e) => handleBaseTLChange(Number(e.target.value))}
                 className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
               />
             </div>

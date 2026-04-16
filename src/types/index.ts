@@ -120,6 +120,7 @@ export interface ShipInArea {
   name: string;
   dt: number;
   monthlyOperatingCost: number;
+  purchasePrice: number;    // FR-032: for income-years calculation
   location: ShipLocation;
   systemPosition?: number;  // QA-024: body index 1–N, only set when location === 'System'
   trafficPool: 'small' | 'civilian' | 'warship';
@@ -188,6 +189,9 @@ export interface StarSystem {
   terrestrialWorlds: PlanetaryBody[];
   iceWorlds: PlanetaryBody[];
   gasWorlds: PlanetaryBody[];
+  
+  /** FR-032: the economic assumptions this world was generated with */
+  economicPreset?: TLProductivityPreset;
 }
 
 // =====================
@@ -225,11 +229,16 @@ export interface TLProductivityPreset {
   id: string;
   name: string;
   description: string;
-  boatYears: number;
-  referenceTL: number;
+  /** Primary calibration: SOC 7 monthly income at the base TL */
+  baseIncome: number;
+  /** The TL that serves as the anchor for the curve (default: 9) */
+  baseTL: number;
   curve: ProductivityCurve;
   linearMultiplier?: number;
+  /** Direct override table for custom curves */
   soc7IncomeByTL?: Record<number, number>;
+  /** Derived: years for SOC 7 to buy the 10DT Boat at baseTL */
+  boatYears?: number;
 }
 
 export interface TableWeights {

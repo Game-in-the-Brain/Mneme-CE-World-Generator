@@ -75,6 +75,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     terrestrialWorlds: terrestrials,
     iceWorlds: ices,
     gasWorlds: gases,
+    economicPreset: opts.tlProductivityPreset,
   };
 }
 

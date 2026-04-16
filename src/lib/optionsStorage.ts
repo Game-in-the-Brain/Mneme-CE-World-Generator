@@ -19,11 +19,12 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
 function isValidPreset(value: unknown): value is TLProductivityPreset {
   if (!value || typeof value !== 'object') return false;
   const p = value as Record<string, unknown>;
+  const hasNewFields = typeof p.baseIncome === 'number' && typeof p.baseTL === 'number';
+  const hasOldFields = typeof p.boatYears === 'number' && typeof p.referenceTL === 'number';
   return (
     typeof p.id === 'string' &&
     typeof p.name === 'string' &&
-    typeof p.boatYears === 'number' &&
-    typeof p.referenceTL === 'number' &&
+    (hasNewFields || hasOldFields) &&
     typeof p.curve === 'string' &&
     ['mneme', 'flat', 'linear', 'custom'].includes(p.curve)
   );
@@ -65,9 +66,24 @@ export function loadGeneratorOptions(): GeneratorOptions {
 
   const populated = typeof stored.populated === 'boolean' ? stored.populated : DEFAULT_GENERATOR_OPTIONS.populated;
 
-  const tlProductivityPreset = isValidPreset(stored.tlProductivityPreset)
-    ? stored.tlProductivityPreset
-    : DEFAULT_GENERATOR_OPTIONS.tlProductivityPreset!;
+  let tlProductivityPreset = DEFAULT_GENERATOR_OPTIONS.tlProductivityPreset!;
+  if (isValidPreset(stored.tlProductivityPreset)) {
+    tlProductivityPreset = stored.tlProductivityPreset;
+    // Migrate old presets (boatYears + referenceTL) to new model (baseIncome + baseTL)
+    const presetRecord = tlProductivityPreset as unknown as Record<string, unknown>;
+    if (
+      typeof presetRecord.boatYears === 'number' &&
+      typeof presetRecord.referenceTL === 'number' &&
+      (!('baseIncome' in presetRecord) || !('baseTL' in presetRecord))
+    ) {
+      const baseIncome = 5_320_400 / ((presetRecord.boatYears as number) * 12);
+      tlProductivityPreset = {
+        ...presetRecord,
+        baseIncome,
+        baseTL: presetRecord.referenceTL,
+      } as unknown as TLProductivityPreset;
+    }
+  }
 
   const developmentWeights = isValidWeights(stored.developmentWeights)
     ? stored.developmentWeights
