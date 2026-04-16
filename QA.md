@@ -171,8 +171,10 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-045](#qa-045) | Lore — Megastructures | Jovian Hammers — MTL 12 gas-giant skimming industry | 🟢 Lore | ✅ Documented |
 | [QA-041](#qa-041) | UI — Generate | Economic assumptions selectable in generation; recent systems show preset used | 🟠 Medium | ✅ Fixed |
 | [QA-042](#qa-042) | UI — Generate / Settings | Generator: TL9 SOC7 & growth curve read-only; editing belongs in Settings | 🟠 Medium | ✅ Fixed |
-| [QA-043](#qa-043) | UI — Recent Systems | Recent systems table should display world code or WB-assigned star system name | 🟠 Medium | 📋 Queued |
-| [QA-044](#qa-044) | UI — System Viewer | Overview should display economic assumptions: "made with: CE / Traveller" | 🟠 Medium | 📋 Queued |
+| [QA-043](#qa-043) | UI — Recent Systems | Recent systems table should display world code or WB-assigned star system name | 🟠 Medium | ✅ Fixed |
+| [QA-044](#qa-044) | UI — System Viewer | Overview should display economic assumptions: "made with: CE / Traveller" | 🟠 Medium | ✅ Fixed |
+| [QA-046](#qa-046) | UI — Settings | Settings: Boat Years should be the editable primary calibration input | 🟠 Medium | 📋 Queued |
+| [QA-047](#qa-047) | Engine — Ships | Ships in the Area should use visiting cost scaled by economic scarcity multiplier | 🟠 Medium | ✅ Fixed |
 
 ---
 
@@ -1995,28 +1997,18 @@ Currently the Generator dashboard exposes raw economic inputs (TL9 SOC 7 monthly
 **Title:** Recent systems table should display the world code or the WB-assigned star system name  
 **Area:** UI — Recent Systems  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Queued  
-**Datetime:** 260416
+**Status:** ✅ Fixed  
+**Datetime:** 260416 | Fixed: 260416
 
 **Problem Statement**  
 The Recent Systems table currently shows only a generic identifier or timestamp, making it hard for world builders (and users) to quickly locate a previously generated system. When a user generates multiple worlds in a session, the list becomes visually indistinguishable.
 
-**Expected Behaviour**
-- Each row in the Recent Systems table should display a **human-readable label**:
-  - **Option A:** The world's **UWP-style code** (e.g. `A-234567-9`) if one is generated or assigned.
-  - **Option B:** The **star system name** if the world builder (WB) has manually named it.
-  - **Fallback:** A short generated alias or truncated timestamp.
-- The label should be the primary clickable text that loads the system.
+**Fix Applied**
+- `src/components/GeneratorDashboard.tsx`: Recent Systems now shows `system.name || generatedCode` as the primary label.
+- Added `getSystemCode()` helper producing compact codes like `AT+3-TL9-Pop12K` (starport + world-type-initial + hab + TL + pop).
+- `src/components/SystemViewer.tsx`: header includes an inline editable name input. Changes propagate back to saved systems via `onUpdateSystem`.
 
-**App Impact / Files**
-- `src/components/RecentSystems.tsx` (or equivalent) — update table columns and row rendering.
-- `src/types/index.ts` — ensure `StarSystem` can store an optional `name` or `code` field.
-- `src/lib/generator.ts` — generate a deterministic world code (or accept a user-provided name).
-- **Export / share flows** may also need to surface this name/code so that exported worlds are identifiable.
-
-**Open Questions**
-- Should the generator auto-assign a pronounceable name (e.g. phonetic star-name generator) or stick to code-only?
-- If the WB renames a system after generation, does the Recent Systems list update in-place?
+**Commit:** `v1.3.95`
 
 ---
 
@@ -2025,25 +2017,89 @@ The Recent Systems table currently shows only a generic identifier or timestamp,
 **Title:** Overview should display economic assumptions: "made with: CE / Traveller" or "Mneme"  
 **Area:** UI — System Viewer / Overview  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Queued  
-**Datetime:** 260416
+**Status:** ✅ Fixed  
+**Datetime:** 260416 | Fixed: 260416
 
 **Problem Statement**  
 Users viewing a generated system have no immediate visual indication of which economic model was used to create it. Because Mneme and CE/Traveller worlds are intentionally incompatible (different GDP curves, different ship traffic logic), this context is essential for referees interpreting trade, ship budgets, and world wealth.
 
+**Fix Applied**
+- `src/components/SystemViewer.tsx`: added a badge below the generation timestamp showing **"Economic model: {preset.name}"**.
+- Fallback for legacy worlds (pre-FR-032) shows **"Legacy / Unknown"**.
+
+**Commit:** `v1.3.94`
+
+---
+
+### QA-046
+
+**Title:** Settings: Boat Years should be the editable primary calibration input  
+**Area:** UI — Settings / Economic Assumptions  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Queued  
+**Datetime:** 260416
+
+**Problem Statement**  
+Currently the Settings preset editor exposes **TL 9 SOC 7 Income (Cr/month)** as the editable number. World builders think in terms of "how many years of average salary does it take to buy a Boat?" — not in raw Credits. The current UI forces them to do mental arithmetic.
+
 **Expected Behaviour**
-- In the **System Viewer Overview** card (or tab), add a small metadata line:
-  - **"Economic model: Mneme"** or **"Economic model: CE / Traveller"** (or the custom preset name).
-- If the world was generated before FR-032 (no `economicPreset` stored), show **"Economic model: Legacy / Unknown"**.
-- The label should be subtle but scannable — e.g. a badge or fine-print line next to the generation timestamp.
+- In the **Settings** Economic Assumptions panel, add a prominent editable field:
+  - **"Boat Years at TL {baseTL}"** — default 10.1 for Mneme, 228.35 for CE.
+- When the user edits Boat Years, the app **automatically computes** `baseIncome = BOAT_PRICE_CR / (boatYears × 12)`.
+- The existing **TL 9 SOC 7 Income** field becomes read-only (or updates live) to show the derived value.
+- The Generator Dashboard should continue to show Boat Years as read-only summary text (QA-042).
 
-**App Impact / Files**
-- `src/components/SystemViewer.tsx` — Overview panel rendering.
-- `src/types/index.ts` — already stores `economicPreset` on `StarSystem` (FR-032).
+**Rationale**  
+Boat-years is the intuitive human-scale anchor. It directly answers: "is a ship like a car (10 years), a house (30 years), or a medieval cathedral (200+ years)?"
 
-**Related**
-- QA-041 (economic assumptions in generation / recent systems)
-- FR-032 (income system redesign)
+**Files**
+- `src/components/Settings.tsx` — add Boat Years input, derive baseIncome from it.
+- `src/lib/economicPresets.ts` — ensure `getBoatYears()` and inverse helper are exported.
+
+---
+
+### QA-047
+
+**Title:** Ships in the Area generator should use visiting cost scaled by economic scarcity multiplier  
+**Area:** Engine — Ships (FR-030 / v1.3.103)  
+**Priority:** 🟠 Medium  
+**Status:** ✅ Fixed  
+**Datetime:** 260416 | Fixed: 260416
+
+**Problem Statement**  
+Even after QA-030 (X/E hard gates) and FR-032 (economic presets), CE/Traveller worlds were still generating too many ships. The raw Credit comparison of port budget vs ship visiting cost does not account for the *structural* scarcity of spacecraft in a stagnant economy. In CE, a Boat costs ~228 salary-years — it should be treated as a rare capital asset, not a routine purchase.
+
+**Fix Applied (v1.3.103)**
+- `src/lib/shipsInArea.ts`: `generateShipsInTheArea()` now accepts an optional `TLProductivityPreset`.
+- It computes a **scarcity multiplier**:
+  ```
+  boatYears = getBoatYears(preset.baseIncome)
+  scarcityMultiplier = max(1, boatYears / mnemeReference)
+  // mnemeReference ≈ 10.1
+  ```
+- The effective ship-generation budget is divided by this multiplier:
+  ```
+  effectiveBudget = rawBudget / scarcityMultiplier
+  ```
+- Ships are still selected from pools using their raw `visiting_cost_cr`, but the available budget is reduced proportionally to the economy's ship-scarcity.
+
+**Impact Analysis**
+| Mode | Boat Years | Budget Factor (from GDP) | Scarcity Multiplier | Combined Ship Density |
+|------|-----------|--------------------------|---------------------|----------------------|
+| **Mneme** | ~10.1 | 1× | 1.0 | **High** — ships are common (car-like) |
+| **CE / Traveller** | ~228 | ~0.044× | ~22.6 | **Very Low** — ships are cathedral-like capital assets |
+
+*Combined effect:* CE/Traveller ship counts drop by roughly **500×** versus Mneme for the same port class, because:
+1. Lower GDP produces a smaller port budget (~22× less)
+2. The scarcity multiplier makes each ship "cost" ~22× more in generation terms
+
+**Result:** A TL 9 Pop-4 CE world might see **0–3** small craft instead of **50+**. A Mneme world of the same stats might see **20–60** ships of mixed pools.
+
+**Files**
+- `src/lib/shipsInArea.ts` — scarcity multiplier logic.
+- `src/components/SystemViewer.tsx` — passes `system.economicPreset` into generation.
+
+**Commit:** `v1.3.103`
 
 ---
 
