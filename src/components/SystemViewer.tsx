@@ -744,6 +744,18 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
           />
         </div>
 
+        {/* Contextual tension note (QA-028) */}
+        {(() => {
+          const note = getWealthDevelopmentContext(inhabitants.wealth, inhabitants.development);
+          if (!note) return null;
+          return (
+            <div className="text-xs p-2 rounded border-l-2" style={{ backgroundColor: 'var(--row-hover)', borderColor: 'var(--accent-red)' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>Narrative context:</strong>{' '}
+              <span style={{ color: 'var(--text-secondary)' }}>{note}</span>
+            </div>
+          );
+        })()}
+
         {/* Development */}
         <div>
           <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>World Development</div>
@@ -1274,6 +1286,26 @@ function getHazardHabitability(hazard: string, intensity: string): number {
     'Radioactive': -1.5, 'Toxic': -1.5, 'Biohazard': -1, 'Corrosive': -1, 'Polluted': -0.5,
   };
   return (baseMod[hazard] || 0) + (intensityMod[intensity] || 0);
+}
+
+function getWealthDevelopmentContext(wealth: import('../types').WealthLevel, development: import('../types').DevelopmentLevel): string | null {
+  const wealthRanks: Record<import('../types').WealthLevel, number> = {
+    'Average': 0, 'Better-off': 1, 'Prosperous': 2, 'Affluent': 3,
+  };
+  const devRanks: Record<import('../types').DevelopmentLevel, number> = {
+    'UnderDeveloped': 0, 'Developing': 1, 'Mature': 2, 'Developed': 3, 'Well Developed': 4, 'Very Developed': 5,
+  };
+  const w = wealthRanks[wealth];
+  const d = devRanks[development];
+  const gap = d - w;
+
+  if (gap >= 2) {
+    return 'This world has the infrastructure and education of a much richer society, but the returns are captured elsewhere. High-output resource extraction, corporate enclaves, or off-world tithes keep local wealth low despite advanced capabilities.';
+  }
+  if (gap <= -2) {
+    return 'Prosperity without institutional depth. Money flows in from resource extraction, foreign investment, or remittances, but local governance and infrastructure lag behind. The economy is rich but brittle.';
+  }
+  return null;
 }
 
 function getEconomicModelLabel(system: StarSystem): string {
