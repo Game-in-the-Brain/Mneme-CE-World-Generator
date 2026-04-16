@@ -2131,7 +2131,7 @@ Become **self-directed by MTL 16**, capable of **jumping between star systems**.
 
 **Evolution by Tech Level**
 - **TL 13:** Hammers can skim **Brown Dwarf Stars**, accessing even denser exotic atmospheres.
-- **Higher TLs:** The simple bolas design gives way to **megaton Celestials** (called **Titans**) that create a magnetic runway and catch system. This launches Hammers into hotter gas giants, and eventually into **cooler stars** and more intense stellar environments.
+- **Higher TLs:** The simple bolas design gives way to **megaton Celestials** (called **Titans**) that create a magnetic runway and catch system. This launches Hammers into **hotter gas giants** or **cooler stars**, and eventually into more intense stellar environments.
 - **Exotic specialisation:** As humanity spreads interstellar, Jovian Hammers and their supporting **Forges** diversify. Crystallisation processes and quantum properties unique to gas-giant pressures become industrial staples.
 
 **Role**  
