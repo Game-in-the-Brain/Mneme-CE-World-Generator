@@ -55,6 +55,8 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-049** | 📋 Queued | Economic model toggle (Stable vs Compounding) — Settings, generator pipeline |
 | **QA-050** | 📋 Queued | Recent Systems should show Economic Assumptions used |
 | **QA-051** | ✅ Fixed | Economic Assumptions Customizations roll profiles — v1.3.106 + v1.3.109 weight calibration |
+| **QA-052** | 📋 Queued | Ships in the Area should use Credit values based on Economic Assumptions, not Years-to-own |
+| **QA-053** | 📋 Queued | Recent Items should display what Economic Assumptions were used |
 
 
 ### Key Files
@@ -191,6 +193,8 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-049](#qa-049) | Engine — Economy / Population | Economic model toggle (Stable vs Compounding) | 🔴 High | 📋 Queued |
 | [QA-050](#qa-050) | UI — Recent Systems | Recent Systems should show Economic Assumptions used | 🟠 Medium | 📋 Queued |
 | [QA-051](#qa-051) | Engine — Inhabitants | Economic Assumptions Customizations roll profiles | 🟠 Medium | ✅ Fixed |
+| [QA-052](#qa-052) | Engine — Ships | Ships in the Area should use Credit values based on Economic Assumptions | 🟠 Medium | 📋 Queued |
+| [QA-053](#qa-053) | UI — Recent Systems | Recent Items should display what Economic Assumptions were used | 🟡 Low | 📋 Queued |
 
 ---
 
@@ -2626,4 +2630,75 @@ The Mneme default tables are calibrated to realistic socio-economic diversity �
 
 **Reference:**  
 See `260416 Economic Assumptions Customizations Custom tables.md` for full derivation, comparison matrices, and design intent.
+
+
+---
+
+---
+
+### QA-052
+
+**Title:** Ships in the Area should use Credit values based on Economic Assumptions, not Years-to-own  
+**Area:** Engine — Ships  
+**Priority:** 🟠 Medium  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+
+**Problem Statement**  
+Currently, the Ships in the Area generator uses `visiting_cost_cr` (monthly operating cost + supplies) as the threshold for adding ships to a pool, but the *selection* logic and scarcity multiplier are anchored to **Boat Years** (years-to-own). This creates a mismatch: a ship's affordability in human terms (income-years) is being used as its gatekeeping cost in the generation budget, rather than its raw Credit price.
+
+**Expected Behaviour**  
+The ship generation budget and selection logic should operate in **Credits** as the native unit, scaled by the economic assumptions of the world:
+- Port budget = `weeklyTradeValue × (1D6 × 0.1)` in Credits
+- Ship costs = raw `visiting_cost_cr` or `total_cost_cr` in Credits
+- Economic scarcity should deflate the budget based on the **Credit ratio** between Mneme and the active preset, not the Boat Years ratio
+
+This decouples the *availability* of ships from their *affordability in income-years*.
+
+**Impact Assessment**
+| Aspect | Current (Boat Years) | Proposed (Credits) |
+|--------|----------------------|--------------------|
+| Budget basis | weeklyTradeValue (already Cr) | unchanged |
+| Scarcity logic | `boatYears / mnemeReference` | Credit-scale multiplier |
+| Ship gatekeeping | `visiting_cost_cr` vs deflated budget | unchanged in structure |
+| UI display | Income-years per ship | Add raw Cr cost alongside income-years |
+
+**Risk:** Low. The change is confined to `src/lib/shipsInArea.ts` and display formatting in `SystemViewer.tsx`. No type changes required.
+
+**Files:**  
+- `src/lib/shipsInArea.ts` — budget/scarcity calculation
+- `src/components/SystemViewer.tsx` — ship cost display
+
+---
+
+---
+
+### QA-053
+
+**Title:** Recent Items should display what Economic Assumptions were used  
+**Area:** UI — Recent Systems  
+**Priority:** 🟡 Low  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+
+**Problem Statement**  
+When a user generates multiple worlds, the Recent Systems / Recent Items list does not show which Economic Assumptions preset was active during generation. Because Mneme and CE/Traveller worlds are intentionally incompatible (different GDP curves, ship scarcity, and income scales), users need this context immediately to avoid mixing incompatible models in the same campaign.
+
+**Expected Behaviour**  
+Each entry in the Recent Systems list should display the economic preset name that was snapshotted at generation time. Possible implementations:
+- A small badge or chip showing the preset name (e.g. "Mneme", "CE / Traveller", "Stagnant", "Custom")
+- A subtitle or tooltip with the preset details
+- Colour-coding for quick visual scanning
+
+**Impact Assessment**
+| Aspect | Change |
+|--------|--------|
+| Data model | None — `StarSystem.economicPreset` already exists |
+| UI scope | `src/components/GeneratorDashboard.tsx` Recent Systems list only |
+| Backward compat | Legacy systems without `economicPreset` show "Legacy" or default label |
+
+**Risk:** Very low. Pure UI enhancement with no generation logic changes.
+
+**Files:**  
+- `src/components/GeneratorDashboard.tsx` — Recent Systems rendering
 

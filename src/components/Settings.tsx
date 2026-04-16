@@ -736,24 +736,23 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
           {showInfo && (
             <div className="text-sm text-[#9e9e9e] space-y-3 leading-relaxed">
               <p>
-                <strong className="text-white">CE/Traveller stagnates.</strong> In classic rules, Tech Level only
-                measures jump distance. Income and productivity flatline. There are no market forces because there is
-                no growth — every "job opportunity" is static, and the vast developing populations of our real world
-                simply don't exist in the setting. Everything is gentrified.
+                <strong className="text-white">Classic CE/Traveller</strong> models a stable, human-labour economy.
+                Tech Level governs jump capability; income and productivity are relatively constant across the setting.
+                Worlds are mostly developed, workforce-dependent, and gentrified by design — the frontier has already been won.
               </p>
               <p>
                 <strong className="text-white">Mneme assumes compounding growth.</strong> Agents and robots move
-                gigatons and terratons. Terraforming and building interstellar infrastructure requires enormous
-                economic output. A small colony with high automation can maintain significant starport traffic because
-                robots don't sleep.
+                gigatons and terratons. Terraforming and interstellar infrastructure require enormous economic output,
+                and a small colony with high automation can sustain significant starport traffic because machines don't
+                sleep or draw wages. Wealth concentrations are possible even on young worlds.
               </p>
               <p>
-                <strong className="text-white">You can model either here.</strong> Choose <em>CE / Traveller</em> for
-                slow, human-labour-dominant economics. Choose <em>Mneme</em> for high-compound, post-scarcity-adjacent
-                growth. The Boat-Years setting anchors the entire economy: a larger number makes ships impossibly
-                expensive and shrinks port traffic naturally.
+                <strong className="text-white">You can model either here.</strong> <em>CE / Traveller</em> suits slow,
+                human-labour-dominant economies where stability is the baseline. <em>Mneme</em> suits high-compound,
+                post-scarcity-adjacent growth where automation reshapes what "development" even means. The Boat-Years
+                setting anchors the entire economy: a larger number makes ships prohibitively expensive and naturally
+                reduces port traffic regardless of which model you choose.
               </p>
-              <p className="italic">Stagnation is a form of caste system. High growth is opportunity.</p>
             </div>
           )}
         </div>
