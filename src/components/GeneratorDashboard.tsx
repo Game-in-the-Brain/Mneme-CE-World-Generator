@@ -68,6 +68,10 @@ export function GeneratorDashboard({
     }
   });
   const [showShipsPriceList, setShowShipsPriceList] = useState(false);
+  const [goalStarportMin, setGoalStarportMin] = useState<import('../types').StarportClass | ''>(defaults.goalStarportMin || '');
+  const [goalMinPopulation, setGoalMinPopulation] = useState<string>(defaults.goalMinPopulation?.toString() || '');
+  const [goalHabitable, setGoalHabitable] = useState<boolean>(defaults.goalHabitable || false);
+  const [goalModeOpen, setGoalModeOpen] = useState(false);
 
   const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
   const isKnownPreset = allPresets.some((p) => p.id === activePreset.id);
@@ -81,8 +85,11 @@ export function GeneratorDashboard({
       mainWorldType,
       populated,
       tlProductivityPreset: activePreset,
+      goalStarportMin: goalStarportMin || undefined,
+      goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
+      goalHabitable: goalHabitable || undefined,
     });
-  }, [starClass, starGrade, mainWorldType, populated, activePreset]);
+  }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable]);
 
   function handlePresetChange(id: string) {
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
@@ -103,6 +110,9 @@ export function GeneratorDashboard({
       mainWorldType,
       populated,
       tlProductivityPreset: activePreset,
+      goalStarportMin: goalStarportMin || undefined,
+      goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
+      goalHabitable: goalHabitable || undefined,
     });
   }
 
@@ -334,6 +344,68 @@ export function GeneratorDashboard({
             </>
           )}
         </button>
+
+        {/* Goal Mode (FR-033) */}
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={() => setGoalModeOpen((v) => !v)}
+            className="text-xs flex items-center gap-1 mx-auto mb-2"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {goalModeOpen ? '▾' : '▸'} Sector Dynamics — Goal Mode
+          </button>
+
+          {goalModeOpen && (
+            <div className="card text-left space-y-3">
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Set optional targets. The generator will loop up to 2,000 times and return the first matching world.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                    Min Starport
+                  </label>
+                  <select
+                    value={goalStarportMin}
+                    onChange={(e) => setGoalStarportMin(e.target.value as import('../types').StarportClass | '')}
+                    className="w-full rounded px-2 py-2 text-sm border"
+                    style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  >
+                    <option value="">Any</option>
+                    {['X', 'E', 'D', 'C', 'B', 'A'].map((c) => (
+                      <option key={c} value={c}>Class {c} or better</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                    Min Population
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="e.g. 1000000"
+                    value={goalMinPopulation}
+                    onChange={(e) => setGoalMinPopulation(e.target.value)}
+                    className="w-full rounded px-2 py-2 text-sm border"
+                    style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={goalHabitable}
+                      onChange={(e) => setGoalHabitable(e.target.checked)}
+                      className="rounded"
+                    />
+                    Habitable world (Hab &gt; 0)
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Debug Batch Export — toggleable in Settings (QA-012, QA-014) */}
         <DebugBatchExportWrapper />

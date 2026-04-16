@@ -70,14 +70,38 @@ function App() {
   const handleGenerate = useCallback(async (options: GeneratorOptions) => {
     setIsGenerating(true);
     try {
-      // Simulate generation delay for effect
+      // Simulate generation delay for effect so the spinner shows immediately
       await new Promise(resolve => setTimeout(resolve, 500));
-      const system = generateStarSystem(options);
+
+      const hasGoals = options.goalStarportMin || options.goalMinPopulation || options.goalHabitable;
+      const maxIterations = 2000;
+      let system = generateStarSystem(options);
+      let iterations = 1;
+
+      if (hasGoals) {
+        const starportRanks: Record<string, number> = { X: 0, E: 1, D: 2, C: 3, B: 4, A: 5 };
+        while (iterations < maxIterations) {
+          const matchStarport = !options.goalStarportMin || (starportRanks[system.inhabitants.starport.class] >= starportRanks[options.goalStarportMin]);
+          const matchPop = !options.goalMinPopulation || (system.inhabitants.population >= options.goalMinPopulation);
+          const matchHab = !options.goalHabitable || (system.mainWorld.habitability > 0);
+          if (matchStarport && matchPop && matchHab) break;
+          system = generateStarSystem(options);
+          iterations++;
+        }
+      }
+
       setCurrentSystem(system);
       await saveSystem(system);
       await loadSavedSystems();
       setView('system');
-      showNotification('New system generated and saved!');
+
+      if (hasGoals && iterations >= maxIterations) {
+        showNotification(`No matching world found after ${iterations.toLocaleString()} generations`);
+      } else if (hasGoals) {
+        showNotification(`Found matching world after ${iterations.toLocaleString()} generation${iterations === 1 ? '' : 's'}`);
+      } else {
+        showNotification('New system generated and saved!');
+      }
     } catch (error) {
       console.error('Error generating system:', error);
       showNotification('Error generating system');

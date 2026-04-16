@@ -254,6 +254,10 @@ export interface GeneratorOptions {
   developmentWeights?: TableWeights;
   powerWeights?: TableWeights;
   govWeights?: TableWeights;
+  /** FR-033: optional goal-loop targets */
+  goalStarportMin?: StarportClass;
+  goalMinPopulation?: number;
+  goalHabitable?: boolean;
 }
 
 export type BodyAnnotations = Record<string, { name: string; notes: string }>;

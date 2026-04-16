@@ -97,6 +97,18 @@ export function loadGeneratorOptions(): GeneratorOptions {
     ? stored.govWeights
     : DEFAULT_GENERATOR_OPTIONS.govWeights!;
 
+  const VALID_STARPORT_CLASSES = new Set<string>(['X', 'E', 'D', 'C', 'B', 'A']);
+  const goalStarportMin =
+    stored.goalStarportMin && VALID_STARPORT_CLASSES.has(stored.goalStarportMin)
+      ? stored.goalStarportMin
+      : undefined;
+  const goalMinPopulation =
+    typeof stored.goalMinPopulation === 'number' && stored.goalMinPopulation > 0
+      ? stored.goalMinPopulation
+      : undefined;
+  const goalHabitable =
+    typeof stored.goalHabitable === 'boolean' ? stored.goalHabitable : undefined;
+
   return {
     starClass,
     starGrade,
@@ -106,6 +118,9 @@ export function loadGeneratorOptions(): GeneratorOptions {
     developmentWeights,
     powerWeights,
     govWeights,
+    goalStarportMin,
+    goalMinPopulation,
+    goalHabitable,
   };
 }
 
