@@ -54,7 +54,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-048** | ✅ Fixed | Boat Years and SOC 7 Income should be independently fillable — v1.3.108 |
 | **QA-049** | 📋 Queued | Economic model toggle (Stable vs Compounding) — Settings, generator pipeline |
 | **QA-050** | 📋 Queued | Recent Systems should show Economic Assumptions used |
-| **QA-051** | 📋 Queued | Economic Assumptions Customizations roll profiles (documented spec) |
+| **QA-051** | ✅ Fixed | Economic Assumptions Customizations roll profiles — v1.3.106 + v1.3.109 weight calibration |
 
 
 ### Key Files
@@ -190,7 +190,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-048](#qa-048) | Engine — Economy / Ships | Boat Years and SOC 7 Income should be decoupled | 🔴 High | ✅ Fixed |
 | [QA-049](#qa-049) | Engine — Economy / Population | Economic model toggle (Stable vs Compounding) | 🔴 High | 📋 Queued |
 | [QA-050](#qa-050) | UI — Recent Systems | Recent Systems should show Economic Assumptions used | 🟠 Medium | 📋 Queued |
-| [QA-051](#qa-051) | Engine — Inhabitants | Economic Assumptions Customizations roll profiles | 🟠 Medium | 📋 Queued |
+| [QA-051](#qa-051) | Engine — Inhabitants | Economic Assumptions Customizations roll profiles | 🟠 Medium | ✅ Fixed |
 
 ---
 
@@ -2588,14 +2588,21 @@ Each entry in the Recent Systems list should visually indicate the economic pres
 **Title:** Economic Assumptions Customizations — Roll Profile Presets for Inhabitants Tables  
 **Area:** Engine — Inhabitants  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Queued  
-**Datetime:** 2026-04-16  
+**Status:** ✅ Fixed  
+**Datetime:** 2026-04-16 | Fixed: 2026-04-16  
 
 **Description:**  
 Defines preset roll profiles for **Wealth**, **Development**, **Power Structure**, and **Source of Power** tables to align generated inhabitants with three distinct campaign assumptions. The profiles are implemented as weighted-distribution presets bundled with economic presets.
 
 **Background:**  
 The Mneme default tables are calibrated to realistic socio-economic diversity — underdeveloped and poor worlds are common, power is often fragmented or authoritarian. Classic Traveller / CE players typically come from high-income nations and carry different baseline assumptions: poverty is the exception, governments are stable, and power leans democratic. A third **Stagnant / Uniform** profile represents a plateaued, homogenised galaxy with no dramatic extremes.
+
+**Fix Applied (v1.3.106 / v1.3.109)**
+1. `src/lib/economicPresets.ts`: added `MNEME_*_WEIGHTS`, `CE_*_WEIGHTS`, and `STAGNANT_*_WEIGHTS` constants for all four inhabitant tables.
+2. `src/lib/worldData.ts`: extended `getWealth()` signature to accept optional `TableWeights` (matching `getPowerStructure`, `getDevelopment`, and `getSourceOfPower`).
+3. `src/lib/generator.ts`: wired `wealthWeights`, `developmentWeights`, `powerWeights`, and `govWeights` into `generateInhabitants()`, with cascading defaults from the active preset.
+4. `src/components/Settings.tsx`: added a **Wealth** selector to the Table Weights panel (now a 4-column layout).
+5. `v1.3.109`: recalibrated `STAGNANT_GOV_WEIGHTS` to `[3, 3, 3, 4, 13, 12, 13, 12, 17, 16, 5]` so the Stagnant Government distribution matches the spec (~13% Aristocracy, ~25% Ideocracy, ~25% Kratocracy, ~33% Democracy, ~5% Meritocracy).
 
 **Presets:**
 

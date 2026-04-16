@@ -232,7 +232,9 @@ export const STAGNANT_POWER_WEIGHTS: TableWeights = {
   dice: [1, 1, 1, 1, 1, 1, 24, 24, 27, 27, 12],
 };
 export const STAGNANT_GOV_WEIGHTS: TableWeights = {
-  dice: [5, 5, 5, 5, 20, 20, 20, 20, 26, 26, 8],
+  // Aristocracy: 2-5, Ideocracy: 6-7, Kratocracy: 8-9, Democracy: 10-11, Meritocracy: 12
+  // QA-051 calibrated: ~13% / ~25% / ~25% / ~33% / ~5%
+  dice: [3, 3, 3, 4, 13, 12, 13, 12, 17, 16, 5],
 };
 
 // =====================
