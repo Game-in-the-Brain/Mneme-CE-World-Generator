@@ -169,7 +169,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-039](#qa-039) | Lore — Megastructures | Celestials — self-directed solar swarm for terraforming | 🟢 Lore | ✅ Documented |
 | [QA-040](#qa-040) | Lore — Megastructures | Great Trees — space elevator megastructures | 🟢 Lore | ✅ Documented |
 | [QA-041](#qa-041) | UI — Generate | Economic assumptions selectable in generation; recent systems show preset used | 🟠 Medium | ✅ Fixed |
-| [QA-042](#qa-042) | UI — Generate / Settings | Generator: TL9 SOC7 & growth curve read-only; editing belongs in Settings | 🟠 Medium | 📋 Queued |
+| [QA-042](#qa-042) | UI — Generate / Settings | Generator: TL9 SOC7 & growth curve read-only; editing belongs in Settings | 🟠 Medium | ✅ Fixed |
 | [QA-043](#qa-043) | UI — Recent Systems | Recent systems table should display world code or WB-assigned star system name | 🟠 Medium | 📋 Queued |
 
 ---
@@ -1957,8 +1957,8 @@ These structures are necessary in the ever-compounding growth of technology and 
 **Title:** Generator: TL9 SOC 7 income and growth curve should be read-only; full editing belongs in Settings  
 **Area:** UI — Generate / Settings  
 **Priority:** 🟠 Medium  
-**Status:** 📋 Queued  
-**Datetime:** 260416
+**Status:** ✅ Fixed  
+**Datetime:** 260416 | Fixed: 260416
 
 **Problem Statement**  
 Currently the Generator dashboard exposes raw economic inputs (TL9 SOC 7 monthly income, growth curve selection) that can be edited inline. This blurs the line between *world selection* (Mneme vs CE/Traveller) and *world building* (customising the underlying income model).
@@ -1973,13 +1973,18 @@ Currently the Generator dashboard exposes raw economic inputs (TL9 SOC 7 monthly
   - Edit TL9 SOC 7 income, choose growth curves, view the full SOC 1–60 grid.
   - Saved custom presets appear in the Generator dropdown.
 
-**Rationale**  
-World builders who want to craft a custom economic model should do so deliberately in Settings. Casual generators should only pick between existing models (Mneme vs CE) without risk of accidentally tweaking the maths.
+**Fix Applied**
+- `src/components/GeneratorDashboard.tsx`:
+  - Removed editable **TL 9 SOC 7 Income** number input and **Growth Curve** dropdown.
+  - Preset selector now loads **custom presets** from `localStorage` (`mneme_custom_presets`) and groups them under a "Custom" optgroup alongside built-ins.
+  - Added read-only summary panel displaying:
+    - TL {baseTL} SOC 7 Income (full comma-separated Credits)
+    - Growth curve label
+    - Boat-years at the reference TL
+  - Added helper text: "Editing presets is available in Settings."
+- `src/components/Settings.tsx`: unchanged — continues to serve as the authoritative preset editor with Save / Save-As / Import / Export / SOC-Income Grid.
 
-**Files**
-- `src/components/GeneratorDashboard.tsx` — simplify economic UI to preset selector + read-only summary
-- `src/components/Settings.tsx` — keep full preset editor as the authoritative editing surface
-- `src/lib/optionsStorage.ts` — ensure custom presets list is loaded for the dropdown
+**Commit:** `v1.3.90`
 
 ---
 
