@@ -3,7 +3,7 @@ import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldTyp
 import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
 import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
-import { BUILT_IN_PRESETS, MNEME_PRESET, getBoatYears } from '../lib/economicPresets';
+import { BUILT_IN_PRESETS, MNEME_PRESET, getBoatYears, BOAT_PRICE_CR } from '../lib/economicPresets';
 import { ShipsPriceList } from './ShipsPriceList';
 
 // Import generator for batch export
@@ -303,9 +303,9 @@ export function GeneratorDashboard({
                   </strong>
                 </span>
                 <span>
-                  Boat (10DT):{' '}
+                  Boat unit ({formatCredits(BOAT_PRICE_CR)}):{' '}
                   <strong style={{ color: 'var(--text-primary)' }}>
-                    {Math.round(getBoatYears(activePreset.baseIncome))} years
+                    {Math.round(getBoatYears(activePreset.baseIncome) * 100) / 100} years
                   </strong>{' '}
                   at TL {activePreset.baseTL}
                 </span>

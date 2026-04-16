@@ -4,8 +4,8 @@ import type { TLProductivityPreset, TableWeights } from '../types';
 // Constants
 // =====================
 
-/** Base Boat (10DT) purchase price in Credits — from mneme_ship_reference.json */
-export const BOAT_PRICE_CR = 5_320_400;
+/** Base Boat purchase price in Credits — reference unit for all ship cost scaling (v1.3.100) */
+export const BOAT_PRICE_CR = 5_480_400;
 
 /** Default number of days in a standard year */
 export const DAYS_PER_YEAR = 365;
@@ -36,7 +36,7 @@ export const MNEME_PRESET: TLProductivityPreset = {
   baseIncome: 45_199, // TL 9 SOC 7 monthly income (legacy 1,486 Cr/day × 365 / 12)
   baseTL: 9,
   curve: 'mneme',
-  boatYears: 10, // derived: 5,320,400 / (45,199 × 12) ≈ 9.8
+  boatYears: 10.1, // derived: 5,480,400 / (45,199 × 12) ≈ 10.1
 };
 
 /** CE / Traveller stagnant preset — flat 2,000 Cr/month SOC 7 at every TL */
@@ -47,7 +47,7 @@ export const CE_PRESET: TLProductivityPreset = {
   baseIncome: 2_000, // TL 9 SOC 7 monthly income
   baseTL: 9,
   curve: 'flat',
-  boatYears: 222, // derived: 5,320,400 / (2,000 × 12) ≈ 222
+  boatYears: 228.35, // derived: 5,480,400 / (2,000 × 12) = 228.35
 };
 
 export const BUILT_IN_PRESETS: TLProductivityPreset[] = [MNEME_PRESET, CE_PRESET];
