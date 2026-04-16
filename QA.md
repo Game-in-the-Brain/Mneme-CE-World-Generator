@@ -52,6 +52,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
 | **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — extracted to standalone repo; MWG links to it |
 | **QA-048** | 📋 Queued | Boat Years and SOC 7 Income should be independently fillable — Boat Years must independently scale ship scarcity |
+| **QA-049** | 📋 Queued | Economic model toggle (Stable vs Compounding) — Settings, generator pipeline |
 
 
 ### Key Files
@@ -185,6 +186,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-046](#qa-046) | UI — Settings | Settings: Boat Years should be the editable primary calibration input | 🟠 Medium | ✅ Fixed |
 | [QA-047](#qa-047) | Engine — Ships | Ships in the Area should use visiting cost scaled by economic scarcity multiplier | 🟠 Medium | ✅ Fixed |
 | [QA-048](#qa-048) | Engine — Economy / Ships | Boat Years and SOC 7 Income should be decoupled | 🔴 High | 📋 Queued |
+| [QA-049](#qa-049) | Engine — Economy / Population | Economic model toggle (Stable vs Compounding) | 🔴 High | 📋 Queued |
 
 ---
 
@@ -2484,3 +2486,72 @@ Ship a **CE Default** preset that flattens the government/development curves and
 
 **Remaining Action:** Needs code implementation.
 **Status:** Open
+
+---
+
+---
+
+### QA-049
+
+**Title:** Economic Model Setting: Stable vs Compounding  
+**Area:** Engine — Economy / Population  
+**Priority:** 🔴 High  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+**Affects:** Population, Starport PSS, Weekly Port Activity, GDP/year display  
+**Files:** `src/lib/generator.ts`, `src/lib/worldData.ts`, `src/components/Settings.tsx`
+
+**Description:**  
+Add a global setting that lets the user choose between two economic models. This setting changes how TL affects population and port throughput. All other generation is unchanged.
+
+**Background:**  
+Cepheus Engine and classic Traveller use a **stable economic model**. Wages and prices do not change across Tech Levels. A TL 9 pilot earns the same as a TL 10 pilot. Ships cost the same at TL 12 as at TL 14. The economy is treated as essentially static — Technology Level measures capability (particularly jump distance) but not economic growth. This keeps credit values consistent across a campaign and makes ship costs and salaries predictable regardless of the setting's era.
+
+Mneme uses a **compounding economic model**. Productivity grows with automation. A single operator managing a robot fleet at TL 12 produces 100× the output of a TL 8 worker. Populations are much larger at high TL because lower support ratios mean the same resources sustain far more people. Port throughput scales with the size of the system economy, not just the starport's physical class. Ship costs and wages rise with TL, but so does the economic capacity to pay for them.
+
+Both are valid design choices for different campaign styles. The setting toggle makes both accessible without hardcoding either assumption.
+
+**Implementation:**  
+Add a setting to the app (in Settings or as a generator option):
+
+```typescript
+type EconomicModel = 'stable' | 'compounding';
+```
+
+**Stable model (CE/Traveller compatible):**
+- TLmod for population = `TL − 7` (current linear formula, range 0–9)
+- Port weekly activity = `10^PVS` fixed (old starport output table)
+- GDP display = not shown (not meaningful in stable model)
+- Credit values consistent across all TLs
+
+**Compounding model (Mneme default):**
+- TLmod for population = productivity-derived lookup table
+  `{7:5, 8:6, 9:6, 10:7, 11:8, 12:9, 13:10, 14:11, 15:12, 16:13}`
+- Port weekly activity = `Annual Trade ÷ 364 × 3D6`
+  where Annual Trade = GDP × TradeFraction × WealthMultiplier
+- GDP/year displayed on world sheet
+- Credit values scale with TL (ship prices differ by era)
+
+**UI:** A toggle in Settings labelled:
+
+```
+Economic Model
+○ Stable       Wages and prices are consistent across all Tech Levels.
+               Compatible with Cepheus Engine and classic Traveller rules.
+● Compounding  Productivity and populations grow with automation.
+               Mneme default. Port activity scales with world GDP.
+```
+
+Default: **Compounding** (Mneme native).
+
+Persist to localStorage key: `mneme_economic_model`.
+
+**Acceptance criteria:**
+1. Toggle appears in Settings, persists across sessions.
+2. Switching to Stable immediately changes population formula to TL−7.
+3. Switching to Compounding immediately restores productivity table.
+4. The world sheet labels the active model so players know which assumptions apply to printed handouts.
+5. Batch export JSON includes `economicModel: 'stable' | 'compounding'` field in the metadata block so exported data is self-documenting.
+
+**Reference:**  
+See `population_recommendation.md` and `starport_recommendation_v1.1.md` in project outputs for full formula derivations and comparison tables. See `population_comparison.csv` and `starport_comparison.csv` for the statistical dataset comparing both models across 1,760–2,304 test cases.
