@@ -8,7 +8,7 @@
 
 **Project:** Mneme CE World Generator PWA  
 **Repo:** [Game-in-the-Brain / Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain)  
-**Last Updated:** 2026-04-14
+**Last Updated:** 2026-04-16
 
 ---
 
@@ -37,12 +37,21 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-034** | ✅ Fixed | Remove Depression Penalty Timing option; hardcode after-starport recalculation |
 | **QA-035** | ✅ Fixed | Main world missing from 2D map — dataAdapter now adds explicitly |
 | **QA-036** | ✅ Fixed | Total Planetary Bodies count excludes main world — now included |
+| **QA-025** | ✅ Fixed | Low Population Terminology Override — v1.3.96 |
+| **QA-027** | ✅ Fixed | Income notation ambiguous; formula and formatting corrected — v1.3.97 |
+| **QA-028** | 🟡 Partially Fixed | Wealth contradicts Development — coherence notes added v1.3.97; root table tension remains |
+| **QA-029** | 📋 Addressed | Anarchy dominance — natural 2D6 default; Mneme/CE/Stagnant table-weight presets shipped v1.3.101/v1.3.106 |
+| **QA-030** | ✅ Fixed | Ships at X/E ports too numerous — port-class hard gate — v1.3.85 |
+| **FR-032** | ✅ Fixed | Income system redesign: avg income per TL + ships as income-years — v1.3.85 |
+| **QA-043** | ✅ Fixed | Recent systems table shows world code or WB-assigned name — v1.3.95 |
+| **QA-044** | ✅ Fixed | System Viewer economic model badge — v1.3.94 |
+| **QA-046** | ✅ Fixed | Settings Boat Years as primary editable input — v1.3.105 |
+| **QA-047** | ✅ Fixed | Ships scarcity multiplier by economic preset — v1.3.103 |
+| **FR-033** | ✅ Fixed | Sector Dynamics goal-loop generation — v1.3.99 |
+| **FR-034** | ✅ Fixed | Ships Price List modal — v1.3.98 |
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
 | **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — extracted to standalone repo; MWG links to it |
-| **QA-027** | 🔴 Open | Income notation ambiguous; economy engine needs root-cause redesign (see §Root Cause Analysis) |
-| **QA-028** | 🔴 Open | Wealth contradicts Development — same root cause as QA-027 |
-| **QA-030** | ✅ Fixed | Ships at X/E ports too numerous — needs port-class hard gate |
-| **FR-032** | ✅ Fixed | Income system redesign: avg income per TL + ships as income-years |
+| **QA-048** | 📋 Queued | Boat Years and SOC 7 Income should be independently fillable — Boat Years must independently scale ship scarcity |
 
 
 ### Key Files
@@ -149,11 +158,11 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-024](#qa-024) | Engine — FR-030 Ships | "In System" ships have no position — missing body index 1–N | 🟠 Medium | ✅ Fixed |
 | [FR-031](#fr-031) | Feature — 2D Map | 2D Animated Planetary System Map (MWG integrated monorepo build) | 🟠 Medium | 🟡 In Progress |
 | [QA-INV-001](#qa-inv-001) | Engine — Starport | Investigation: E/X port dominance — is the PSS formula excluding higher classes? | 📋 Investigated | ✅ No Bug |
-| [QA-025](#qa-025) | Engine — Inhabitants | Low Population Terminology Override | 🟡 Low | 📋 Proposed |
+| [QA-025](#qa-025) | Engine — Inhabitants | Low Population Terminology Override | 🟡 Low | ✅ Fixed |
 | [QA-026](#qa-026) | Engine — Inhabitants | Depression Penalty for Low Population Worlds | 🟠 Medium | ✅ Fixed |
 | [QA-027](#qa-027) | UI — Economy | Income "B cr" notation ambiguous; weekly × 52 ≠ annual total shown | 🔴 High | ✅ Fixed |
-| [QA-028](#qa-028) | UI — Economy | Wealth display contradicts World Development section | 🟠 Medium | 🔴 Open |
-| [QA-029](#qa-029) | Engine — Government | Anarchy government type disproportionately dominant | 🔴 High | 📋 Investigated — Table Design |
+| [QA-028](#qa-028) | UI — Economy | Wealth display contradicts World Development section | 🟠 Medium | 🟡 Partially Fixed |
+| [QA-029](#qa-029) | Engine — Government | Anarchy government type disproportionately dominant | 🔴 High | 📋 Addressed via Table Weights |
 | [QA-030](#qa-030) | Engine — Ships (FR-030) | Ships at X/E-class starport too numerous for port class | 🔴 High | ✅ Fixed |
 | [QA-031](#qa-031) | UI — Stars | Star color displayed as raw hex — needs human-readable name | 🟠 Medium | ✅ Fixed |
 | [QA-032](#qa-032) | Engine — World Physics | 427 km world showing 0.18G — stale pre-QA-023 data | 🟠 Medium | ✅ Fixed — No Bug |
@@ -163,8 +172,8 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-035](#qa-035) | UI — 2D Map | Main world missing from 2D map — buildSceneGraph never adds it (only marks) | 🔴 High | ✅ Fixed |
 | [QA-036](#qa-036) | UI — Planetary System Tab | Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one | 🟠 Medium | ✅ Fixed |
 | [QA-037](#qa-037) | UI — Settings | localStorage `mneme_generator_options` backward compatibility for new fields | 🟠 Medium | ✅ Fixed |
-| [FR-034](#fr-034) | Feature — Ships | Ships Price List page reflecting economic assumptions | 🟠 Medium | 📋 Proposed |
-| [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | 📋 Proposed |
+| [FR-034](#fr-034) | Feature — Ships | Ships Price List page reflecting economic assumptions | 🟠 Medium | ✅ Fixed |
+| [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | ✅ Fixed |
 | [QA-038](#qa-038) | Lore — Megastructures | Great Serpent (formerly Bakunawa Coil) — MTL 12 antimatter ring | 🟢 Lore | ✅ Documented |
 | [QA-039](#qa-039) | Lore — Megastructures | Celestials — self-directed solar swarm for terraforming | 🟢 Lore | ✅ Documented |
 | [QA-040](#qa-040) | Lore — Megastructures | Great Trees — space elevator megastructures | 🟢 Lore | ✅ Documented |
@@ -175,6 +184,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-044](#qa-044) | UI — System Viewer | Overview should display economic assumptions: "made with: CE / Traveller" | 🟠 Medium | ✅ Fixed |
 | [QA-046](#qa-046) | UI — Settings | Settings: Boat Years should be the editable primary calibration input | 🟠 Medium | ✅ Fixed |
 | [QA-047](#qa-047) | Engine — Ships | Ships in the Area should use visiting cost scaled by economic scarcity multiplier | 🟠 Medium | ✅ Fixed |
+| [QA-048](#qa-048) | Engine — Economy / Ships | Boat Years and SOC 7 Income should be decoupled | 🔴 High | 📋 Queued |
 
 ---
 
@@ -2100,6 +2110,47 @@ Even after QA-030 (X/E hard gates) and FR-032 (economic presets), CE/Traveller w
 - `src/components/SystemViewer.tsx` — passes `system.economicPreset` into generation.
 
 **Commit:** `v1.3.103`
+
+---
+
+### QA-048
+
+**Title:** Economic Assumptions — Boat Years and SOC 7 Income should be independently fillable
+**Area:** Engine — Economy / Ships
+**Priority:** 🔴 High  
+**Status:** 📋 Queued  
+**Datetime:** 260416  
+
+**Problem Statement**  
+In the Settings preset editor, **Boat Years at TL 9** is the primary editable input, and **Derived TL 9 SOC 7 Income** is shown as a read-only derived value. The two are mathematically coupled:
+```
+baseIncome = BOAT_PRICE_CR / (boatYears × 12)
+```
+This means a world builder cannot set them independently. If they want:
+- A *high-income* world where ships are still *scarce* (e.g. a rich guild-monopoly culture), or
+- A *low-income* world where ships are *common* (e.g. a post-scarcity automated shipyard planet),
+...the current model makes this impossible.
+
+**Expected Behaviour**  
+1. **SOC 7 Income (`baseIncome`)** should drive GDP per capita, starport trade budgets, and the SOC-income grid.  
+2. **Boat Years (`boatYears`)** should be an *independent* scarcity dial that controls how many ships appear in the area, regardless of `baseIncome`.  
+3. Both fields should be editable in Settings. If the user only edits one, the other should *not* auto-override.  
+4. The scarcity multiplier in `shipsInArea.ts` should use the preset's stored `boatYears` directly, not a value derived from `baseIncome`.
+
+**Current Code Path**
+- `src/components/Settings.tsx`: `handleBoatYearsChange()` calls `getBaseIncomeFromBoatYears()`, which overwrites `baseIncome`.
+- `src/lib/shipsInArea.ts`: `scarcityMultiplier = max(1, getBoatYears(preset.baseIncome) / 10.1)` — derives boat-years from income.
+
+**Proposed Fix**
+1. Store `boatYears` as a *separate* primary field in `TLProductivityPreset` (it already exists, but is treated as derived).
+2. Make `baseIncome` directly editable again in Settings, side-by-side with Boat Years.
+3. Remove `getBaseIncomeFromBoatYears()` as the single source of truth; instead allow both to diverge.
+4. Update `shipsInArea.ts` to read `preset.boatYears ?? getBoatYears(preset.baseIncome)` for backward compatibility.
+5. Update Ships Price List and Income-Years displays to use `boatYears` for the affordability calculation, not `baseIncome`.
+
+**Backward Compatibility**
+- Existing presets that only store `baseIncome` should continue to work by falling back to `getBoatYears(baseIncome)`.
+- Old saved systems should use their snapshot `boatYears` if present, otherwise derive it.
 
 ---
 
