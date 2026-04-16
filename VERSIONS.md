@@ -4,6 +4,21 @@
 
 ---
 
+## v1.3.84 — FR-032 Phase 2: Economic Settings UI (2026-04-16)
+
+### Features
+- **FR-032 Phase 2**: Added the "Economic Assumptions" panel to `Settings.tsx`
+  - Preset selector (Mneme / CE) with Save, Save As, Load, Import, Export for custom presets
+  - Boat-Years calibration input with live derived income/GDP readouts
+  - Reference TL and Growth curve selectors (Mneme / Flat / Linear / Custom)
+  - Expandable SOC-Income grid (SOC 1–60) for any TL 7–16
+  - Collapsible explanatory note on CE stagnation vs Mneme growth
+- `src/components/Settings.tsx`: refactored to manage `activePreset`, `customPresets`, and localStorage persistence
+- `formatCreditCompact()` helper for readable large-credit grid values
+- Build passes with zero TypeScript errors
+
+---
+
 ## v1.3.83 — FR-032 Phase 1: Economic Engine Data Model (2026-04-16)
 
 ### Features

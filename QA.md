@@ -1843,6 +1843,15 @@ Justin's expanded economic engine redesign:
 - `src/lib/worldData.ts`: `calculateStarport()` accepts `gdpPerDayOverride`; `getDevelopment`/`getPowerStructure`/`getSourceOfPower` accept optional `weights`
 - `src/lib/generator.ts`: passes preset GDP into `calculateStarport()` and weights into table rolls
 
+**Phase 2 Completed (260416)**
+- `src/components/Settings.tsx`: added full "Economic Assumptions" panel
+  - Preset selector with built-in Mneme / CE presets
+  - Save, Save As, Load, Import, Export actions for custom presets
+  - Boat-Years calibration input + Reference TL + Growth curve selector
+  - Derived readouts: SOC 7 annual/monthly income and GDP per capita/day
+  - Expandable SOC-Income grid showing SOC 1–60 for selected TL (7–16)
+  - Collapsible "Why do these numbers matter?" explanatory note
+
 **Dependencies**  
 QA-027 ✅ (fixed as prerequisite).  
 QA-037 ✅ (localStorage backward compatibility).
