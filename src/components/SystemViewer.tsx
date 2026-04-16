@@ -6,8 +6,10 @@ import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnua
 import {
   CULTURE_TRAIT_DESCRIPTIONS,
   WEALTH_DESCRIPTIONS,
+  WEALTH_DESCRIPTIONS_LOW_POP,
   POWER_STRUCTURE_DESCRIPTIONS,
   DEVELOPMENT_DESCRIPTIONS,
+  DEVELOPMENT_DESCRIPTIONS_LOW_POP,
   SOURCE_OF_POWER_DESCRIPTIONS,
   TL_TABLE,
 } from '../lib/worldData';
@@ -662,9 +664,10 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
     );
   }
 
-  const wealthDesc = WEALTH_DESCRIPTIONS[inhabitants.wealth];
+  const useLowPop = inhabitants.populated !== false && inhabitants.population < 1_000_000;
+  const wealthDesc = useLowPop ? WEALTH_DESCRIPTIONS_LOW_POP[inhabitants.wealth] : WEALTH_DESCRIPTIONS[inhabitants.wealth];
   const govDesc    = POWER_STRUCTURE_DESCRIPTIONS[inhabitants.powerStructure];
-  const devDesc    = DEVELOPMENT_DESCRIPTIONS[inhabitants.development];
+  const devDesc    = useLowPop ? DEVELOPMENT_DESCRIPTIONS_LOW_POP[inhabitants.development] : DEVELOPMENT_DESCRIPTIONS[inhabitants.development];
   const powerDesc  = SOURCE_OF_POWER_DESCRIPTIONS[inhabitants.sourceOfPower];
   const govSign    = inhabitants.governance >= 0 ? `+${inhabitants.governance}` : `${inhabitants.governance}`;
 

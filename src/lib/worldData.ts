@@ -785,6 +785,14 @@ export const WEALTH_DESCRIPTIONS: Record<WealthLevel, { description: string }> =
   'Affluent':   { description: 'A wealthy, thriving society with high per-capita income. Premium services are standard; off-world investment is significant. Poverty is minimal; consumption is conspicuous.' },
 };
 
+/** QA-025: Low-population terminology variants for populations < 1,000,000 */
+export const WEALTH_DESCRIPTIONS_LOW_POP: Record<WealthLevel, { description: string }> = {
+  'Average':    { description: 'The population meets basic needs with little surplus. Vital supplies are limited; saving is difficult. Standard of living varies widely between individuals.' },
+  'Better-off': { description: 'An above-average fiscal condition with growing specialist groups. Basic luxuries are accessible; disposable income exists. Trade is active and communal resources are beginning to circulate.' },
+  'Prosperous': { description: 'A strong fiscal condition with significant trade surplus. Luxury goods are available; communal resources circulate freely. Quality of life is high for most members.' },
+  'Affluent':   { description: 'A wealthy, thriving community with high per-capita income. Premium services are standard; off-world support is significant. Hardship is minimal; resource use is conspicuous.' },
+};
+
 export const POWER_STRUCTURE_DESCRIPTIONS: Record<PowerStructure, { description: string }> = {
   'Anarchy':       { description: 'No recognised central authority exists. Power is fragmented among local strongmen, warlords, community councils, or guilds. Rules vary by location; travel between zones can be unpredictable.' },
   'Confederation': { description: 'A loose alliance of member-states that retain sovereignty. The central body has limited powers — primarily defence and trade arbitration. Member interests frequently conflict with collective decisions.' },
@@ -799,6 +807,16 @@ export const DEVELOPMENT_DESCRIPTIONS: Record<DevelopmentLevel, { hdi: string; d
   'Developed':      { hdi: '0.80–0.89', description: 'High standard of living. Service and knowledge economy is dominant. Strong institutions; rule of law is generally reliable. Life expectancy is high; most citizens have access to advanced medical care and education. (Book p.29)' },
   'Well Developed': { hdi: '0.90–0.94', description: 'Post-industrial, technology-intensive economy. High educational attainment across the population. A strong social safety net reduces extreme hardship. Automation handles much routine labour. Off-world investment is common. (Book p.29)' },
   'Very Developed': { hdi: '>0.95', description: 'Near-optimal material conditions. Automation handles most labour; citizens pursue creative, scientific, and exploratory vocations. Inequality is minimal. This society is a significant player in interstellar trade and culture. (Book p.29)' },
+};
+
+/** QA-025: Low-population terminology variants for populations < 1,000,000 */
+export const DEVELOPMENT_DESCRIPTIONS_LOW_POP: Record<DevelopmentLevel, { hdi: string; description: string }> = {
+  'UnderDeveloped': { hdi: '0.0–0.59', description: 'Subsistence framework dominates. High infant mortality, minimal infrastructure, most of the population engaged in agricultural or extractive labour. Basic literacy and healthcare are patchy. Significant deprivation is the norm. (Book p.29)' },
+  'Developing':     { hdi: '0.60–0.69', description: 'Industrial base is forming. Specialist groups are emerging. Access to basic technology — communications, medicine, transport — is becoming widespread. Labour mobility is accelerating. Inequality is often high during this transition. (Book p.29)' },
+  'Mature':         { hdi: '0.70–0.79', description: 'A stable industrial framework with broadly accessible education and healthcare. Vital supply chains are growing. Social institutions are functioning but under strain. Life expectancy has improved markedly. (Book p.29)' },
+  'Developed':      { hdi: '0.80–0.89', description: 'High standard of living. Service and knowledge framework is dominant. Strong institutions; rule of law is generally reliable. Life expectancy is high; most members have access to advanced medical care and education. (Book p.29)' },
+  'Well Developed': { hdi: '0.90–0.94', description: 'Post-industrial, technology-intensive framework. High educational attainment across the population. A strong communal safety net reduces extreme hardship. Automation handles much routine labour. Off-world support is common. (Book p.29)' },
+  'Very Developed': { hdi: '>0.95', description: 'Near-optimal material conditions. Automation handles most labour; individuals pursue creative, scientific, and exploratory vocations. Inequality is minimal. This community is a significant player in interstellar trade and culture. (Book p.29)' },
 };
 
 export const SOURCE_OF_POWER_DESCRIPTIONS: Record<PowerSource, { description: string }> = {
