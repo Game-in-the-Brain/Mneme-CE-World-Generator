@@ -16,6 +16,7 @@ import {
 import { generateShipsInTheArea } from '../lib/shipsInArea';
 import { STAR_COLOR_NAMES } from '../lib/stellarData';
 import { getIncomeYears, MNEME_PRESET } from '../lib/economicPresets';
+import { ShipsPriceList } from './ShipsPriceList';
 
 interface SystemViewerProps {
   system: StarSystem;
@@ -68,6 +69,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   // Body annotations — persisted per system (localStorage)
   const [annotations, setAnnotations] = useState<BodyAnnotations>({});
   const [shipsResult, setShipsResult] = useState<ShipsInAreaResult | null>(null);
+  const [showShipsPriceList, setShowShipsPriceList] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
@@ -217,7 +219,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Users style={{ color: 'var(--accent-red)' }} size={20} />
           Inhabitants
         </h2>
-        <InhabitantsTab inhabitants={system.inhabitants} system={system} onUpdateSystem={onUpdateSystem} shipsResult={shipsResult} setShipsResult={setShipsResult} />
+        <InhabitantsTab inhabitants={system.inhabitants} system={system} onUpdateSystem={onUpdateSystem} shipsResult={shipsResult} setShipsResult={setShipsResult} onOpenShipsPriceList={() => setShowShipsPriceList(true)} />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}
@@ -242,6 +244,13 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
             Definitions &amp; Units Glossary
           </button>
         </div>
+      )}
+
+      {showShipsPriceList && (
+        <ShipsPriceList
+          preset={system.economicPreset}
+          onClose={() => setShowShipsPriceList(false)}
+        />
       )}
     </div>
   );
@@ -649,7 +658,7 @@ function FootnoteBlock({ children }: { children: React.ReactNode }) {
   );
 }
 
-function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void }) {
+function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult, onOpenShipsPriceList }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void; onOpenShipsPriceList?: () => void }) {
   const isPopulated = inhabitants.populated !== false;
 
   if (!isPopulated) {
@@ -874,7 +883,21 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
 
       {/* Ships in the Area (FR-030) */}
       <div className="card space-y-4 md:col-span-2">
-        <h3 className="text-lg font-semibold">Ships in the Area</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Ships in the Area</h3>
+          <button
+            onClick={onOpenShipsPriceList}
+            disabled={!onOpenShipsPriceList}
+            className="text-xs px-3 py-1.5 rounded border transition-colors hover:bg-white/5 disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--bg-primary)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            Open Price List
+          </button>
+        </div>
         <button
           onClick={handleGenerateShips}
           className="text-xs px-3 py-1.5 rounded border transition-colors"
@@ -947,7 +970,6 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
           <CultureTraitList traits={inhabitants.cultureTraits} />
         </div>
       </div>
-
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
 import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
 import { BUILT_IN_PRESETS, MNEME_PRESET, getBoatYears } from '../lib/economicPresets';
+import { ShipsPriceList } from './ShipsPriceList';
 
 // Import generator for batch export
 import { generateStarSystem } from '../lib/generator';
@@ -66,6 +67,7 @@ export function GeneratorDashboard({
       return [];
     }
   });
+  const [showShipsPriceList, setShowShipsPriceList] = useState(false);
 
   const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
   const isKnownPreset = allPresets.some((p) => p.id === activePreset.id);
@@ -298,9 +300,18 @@ export function GeneratorDashboard({
                   at TL {activePreset.baseTL}
                 </span>
               </div>
-              <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
-                Editing presets is available in <strong>Settings</strong>.
-              </p>
+              <div className="flex items-center gap-3 text-xs mt-2">
+                <span style={{ color: 'var(--text-secondary)' }}>
+                  Editing presets is available in <strong>Settings</strong>.
+                </span>
+                <button
+                  onClick={() => setShowShipsPriceList(true)}
+                  className="underline hover:text-[var(--accent-red)] transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  View Ships Price List
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -395,6 +406,13 @@ export function GeneratorDashboard({
         <FeatureCard title="World Creation"   description="Diverse worlds with realistic gravity, atmosphere, temperature, hazards, and habitability scoring." />
         <FeatureCard title="Inhabitants"      description="Natural or habitat-based populations, governments, cultures, and starport infrastructure." />
       </div>
+
+      {showShipsPriceList && (
+        <ShipsPriceList
+          preset={activePreset}
+          onClose={() => setShowShipsPriceList(false)}
+        />
+      )}
     </div>
   );
 }
