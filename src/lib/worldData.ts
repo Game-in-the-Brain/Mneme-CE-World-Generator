@@ -364,13 +364,20 @@ export function calculatePopulation(envHab: number, tl: number, roll: number): n
 // Wealth Table
 // =====================
 
-export function getWealth(roll: number, resources: ResourceLevel): WealthLevel {
+export function getWealth(roll: number, resources: ResourceLevel): WealthLevel;
+export function getWealth(roll: undefined, resources: ResourceLevel, weights?: TableWeights): WealthLevel;
+export function getWealth(roll: number | undefined, resources: ResourceLevel, weights?: TableWeights): WealthLevel {
+  const r = roll ?? (weights ? rollWeighted2D6(weights).value : (() => {
+    const v = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+    return v;
+  })());
+
   let modifier = 0;
   if (resources === 'Abundant') modifier = 1;
   if (resources === 'Inexhaustible') modifier = 2;
-  
-  const adjustedRoll = roll + modifier;
-  
+
+  const adjustedRoll = r + modifier;
+
   if (adjustedRoll <= 8) return 'Average';
   if (adjustedRoll <= 10) return 'Better-off';
   if (adjustedRoll === 11) return 'Prosperous';

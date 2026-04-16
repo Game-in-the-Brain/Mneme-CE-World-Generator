@@ -239,6 +239,11 @@ export interface TLProductivityPreset {
   soc7IncomeByTL?: Record<number, number>;
   /** Derived: years for SOC 7 to buy the 10DT Boat at baseTL */
   boatYears?: number;
+  /** Roll-profile weights bundled with the preset (v1.3.106) */
+  wealthWeights?: TableWeights;
+  developmentWeights?: TableWeights;
+  powerWeights?: TableWeights;
+  govWeights?: TableWeights;
 }
 
 export interface TableWeights {
@@ -254,6 +259,7 @@ export interface GeneratorOptions {
   developmentWeights?: TableWeights;
   powerWeights?: TableWeights;
   govWeights?: TableWeights;
+  wealthWeights?: TableWeights;
   /** FR-033: optional goal-loop targets */
   goalStarportMin?: StarportClass;
   goalMinPopulation?: number;

@@ -22,6 +22,7 @@ import {
   DEFAULT_DEVELOPMENT_WEIGHTS,
   DEFAULT_POWER_WEIGHTS,
   DEFAULT_GOV_WEIGHTS,
+  MNEME_WEALTH_WEIGHTS,
   DEMOCRATIC_POWER_WEIGHTS,
   STABLE_POWER_WEIGHTS,
 } from '../lib/economicPresets';
@@ -89,11 +90,12 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
   const [devWeights, setDevWeights] = useState(generatorOptions.developmentWeights || DEFAULT_DEVELOPMENT_WEIGHTS);
   const [powerWeights, setPowerWeights] = useState(generatorOptions.powerWeights || DEFAULT_POWER_WEIGHTS);
   const [govWeights, setGovWeights] = useState(generatorOptions.govWeights || DEFAULT_GOV_WEIGHTS);
+  const [wealthWeights, setWealthWeights] = useState(generatorOptions.wealthWeights || MNEME_WEALTH_WEIGHTS);
 
   useEffect(() => {
     const current = loadGeneratorOptions();
-    saveGeneratorOptions({ ...current, developmentWeights: devWeights, powerWeights, govWeights });
-  }, [devWeights, powerWeights, govWeights]);
+    saveGeneratorOptions({ ...current, developmentWeights: devWeights, powerWeights, govWeights, wealthWeights });
+  }, [devWeights, powerWeights, govWeights, wealthWeights]);
 
   // Persist active preset to generator options whenever it changes
   useEffect(() => {
@@ -737,7 +739,19 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
           Adjust the probability distributions used for 2D6 table lookups. These affect how common or rare each outcome is during world generation.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Wealth</label>
+            <select
+              value={arraysEqual(wealthWeights.dice, NATURAL_2D6_WEIGHTS.dice) ? 'natural' : 'flat'}
+              onChange={(e) => setWealthWeights(e.target.value === 'natural' ? NATURAL_2D6_WEIGHTS : FLAT_WEIGHTS)}
+              className="w-full rounded px-3 py-2 text-sm border bg-[#141419] border-white/10"
+            >
+              <option value="natural">Natural 2D6 — bell curve</option>
+              <option value="flat">Flat — uniform</option>
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs mb-1 font-medium text-[#9e9e9e]">Development</label>
             <select

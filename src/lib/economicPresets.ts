@@ -25,34 +25,6 @@ export const MNEME_RATIOS: Record<number, number> = {
 };
 
 // =====================
-// Built-in Presets
-// =====================
-
-/** Exact Mneme default — reproduces legacy GDP_PER_DAY_BY_TL behavior */
-export const MNEME_PRESET: TLProductivityPreset = {
-  id: 'mneme',
-  name: 'Mneme',
-  description: 'Compounding productivity growth per TL. High automation, post-scarcity-adjacent economics.',
-  baseIncome: 45_199, // TL 9 SOC 7 monthly income (legacy 1,486 Cr/day × 365 / 12)
-  baseTL: 9,
-  curve: 'mneme',
-  boatYears: 10.1, // derived: 5,480,400 / (45,199 × 12) ≈ 10.1
-};
-
-/** CE / Traveller stagnant preset — flat 2,000 Cr/month SOC 7 at every TL */
-export const CE_PRESET: TLProductivityPreset = {
-  id: 'ce',
-  name: 'CE / Traveller',
-  description: 'Flat income across all TLs. Human-labour-dominant, low-compound stagnation model.',
-  baseIncome: 2_000, // TL 9 SOC 7 monthly income
-  baseTL: 9,
-  curve: 'flat',
-  boatYears: 228.35, // derived: 5,480,400 / (2,000 × 12) = 228.35
-};
-
-export const BUILT_IN_PRESETS: TLProductivityPreset[] = [MNEME_PRESET, CE_PRESET];
-
-// =====================
 // Helpers
 // =====================
 
@@ -181,6 +153,107 @@ export const DEMOCRATIC_POWER_WEIGHTS: TableWeights = {
 export const STABLE_POWER_WEIGHTS: TableWeights = {
   dice: [1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 3],
 };
+
+// =====================
+// Roll Profile Weights — Economic Assumptions Customizations (v1.3.106)
+// =====================
+
+/** Mneme Default roll profiles */
+export const MNEME_WEALTH_WEIGHTS: TableWeights = {
+  // Average: 2-8, Better-off: 9-10, Prosperous: 11, Affluent: 12
+  dice: [4, 4, 4, 4, 4, 4, 4, 4, 4, 2, 2],
+};
+export const MNEME_DEV_WEIGHTS: TableWeights = {
+  // UnderDev: 2-7, Developing: 8, Mature: 9, Developed: 10, WellDev: 11, VeryDev: 12
+  dice: [7, 7, 7, 7, 7, 7, 10, 10, 10, 4, 4],
+};
+export const MNEME_POWER_WEIGHTS: TableWeights = {
+  // Anarchy: 2-7, Confederation: 8-9, Federation: 10-11, Unitary: 12
+  dice: [7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 6],
+};
+export const MNEME_GOV_WEIGHTS: TableWeights = {
+  // Aristocracy: 2-5, Ideocracy: 6-7, Kratocracy: 8-9, Democracy: 10-11, Meritocracy: 12
+  dice: [15, 15, 15, 15, 16, 16, 16, 16, 16, 16, 4],
+};
+
+/** CE / Traveller roll profiles */
+export const CE_WEALTH_WEIGHTS: TableWeights = {
+  dice: [8, 8, 8, 8, 8, 8, 8, 49, 49, 70, 56],
+};
+export const CE_DEV_WEIGHTS: TableWeights = {
+  dice: [1, 1, 1, 1, 1, 1, 8, 20, 20, 18, 8],
+};
+export const CE_POWER_WEIGHTS: TableWeights = {
+  dice: [2, 2, 2, 2, 2, 2, 12, 12, 27, 27, 30],
+};
+export const CE_GOV_WEIGHTS: TableWeights = {
+  dice: [3, 3, 3, 3, 10, 10, 14, 14, 40, 40, 20],
+};
+
+/** Stagnant / Uniform roll profiles */
+export const STAGNANT_WEALTH_WEIGHTS: TableWeights = {
+  dice: [12, 12, 12, 12, 12, 12, 12, 70, 70, 49, 7],
+};
+export const STAGNANT_DEV_WEIGHTS: TableWeights = {
+  dice: [1, 1, 1, 1, 1, 1, 36, 96, 84, 18, 0],
+};
+export const STAGNANT_POWER_WEIGHTS: TableWeights = {
+  dice: [1, 1, 1, 1, 1, 1, 24, 24, 27, 27, 12],
+};
+export const STAGNANT_GOV_WEIGHTS: TableWeights = {
+  dice: [5, 5, 5, 5, 20, 20, 20, 20, 26, 26, 8],
+};
+
+// =====================
+// Built-in Presets
+// =====================
+
+/** Exact Mneme default — reproduces legacy GDP_PER_DAY_BY_TL behavior */
+export const MNEME_PRESET: TLProductivityPreset = {
+  id: 'mneme',
+  name: 'Mneme',
+  description: 'Compounding productivity growth per TL. High automation, post-scarcity-adjacent economics.',
+  baseIncome: 45_199, // TL 9 SOC 7 monthly income (legacy 1,486 Cr/day × 365 / 12)
+  baseTL: 9,
+  curve: 'mneme',
+  boatYears: 10.1, // derived: 5,480,400 / (45,199 × 12) ≈ 10.1
+  wealthWeights: MNEME_WEALTH_WEIGHTS,
+  developmentWeights: MNEME_DEV_WEIGHTS,
+  powerWeights: MNEME_POWER_WEIGHTS,
+  govWeights: MNEME_GOV_WEIGHTS,
+};
+
+/** CE / Traveller stagnant preset — flat 2,000 Cr/month SOC 7 at every TL */
+export const CE_PRESET: TLProductivityPreset = {
+  id: 'ce',
+  name: 'CE / Traveller',
+  description: 'Flat income across all TLs. Human-labour-dominant, low-compound stagnation model.',
+  baseIncome: 2_000, // TL 9 SOC 7 monthly income
+  baseTL: 9,
+  curve: 'flat',
+  boatYears: 228.35, // derived: 5,480,400 / (2,000 × 12) = 228.35
+  wealthWeights: CE_WEALTH_WEIGHTS,
+  developmentWeights: CE_DEV_WEIGHTS,
+  powerWeights: CE_POWER_WEIGHTS,
+  govWeights: CE_GOV_WEIGHTS,
+};
+
+/** Stagnant / Uniform preset — tight clustering around median outcomes, very few extremes */
+export const STAGNANT_PRESET: TLProductivityPreset = {
+  id: 'stagnant',
+  name: 'Stagnant',
+  description: 'Flat income with tightly clustered societal outcomes. Bureaucratic equilibrium, minimal variance.',
+  baseIncome: 2_000,
+  baseTL: 9,
+  curve: 'flat',
+  boatYears: 228.35,
+  wealthWeights: STAGNANT_WEALTH_WEIGHTS,
+  developmentWeights: STAGNANT_DEV_WEIGHTS,
+  powerWeights: STAGNANT_POWER_WEIGHTS,
+  govWeights: STAGNANT_GOV_WEIGHTS,
+};
+
+export const BUILT_IN_PRESETS: TLProductivityPreset[] = [MNEME_PRESET, CE_PRESET, STAGNANT_PRESET];
 
 // =====================
 // Import / Export

@@ -4,7 +4,7 @@ import type {
   StellarClass, StellarGrade, Zone, BodyType, GasWorldClass, LesserEarthType, ZoneBoundaries,
   WorldType, GeneratorOptions
 } from '../types';
-import { getGdpPerDayFromPreset, MNEME_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS } from './economicPresets';
+import { getGdpPerDayFromPreset, MNEME_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS, MNEME_WEALTH_WEIGHTS } from './economicPresets';
 import { roll5D6, roll2D6, roll3D6, rollKeep, rollD6 } from './dice';
 import {
   getClassFromRoll, getGradeFromRoll, getStellarMass, getStellarLuminosity,
@@ -36,9 +36,10 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     mainWorldType:           options?.mainWorldType           ?? 'random',
     populated:               options?.populated               ?? true,
     tlProductivityPreset:    options?.tlProductivityPreset    ?? MNEME_PRESET,
-    developmentWeights:      options?.developmentWeights      ?? DEFAULT_DEVELOPMENT_WEIGHTS,
-    powerWeights:            options?.powerWeights            ?? DEFAULT_POWER_WEIGHTS,
-    govWeights:              options?.govWeights              ?? DEFAULT_GOV_WEIGHTS,
+    developmentWeights:      options?.developmentWeights      ?? options?.tlProductivityPreset?.developmentWeights ?? DEFAULT_DEVELOPMENT_WEIGHTS,
+    powerWeights:            options?.powerWeights            ?? options?.tlProductivityPreset?.powerWeights ?? DEFAULT_POWER_WEIGHTS,
+    govWeights:              options?.govWeights              ?? options?.tlProductivityPreset?.govWeights ?? DEFAULT_GOV_WEIGHTS,
+    wealthWeights:           options?.wealthWeights           ?? options?.tlProductivityPreset?.wealthWeights ?? MNEME_WEALTH_WEIGHTS,
   };
 
   const id = uuidv4();
@@ -372,8 +373,7 @@ function generateInhabitants(
     population = calculatePopulation(envHab, techLevel, popRoll);
   }
 
-  const wealthRoll = roll2D6().value;
-  const wealth = getWealth(wealthRoll, mainWorld.biochemicalResources);
+  const wealth = getWealth(undefined, mainWorld.biochemicalResources, opts.wealthWeights);
 
   const powerStructure = getPowerStructure(undefined, opts.powerWeights);
 
