@@ -2231,18 +2231,23 @@ Become **self-directed by MTL 16**, capable of **jumping between star systems**.
 
 ### QA-045
 
-**Title:** Megastructure — Jovian Hammers (MTL 12 gas-giant skimming industry)  
+**Title:** Megastructure — Jovian Hammers and Forges (MTL 12 gas-giant skimming industry)  
 **Area:** Lore — Megastructures  
 **Priority:** 🟢 Lore  
 **Status:** ✅ Documented  
-**Datetime:** 260416
+**Datetime:** 260416 | Updated: 2026-04-16
 
 **Description**  
 **MTL 12** industrial megastructures built from carbon nanotubes — the same core material used in space elevators and Great Serpents. Jovian Hammers function like sky-hooks or spinning bolas in orbit around gas giants (e.g. Jupiter, Saturn). They make deep gouging or skimming passes through the upper atmosphere to harvest materials that can only be produced under gas-giant conditions.
 
+**Scale Context**
+- **Megastructures in the millions of tons** are achievable by **TL 9**.
+- **Gigatons** (billions of tons) become the standard civilisational output as automation compounds. For reference, Earth's concrete production is measured in gigatons per year, and carbon generated per year is roughly **10 gigatons**.
+- **Terratons** (trillions of tons) mark the next order of magnitude. Atmospheric carbon in 2026 is approximately **0.8 Terratons**.
+
 **Evolution by Tech Level**
 - **TL 13:** Hammers can skim **Brown Dwarf Stars**, accessing even denser exotic atmospheres.
-- **Higher TLs:** The simple bolas design gives way to **megaton Celestials** (called **Titans**) that create a magnetic runway and catch system. This launches Hammers into **hotter gas giants** or **cooler stars**, and eventually into more intense stellar environments.
+- **Higher TLs:** The simple bolas design gives way to **Titans** — megaton Celestials arranged as a **ring orbiting a Hot Giant or a Cool Brown Dwarf**. These rings create a magnetic runway and catch system that launches Hammers into hotter gas giants, cooler stars, and eventually into more intense stellar environments.
 - **Exotic specialisation:** As humanity spreads interstellar, Jovian Hammers and their supporting **Forges** diversify. Crystallisation processes and quantum properties unique to gas-giant pressures become industrial staples.
 
 **Role**  
@@ -2724,7 +2729,7 @@ These structures are necessary in the ever-compounding growth of technology and 
 - **QA-038 — Great Serpents** (formerly Bakunawa Coil): MTL 12 antimatter rings built around gas-giant radiation belts.
 - **QA-039 — Celestials**: MTL 13 self-directed solar swarms that harvest atmospheres and concentrate light for terraforming.
 - **QA-040 — Great Trees**: MTL 13 fixed space-elevator megastructures capable of interstellar travel by MTL 16.
-- **QA-045 — Jovian Hammers**: MTL 12 gas-giant skimming industry that extracts raw bulk materials for orbital infrastructure.
+- **QA-045 — Jovian Hammers and Forges**: MTL 12 gas-giant skimming industry that extracts raw bulk materials for orbital infrastructure.
 
 **Design Note:**  
 The megastructure cluster forms the technological backbone of the Mneme setting. In a high-compound economy, these projects are not optional luxuries — they are the minimum infrastructure required to prevent stagnation and maintain upward trajectory.
