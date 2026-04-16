@@ -41,7 +41,9 @@ src/
 ├── types/index.ts          # ALL TypeScript interfaces — read this first
 ├── lib/
 │   ├── generator.ts        # Core generation pipeline — ENTRY POINT
-│   ├── worldData.ts        # Tables: gravity, atmosphere, TL, etc.
+│   ├── worldData.ts        # Tables: gravity, atmosphere, TL, PSS, GDP — see §6.5
+│   ├── economicPresets.ts  # TL productivity presets (Mneme / CE / Custom) — see §6.5
+│   ├── shipsInArea.ts      # Ships in the Area generation — see §6.5
 │   ├── stellarData.ts      # Star mass, luminosity, zone calculations
 │   ├── physicalProperties.ts # Density → radius/gravity/escape velocity
 │   ├── dice.ts             # Roll functions (2D6, 3D6, keep/explode)
@@ -166,12 +168,13 @@ Entry: `generateStarSystem(options?)` in `src/lib/generator.ts`
    │   └── Fork: if (envHab + TLmod) ≤ 0 → MVT/GVT habitat table instead
    ├── Wealth, Power Structure, Development, Source of Power (2D6 tables)
    ├── Governance DM = f(Development, Wealth)
-   ├── Starport (PSS v1.1 — QA-019):
-   │   ├── annualTrade = population × GDP/day[TL] × 365 × tradeFraction[Dev] × wealthMult[Wealth]
-   │   ├── PSS = floor(log10(annualTrade)) − 10 → rawClass
-   │   ├── tlCap: TL 7–9→C max, TL 10–11→B max, TL 12+→A
+   ├── Starport (PSS v1.1 — QA-019):  ← see §6.5 for full economic breakdown
+   │   ├── gdpPerDay = getGdpPerDayFromPreset(TL, preset) — preset-aware (Mneme/CE/Custom)
+   │   ├── annualTrade = population × gdpPerDay × 365 × tradeFraction[Dev] × wealthMult[Wealth]
+   │   ├── PSS = floor(log10(annualTrade)) − 10 → rawClass (pssToClass)
+   │   ├── tlCap = getTLCapClass(TL) — TL ≤3→X, 4–5→E, 6–7→D, 8–9→C, 10–11→B, ≥12→A
    │   ├── finalClass = min(rawClass, tlCap)
-   │   └── weeklyActivity = (annualTrade ÷ 364) × 3D6
+   │   └── weeklyActivity = (annualTrade ÷ 52) × 3D6  ← NOTE: code uses /52, old JSDoc said /364 (stale)
    └── Travel Zone = f(Hazard, Intensity)
 
 6. generatePlanetarySystem(star, zones)
@@ -239,6 +242,130 @@ Rule: If Gas III in Infernal OR Gas IV/V in Hot:
 - Phone is separate toggle — click again returns to previous desktop theme
 - Persisted to localStorage key: `mneme_theme`
 - CSS: `[data-theme="phone"]` triggers single-column layout
+
+---
+
+### 6.5 Economic System — Implementation Reference
+
+Four interdependent calculations. Read this before touching any starport, income, or ships code.
+
+#### PSS (Port Size Score)  `src/lib/worldData.ts:551–579`
+
+```
+gdpPerDay   = getGdpPerDayFromPreset(TL, preset)   ← preset-aware (see GDP below)
+annualTrade = population × gdpPerDay × 365 × getTradeFraction(dev) × getWealthTradeMultiplier(wealth)
+PSS         = floor(log10(max(1, annualTrade))) − 10
+rawClass    = pssToClass(PSS)
+tlCap       = getTLCapClass(TL)
+finalClass  = min(rawClass, tlCap)
+```
+
+PSS → Class:
+
+| PSS  | Class |
+|------|-------|
+| < 4  | X     |
+| 4–5  | E     |
+| 6–7  | D     |
+| 8–9  | C     |
+| 10–11| B     |
+| ≥ 12 | A     |
+
+TL Capability Cap:
+
+| TL    | Max Class |
+|-------|-----------|
+| ≤ 3   | X         |
+| 4–5   | E         |
+| 6–7   | D         |
+| 8–9   | C         |
+| 10–11 | B         |
+| ≥ 12  | A         |
+
+**Known conflict:** The JSDoc comment on the weekly trade line says `annualTrade ÷ 364 × weeklyRoll`, but the live code uses `/ 52`. The code is correct (weeks, not days); the comment is stale from a pre-QA-027 edit. Do not revert to `/364`.
+
+---
+
+#### GDP Per Day  `src/lib/worldData.ts:477–494` + `src/lib/economicPresets.ts:76–80`
+
+Active generation always routes through `getGdpPerDayFromPreset(tl, preset)`:
+
+```typescript
+// economicPresets.ts
+export function getGdpPerDayFromPreset(tl: number, preset: TLProductivityPreset): number {
+  const monthly = getSoc7MonthlyIncome(tl, preset);
+  return (monthly * 12) / DAYS_PER_YEAR;
+}
+```
+
+Behaviour by preset:
+
+| Preset  | Curve  | TL 9 GDP/day | TL 12 GDP/day | Notes |
+|---------|--------|-------------|--------------|-------|
+| Mneme   | Compounding (×3.3 per TL) | ~1 486 Cr | ~210 000 Cr | Default |
+| CE/Traveller | Flat | ~66 Cr (all TLs) | ~66 Cr | `baseIncome ≈ 2 000 Cr/mo` |
+| Custom  | User multipliers | Varies | Varies | FR-032 |
+
+The legacy `GDP_PER_DAY_BY_TL` table in `worldData.ts` still exists as a hardcoded fallback if no preset is supplied. All live calls pass a preset; the table is effectively dead code.
+
+---
+
+#### Annual Trade  `src/lib/worldData.ts:568`
+
+```
+annualTrade = population × gdpPerDay × 365 × TradeFraction[dev] × WealthMultiplier[wealth]
+```
+
+| Dev Level      | Trade Fraction |
+|----------------|---------------|
+| UnderDeveloped | 5%            |
+| Developing     | 10%           |
+| Mature         | 15%           |
+| Developed      | 20%           |
+| Well Developed | 25%           |
+| Very Developed | 30%           |
+
+| Wealth     | Multiplier |
+|------------|-----------|
+| Average    | 1.0       |
+| Better-off | 1.2       |
+| Prosperous | 1.5       |
+| Affluent   | 2.0       |
+
+**Preset impact:** In Mneme, GDP/day compounds with TL — a TL 12 world at the same population as TL 9 generates ~140× more annual trade, pushing it two or three starport classes higher. In CE/Traveller the curve is flat; population and dev/wealth drive almost all variance.
+
+---
+
+#### Ships in the Area  `src/lib/shipsInArea.ts:85–123`
+
+```
+rawBudget          = weeklyTradeValue × (1D6 × 0.1)
+boatYears          = preset.boatYears ?? derivedFromBaseIncome
+scarcityMultiplier = max(1, boatYears / MNEME_PRESET.boatYears)   ← reference is ~10.1
+effectiveBudget    = rawBudget / scarcityMultiplier
+categoryBudgets    = effectiveBudget × DISTRIBUTION_TABLE[1D6]   (small / civilian / warship %)
+```
+
+Ships are then selected greedily from pool by `visiting_cost_cr` until the category budget is exhausted (safety cap 1 000).
+
+**Hard gates (QA-030):**
+- Class X port → zero ships (returns empty arrays)
+- Class E port → budget capped at 10%, small-craft-only, max 5 ships
+These gates are applied upstream in `SystemViewer.tsx` before `generateShipsInTheArea` is called.
+
+**Known design tension — QA-052 (queued):**  
+The scarcity multiplier deflates the *budget* in Credits using a Boat Years ratio, but ship costs inside the pool remain raw Credits. This is internally consistent as a "how many ships can this port afford?" model, but it couples ship availability to the income-years concept rather than native Credits throughout. The proposed fix (QA-052) is to replace the Boat Years ratio with a Credit-native multiplier (`baseIncome_Mneme / baseIncome_preset`) so the entire pipeline operates in the same unit.
+
+---
+
+#### Economic System Summary
+
+| Calculation   | Status | Key Dependency |
+|---------------|--------|----------------|
+| PSS           | ✅ Correct | `getGdpPerDayFromPreset()` via preset |
+| GDP Per Day   | ✅ Correct | `economicPresets.ts` — Mneme compounding vs CE flat |
+| Annual Trade  | ✅ Correct | GDP/day × population × dev/wealth multipliers |
+| Ships in Area | ⚠️ Working, design tension | Boat Years scarcity on budget; QA-052 queued |
 
 ---
 
@@ -330,7 +457,13 @@ Generate a G5 star with Average atmo/temp, no hazard, Abundant biochem, TL 14:
 2. **Habitability vs Population vs Starport**: Three separate TL scalings:
    - **Displayed habitability**: uses `TL−7` (clamped 0–9) — for world descriptors only
    - **Population**: uses `TL_POP_MOD` lookup table (TL7→+5 … TL16→+13). `envHab` = habitability minus TL display mod. MVT/GVT fires when `envHab + TLmod ≤ 0`.
-   - **Starport**: uses GDP/person/day[TL] for economic scale, `getTLCapClass(TL)` as capability ceiling. No Hab or TL-7 involved. See QA-019.
+   - **Starport**: uses `getGdpPerDayFromPreset(TL, preset)` for economic scale, `getTLCapClass(TL)` as capability ceiling. No Hab or TL-7 involved. See QA-019 and §6.5.
+
+7. **GDP/day legacy table vs preset path**: `GDP_PER_DAY_BY_TL` in `worldData.ts` still exists but is dead code — all live generation uses `getGdpPerDayFromPreset()`. Do not extend the legacy table; extend the preset system.
+
+8. **Stale JSDoc in `worldData.ts`**: The comment on the weekly trade line says `annualTrade ÷ 364 × weeklyRoll`. The actual code uses `/ 52` (weeks). The comment is wrong; the code is right. Do not "fix" the code to match the comment.
+
+9. **Ships scarcity unit mismatch (QA-052)**: `generateShipsInTheArea` deflates the budget using a Boat Years ratio, but `visiting_cost_cr` in the ship pool is raw Credits. These are different economic units. The scarcity works numerically but the conceptual mismatch will matter when CE and Mneme worlds are compared side-by-side. See §6.5 Ships section.
 
 3. **Stellar class modifiers**: REF-007 v1.1 changed these:
    - F: Adv+2 (was +1)
@@ -378,8 +511,8 @@ npm run preview
 
 ---
 
-**Last Updated:** 2026-04-11  
-**Version:** 1.3.1
+**Last Updated:** 2026-04-16  
+**Version:** 1.4.0
 
 ## 13. Batch Export & Statistical Analysis (QA-012, QA-016)
 
@@ -395,11 +528,16 @@ DEV-only feature for statistical validation:
 - Tracks: mean habitability, hot Jupiter frequency
 - JSON format with metadata and summary statistics
 
-## 15. Open Issues (2026-04-11)
+## 15. Open Issues (2026-04-16)
 
 | Issue | Location | Description |
 |-------|----------|-------------|
-| QA-018 / FR-028 | `GeneratorDashboard.tsx` | Generator options (starClass, starGrade, mainWorldType, populated) reset on every navigation. Fix: persist to `mneme_generator_options` in localStorage; load on mount with validation fallback. |
+| QA-027 | `worldData.ts`, `SystemViewer.tsx` | Income notation ambiguous — "B" = billion unclear, weekly vs annual figures don't reconcile. Root cause: Mneme compounding makes CE-scale populations produce CE-unfamiliar numbers. Blocked on FR-032 (income redesign). |
+| QA-028 | `SystemViewer.tsx` | Wealth panel contradicts World Development description. Same root cause as QA-027. |
+| QA-030 | `shipsInArea.ts`, `SystemViewer.tsx` | Ships at X/E-class starports too numerous. Hard gates exist but may need tightening. |
+| **QA-052** | `shipsInArea.ts` | Ships scarcity uses Boat Years ratio to deflate Credit budget, but ship pool costs are raw Credits. Proposed fix: replace `boatYears/mnemeRef` ratio with `baseIncome_Mneme/baseIncome_preset` Credit-native multiplier. See §6.5. |
+| **Stale JSDoc** | `worldData.ts` ~line 574 | Comment says `annualTrade ÷ 364 × weeklyRoll`; code uses `/ 52`. Comment is wrong. Fix: update JSDoc only — do not change code. |
+| FR-032 | `economicPresets.ts` | Income system redesign: avg income per TL + ships-as-income-years UI. Architectural prerequisite for resolving QA-027/028/030. Spec in `260416-fr032-fr033-spec.md`. |
 
 ---
 

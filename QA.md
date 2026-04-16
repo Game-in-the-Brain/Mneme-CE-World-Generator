@@ -59,6 +59,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-053** | 📋 Queued | Recent Items should display what Economic Assumptions were used |
 | **QA-054** | 📋 Queued | Terraforming Terraton Structures — megastructure lore umbrella |
 | **QA-055** | ✅ Fixed | Table Weights UI: per-outcome editable rows with live bars and percentages |
+| **QA-056** | 📋 Queued | GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7 |
 
 
 ### Key Files
@@ -199,6 +200,7 @@ Use the test harness in the map repo: `npm run dev` in `2d-star-system-map/`, th
 | [QA-053](#qa-053) | UI — Recent Systems | Recent Items should display what Economic Assumptions were used | 🟡 Low | 📋 Queued |
 | [QA-054](#qa-054) | Lore — Megastructures | Terraforming Terraton Structures | 🟢 Lore | 📋 Queued |
 | [QA-055](#qa-055) | UI — Settings | Table Weights UI: per-outcome editable rows | 🔴 High | ✅ Fixed |
+| [QA-056](#qa-056) | Engine — Economy | GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7 | 🔴 High | 📋 Queued |
 
 ---
 
@@ -2787,4 +2789,111 @@ The Table Weights panel in `Settings.tsx` rendered four coarse dropdown selects 
 
 **Reference**
 See `260416-04 Economic Assumptions Customizations Custom tables.md` for the original spec and comparison matrices.
+
+
+---
+
+---
+
+### QA-056
+
+**Title:** GDP/day should use average SOC (Development + Wealth) instead of hardcoded SOC 7  
+**Area:** Engine — Economy  
+**Priority:** 🔴 High  
+**Status:** 📋 Queued  
+**Datetime:** 2026-04-16  
+
+**Problem Statement**  
+`getGdpPerDayFromPreset(tl, preset)` always anchors to **SOC 7 income** when computing per-capita GDP. Development and Wealth do affect `annualTrade` via `tradeFraction[dev]` and `wealthMultiplier[wealth]`, but those are rough proxies — they don't actually shift the **per-capita income baseline**, which is what Development and Wealth are supposed to represent mechanically.
+
+Per the rulebook:
+- **Development** sets the **base average SOC** (UnderDeveloped=3–4, Developing=5, Mature=6, Developed=8, Well Developed=9, Very Developed=10)
+- **Wealth** adds a **SOC bonus** on top (+0 to +3)
+
+So the GDP/day used in `annualTrade` should be based on `avgSoc = developmentSoc + wealthBonus`, not hardcoded to SOC 7.
+
+**Root Cause**  
+- `getGdpPerDayFromPreset(tl, preset)` calls `getSoc7MonthlyIncome(tl, preset)` — it always uses SOC 7 as the anchor.
+- The SOC & Income Table shows income scales with SOC level. Development determines the population's average SOC; Wealth raises it further.
+- Neither Development nor Wealth is currently wired into the GDP/day calculation.
+
+**Proposed Fix**
+
+**Step 1 — Add SOC mapping tables**
+
+```typescript
+export const DEVELOPMENT_AVG_SOC: Record<DevelopmentLevel, number> = {
+  'UnderDeveloped': 3.5,
+  'Developing':     5,
+  'Mature':         6,
+  'Developed':      8,
+  'Well Developed': 9,
+  'Very Developed': 10,
+};
+
+export const WEALTH_SOC_BONUS: Record<WealthLevel, number> = {
+  'Average':    0,
+  'Better-off': 1,
+  'Prosperous': 2,
+  'Affluent':   3,
+};
+```
+
+**Step 2 — Generalize `getSocMonthlyIncome` to accept any SOC**
+
+```typescript
+export const SOC_MONTHLY_INCOME_MC: Record<number, number> = {
+  0:  0,      1:  0.05,  2:  0.10,  3:  0.20,
+  4:  0.50,   5:  1.00,  6:  2.00,  7:  5.00,
+  8:  10.00,  9:  20.00, 10: 50.00, 11: 100.00,
+  12: 200.00,
+};
+
+export function getSocIncomeRatio(soc: number): number {
+  return (SOC_MONTHLY_INCOME_MC[soc] ?? 0) / SOC_MONTHLY_INCOME_MC[7];
+}
+
+export function getSocMonthlyIncome(soc: number, tl: number, preset: TLProductivityPreset): number {
+  return getSoc7MonthlyIncome(tl, preset) * getSocIncomeRatio(soc);
+}
+```
+
+**Step 3 — Add `getGdpPerDayForWorld`**
+
+```typescript
+export function getGdpPerDayForWorld(
+  tl: number,
+  development: DevelopmentLevel,
+  wealth: WealthLevel,
+  preset: TLProductivityPreset,
+): number {
+  const baseSoc = DEVELOPMENT_AVG_SOC[development];
+  const socBonus = WEALTH_SOC_BONUS[wealth];
+  const avgSoc = Math.min(12, baseSoc + socBonus);
+  const monthly = getSocMonthlyIncome(avgSoc, tl, preset);
+  return (monthly * 12) / DAYS_PER_YEAR;
+}
+```
+
+**Step 4 — Replace the call in `generator.ts`**
+
+```typescript
+// Before
+const gdpPerDay = getGdpPerDayFromPreset(techLevel, opts.tlProductivityPreset!);
+
+// After
+const gdpPerDay = getGdpPerDayForWorld(techLevel, devResult.level, wealth, opts.tlProductivityPreset!);
+```
+
+**Trade Fraction Question**
+
+With this fix, Development and Wealth are embedded in GDP/day. Two options:
+
+- **Option A (recommended):** Remove `wealthMultiplier[wealth]` from `annualTrade` entirely. Wealth is now fully expressed via SOC income. `tradeFraction[dev]` remains as the external-trade-openness modifier.
+- **Option B:** Keep `wealthMultiplier` as an additional trade-volume amplifier. This means Affluent worlds get a double boost; acceptable only if intentionally documented.
+
+**Files**
+- `src/lib/economicPresets.ts` — new SOC tables and helpers
+- `src/lib/worldData.ts` — update `annualTrade` calculation
+- `src/lib/generator.ts` — switch to `getGdpPerDayForWorld`
 
