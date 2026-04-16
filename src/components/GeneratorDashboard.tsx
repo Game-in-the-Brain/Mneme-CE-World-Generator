@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType } from '../types';
 import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
+import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
 
 // Import generator for batch export
 import { generateStarSystem } from '../lib/generator';
@@ -42,43 +43,15 @@ export function GeneratorDashboard({
   recentSystems,
   onViewSystem,
 }: GeneratorDashboardProps) {
-  const VALID_CLASSES  = new Set(['random','O','B','A','F','G','K','M']);
-  const VALID_GRADES   = new Set(['random','0','1','2','3','4','5','6','7','8','9']);
-  const VALID_TYPES    = new Set(['random','Terrestrial','Dwarf','Habitat']);
+  const defaults = loadGeneratorOptions();
 
+  const [starClass, setStarClass] = useState<StellarClass | 'random'>(defaults.starClass);
+  const [starGrade, setStarGrade] = useState<StellarGrade | 'random'>(defaults.starGrade);
+  const [mainWorldType, setMainWorldType] = useState<WorldType | 'random'>(defaults.mainWorldType);
+  const [populated, setPopulated] = useState<boolean>(defaults.populated);
 
-  const [starClass, setStarClass] = useState<StellarClass | 'random'>(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem('mneme_generator_options') ?? '{}');
-      return VALID_CLASSES.has(s.starClass) ? s.starClass : 'random';
-    } catch { return 'random'; }
-  });
-  const [starGrade, setStarGrade] = useState<StellarGrade | 'random'>(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem('mneme_generator_options') ?? '{}');
-      const v = String(s.starGrade);
-      return VALID_GRADES.has(v) ? (s.starGrade === 'random' ? 'random' : Number(s.starGrade) as StellarGrade) : 'random';
-    } catch { return 'random'; }
-  });
-  const [mainWorldType, setMainWorldType] = useState<WorldType | 'random'>(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem('mneme_generator_options') ?? '{}');
-      return VALID_TYPES.has(s.mainWorldType) ? s.mainWorldType : 'random';
-    } catch { return 'random'; }
-  });
-  const [populated, setPopulated] = useState<boolean>(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem('mneme_generator_options') ?? '{}');
-      return typeof s.populated === 'boolean' ? s.populated : true;
-    } catch { return true; }
-  });
   useEffect(() => {
-    localStorage.setItem('mneme_generator_options', JSON.stringify({
-      starClass,
-      starGrade,
-      mainWorldType,
-      populated,
-    }));
+    saveGeneratorOptions({ starClass, starGrade, mainWorldType, populated });
   }, [starClass, starGrade, mainWorldType, populated]);
 
   function handleGenerate() {

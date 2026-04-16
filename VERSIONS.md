@@ -4,6 +4,16 @@
 
 ---
 
+## v1.3.82 — QA-037 localStorage Backward Compatibility (2026-04-16)
+
+### Fixes
+- **QA-037:** Added `src/lib/optionsStorage.ts` with `loadGeneratorOptions()` and `saveGeneratorOptions()`
+- Centralised parsing, validation, and default-merging for `mneme_generator_options`
+- Refactored `GeneratorDashboard.tsx` to use the new helpers instead of inline localStorage access
+- Ensures old stored objects gracefully merge with new defaults when FR-032 fields arrive
+
+---
+
 ## v1.3.81 — QA-027 Income Notation & Math Fix (2026-04-16)
 
 ### Fixes

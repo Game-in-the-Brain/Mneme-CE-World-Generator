@@ -109,7 +109,7 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | [FR-032](#fr-032) | Feature — Economy | Income system redesign: avg income per TL + ships as income-years | 🟠 Medium | 📋 Proposed |
 | [QA-035](#qa-035) | UI — 2D Map | Main world missing from 2D map — buildSceneGraph never adds it (only marks) | 🔴 High | ✅ Fixed |
 | [QA-036](#qa-036) | UI — Planetary System Tab | Total Planetary Bodies count excludes main world; ships totalBodies also off-by-one | 🟠 Medium | ✅ Fixed |
-| [QA-037](#qa-037) | UI — Settings | localStorage `mneme_generator_options` backward compatibility for new fields | 🟠 Medium | 🔴 Open |
+| [QA-037](#qa-037) | UI — Settings | localStorage `mneme_generator_options` backward compatibility for new fields | 🟠 Medium | ✅ Fixed |
 | [FR-033](#fr-033) | Feature — Generate | Sector Dynamics goal-loop: generate until Starport/Pop/Habitability targets hit | 🟡 Low | 📋 Proposed |
 
 ---
@@ -178,8 +178,8 @@ May be a display/wording issue rather than a calculation bug. Review what each p
 **Title:** localStorage `mneme_generator_options` backward compatibility for new fields  
 **Area:** UI — Settings  
 **Priority:** 🟠 Medium  
-**Status:** 🔴 Open  
-**Datetime:** 260416  
+**Status:** ✅ Fixed  
+**Datetime:** 260416 | Fixed: 260416  
 
 **Problem Statement**  
 `GeneratorDashboard.tsx` and `Settings.tsx` read `mneme_generator_options` from `localStorage`. Older stored objects only contain `starClass`, `starGrade`, `mainWorldType`, and `populated`. When FR-032 adds `tlProductivityPreset`, `developmentWeights`, `powerWeights`, and `govWeights`, naive destructuring or missing-field access will cause runtime errors or `undefined` values propagating into the UI.
@@ -189,16 +189,15 @@ May be a display/wording issue rather than a calculation bug. Review what each p
 - No runtime errors when old users upgrade.
 - New fields must be independently validate-able (e.g. unknown preset ID → fallback to Mneme default).
 
-**Fix Required**
-- Create a central `loadGeneratorOptions()` helper that:
-  1. Reads raw `localStorage` item
-  2. Deep-merges with a `DEFAULT_GENERATOR_OPTIONS` object
-  3. Validates each field (e.g. `VALID_CLASSES.has(opts.starClass)`)
-  4. Returns a fully populated, type-safe `GeneratorOptions`
-- Update `GeneratorDashboard.tsx` and `Settings.tsx` to use this helper.
+**Fixes Applied**
+- Created `src/lib/optionsStorage.ts` with:
+  - `DEFAULT_GENERATOR_OPTIONS`
+  - `loadGeneratorOptions()` — parses, validates, and merges old stored data with defaults
+  - `saveGeneratorOptions()` — centralised persistence helper
+- Refactored `GeneratorDashboard.tsx` to use `loadGeneratorOptions()` and `saveGeneratorOptions()` instead of inline localStorage access.
 
 **Files**  
-`src/lib/optionsStorage.ts` (new), `src/components/GeneratorDashboard.tsx`, `src/components/Settings.tsx`
+`src/lib/optionsStorage.ts` (new), `src/components/GeneratorDashboard.tsx`
 
 ---
 
