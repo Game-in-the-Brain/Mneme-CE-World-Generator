@@ -108,6 +108,11 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             Generated {new Date(system.createdAt).toLocaleString()}
           </p>
+          <p className="text-xs mt-1">
+            <span className="px-2 py-0.5 rounded bg-white/10 text-[var(--text-secondary)]">
+              Economic model: {getEconomicModelLabel(system)}
+            </span>
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -1250,4 +1255,13 @@ function getHazardHabitability(hazard: string, intensity: string): number {
     'Radioactive': -1.5, 'Toxic': -1.5, 'Biohazard': -1, 'Corrosive': -1, 'Polluted': -0.5,
   };
   return (baseMod[hazard] || 0) + (intensityMod[intensity] || 0);
+}
+
+function getEconomicModelLabel(system: StarSystem): string {
+  const preset = system.economicPreset;
+  if (!preset) return 'Legacy / Unknown';
+  if (preset.name) return preset.name;
+  if (preset.id === 'mneme') return 'Mneme';
+  if (preset.id === 'ce') return 'CE / Traveller';
+  return preset.id;
 }
