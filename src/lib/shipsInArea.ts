@@ -1,6 +1,6 @@
 import type { ShipInArea, ShipsInAreaResult, ShipLocation, TLProductivityPreset } from '../types';
 import shipReference from '../../mneme_ship_reference.json';
-import { getBoatYears, MNEME_PRESET } from './economicPresets';
+
 
 interface ShipRef {
   name: string;
@@ -71,6 +71,7 @@ function generatePoolShips(pool: ShipRef[], budget: number, totalBodies: number)
         dt: ship.dt,
         monthlyOperatingCost: ship.monthly_operating_cost_cr,
         purchasePrice: ship.total_cost_cr,
+        visitingCost: ship.visiting_cost_cr,
         location,
         systemPosition,
         trafficPool: ship.traffic_pool,
@@ -85,20 +86,14 @@ function generatePoolShips(pool: ShipRef[], budget: number, totalBodies: number)
 export function generateShipsInTheArea(
   weeklyTradeValue: number,
   totalBodies: number,
-  preset?: TLProductivityPreset
+  _preset?: TLProductivityPreset
 ): ShipsInAreaResult {
   // Step 1: Ships Budget = Weekly Trade Value × (1D6 × 10%)
   const budgetRoll = rollD6();
   const rawBudget = weeklyTradeValue * (budgetRoll * 0.1);
 
-  // Step 1b: Economic scarcity adjustment (v1.3.103 / QA-048)
-  // In CE/Traveller, ships cost many salary-years, so they are treated as proportionally
-  // scarcer capital goods. In Mneme, ships are affordable and traffic is dense.
-  // QA-048: preset.boatYears is now an independent scarcity dial.
-  const boatYears = preset?.boatYears ?? (preset?.baseIncome ? getBoatYears(preset.baseIncome) : MNEME_PRESET.boatYears ?? 10);
-  const mnemeReference = MNEME_PRESET.boatYears ?? 10;
-  const scarcityMultiplier = Math.max(1, boatYears / mnemeReference);
-  const budget = rawBudget / scarcityMultiplier;
+  // QA-058: removed scarcity multiplier — let lower CE trade value drive scarcity naturally
+  const budget = rawBudget;
 
   // Step 2: Category distribution
   const distRoll = rollD6();

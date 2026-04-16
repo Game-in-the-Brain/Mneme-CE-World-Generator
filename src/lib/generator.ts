@@ -4,8 +4,8 @@ import type {
   StellarClass, StellarGrade, Zone, BodyType, GasWorldClass, LesserEarthType, ZoneBoundaries,
   WorldType, GeneratorOptions
 } from '../types';
-import { getGdpPerDayFromPreset, MNEME_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS, MNEME_WEALTH_WEIGHTS } from './economicPresets';
-import { roll5D6, roll2D6, roll3D6, rollKeep, rollD6 } from './dice';
+import { getGdpPerDayForWorld, CE_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS, MNEME_WEALTH_WEIGHTS } from './economicPresets';
+import { roll5D6, roll2D6, roll3D6, rollKeep, rollD6, rollTL } from './dice';
 import {
   getClassFromRoll, getGradeFromRoll, getStellarMass, getStellarLuminosity,
   calculateZoneBoundaries, getCompanionTarget,
@@ -35,7 +35,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     starGrade:               options?.starGrade               ?? 'random',
     mainWorldType:           options?.mainWorldType           ?? 'random',
     populated:               options?.populated               ?? true,
-    tlProductivityPreset:    options?.tlProductivityPreset    ?? MNEME_PRESET,
+    tlProductivityPreset:    options?.tlProductivityPreset    ?? CE_PRESET,
     developmentWeights:      options?.developmentWeights      ?? options?.tlProductivityPreset?.developmentWeights ?? DEFAULT_DEVELOPMENT_WEIGHTS,
     powerWeights:            options?.powerWeights            ?? options?.tlProductivityPreset?.powerWeights ?? DEFAULT_POWER_WEIGHTS,
     govWeights:              options?.govWeights              ?? options?.tlProductivityPreset?.govWeights ?? DEFAULT_GOV_WEIGHTS,
@@ -77,6 +77,9 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     iceWorlds: ices,
     gasWorlds: gases,
     economicPreset: opts.tlProductivityPreset,
+    economicPresetLabel: opts.tlProductivityPreset?.label ?? opts.tlProductivityPreset?.name ?? 'Mneme',
+    economicPresetSnapshot: opts.tlProductivityPreset ? { ...opts.tlProductivityPreset } : undefined,
+    allowShipsAtXPort: opts.allowShipsAtXPort,
   };
 }
 
@@ -270,7 +273,8 @@ function generateMainWorld(
   const bioResult = getBiochemicalResources(bioRoll);
 
   // Generate Tech Level early so it can affect habitability (QA-009 fix)
-  const tlRoll = roll2D6().value;
+  // QA-053: replaced 2D6 with 6D6 keep lowest 4 ÷ 2 for downward-biased TL distribution
+  const tlRoll = rollTL();
   const techLevel = getTechLevel(tlRoll);
 
   // Calculate habitability WITH Tech Level modifier (QA-009 fix)
@@ -388,14 +392,14 @@ function generateInhabitants(
 
   const weeklyRoll = roll3D6().value;
 
-  const gdpPerDay = getGdpPerDayFromPreset(techLevel, opts.tlProductivityPreset!);
+  const gdpPerDay = getGdpPerDayForWorld(techLevel, devResult.level, wealth, opts.tlProductivityPreset!);
 
   // QA-034: depression penalty is always applied after starport calculation
   let foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll, gdpPerDay);
   let starportResult = foundingStarportResult;
 
   if (effectiveTL !== techLevel) {
-    const effectiveGdpPerDay = getGdpPerDayFromPreset(effectiveTL, opts.tlProductivityPreset!);
+    const effectiveGdpPerDay = getGdpPerDayForWorld(effectiveTL, devResult.level, wealth, opts.tlProductivityPreset!);
     starportResult = calculateStarport(population, effectiveTL, wealth, devResult.level, weeklyRoll, effectiveGdpPerDay);
   }
 

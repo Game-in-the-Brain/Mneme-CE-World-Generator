@@ -3,7 +3,7 @@ import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldTyp
 import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
 import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
-import { BUILT_IN_PRESETS, MNEME_PRESET, getBoatYears, BOAT_PRICE_CR } from '../lib/economicPresets';
+import { BUILT_IN_PRESETS, CE_PRESET, getBoatYears, BOAT_PRICE_CR, displayTL } from '../lib/economicPresets';
 import { ShipsPriceList } from './ShipsPriceList';
 
 // Import generator for batch export
@@ -58,7 +58,7 @@ export function GeneratorDashboard({
   const [starGrade, setStarGrade] = useState<StellarGrade | 'random'>(defaults.starGrade);
   const [mainWorldType, setMainWorldType] = useState<WorldType | 'random'>(defaults.mainWorldType);
   const [populated, setPopulated] = useState<boolean>(defaults.populated);
-  const [activePreset, setActivePreset] = useState<TLProductivityPreset>(defaults.tlProductivityPreset || MNEME_PRESET);
+  const [activePreset, setActivePreset] = useState<TLProductivityPreset>(defaults.tlProductivityPreset || CE_PRESET);
   const [customPresets] = useState<TLProductivityPreset[]>(() => {
     try {
       const raw = localStorage.getItem('mneme_custom_presets');
@@ -71,6 +71,7 @@ export function GeneratorDashboard({
   const [goalStarportMin, setGoalStarportMin] = useState<import('../types').StarportClass | ''>(defaults.goalStarportMin || '');
   const [goalMinPopulation, setGoalMinPopulation] = useState<string>(defaults.goalMinPopulation?.toString() || '');
   const [goalHabitable, setGoalHabitable] = useState<boolean>(defaults.goalHabitable || false);
+  const [allowShipsAtXPort, setAllowShipsAtXPort] = useState<boolean>(defaults.allowShipsAtXPort || false);
   const [goalModeOpen, setGoalModeOpen] = useState(false);
 
   const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
@@ -88,6 +89,7 @@ export function GeneratorDashboard({
       goalStarportMin: goalStarportMin || undefined,
       goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
       goalHabitable: goalHabitable || undefined,
+      allowShipsAtXPort: allowShipsAtXPort || undefined,
     });
   }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable]);
 
@@ -113,6 +115,7 @@ export function GeneratorDashboard({
       goalStarportMin: goalStarportMin || undefined,
       goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
       goalHabitable: goalHabitable || undefined,
+      allowShipsAtXPort: allowShipsAtXPort || undefined,
     });
   }
 
@@ -305,6 +308,17 @@ export function GeneratorDashboard({
                     </label>
                   </div>
                 </div>
+                <div className="mt-3">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={allowShipsAtXPort}
+                      onChange={(e) => setAllowShipsAtXPort(e.target.checked)}
+                      className="rounded"
+                    />
+                    Allow ships at X-class ports
+                  </label>
+                </div>
               </div>
             )}
           </div>
@@ -458,8 +472,9 @@ export function GeneratorDashboard({
                     <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                       {system.mainWorld.type} World
                       {system.inhabitants.populated !== false && (
-                        <> | Hab: {system.mainWorld.habitability} | TL: {system.inhabitants.techLevel} | Pop: {formatPopulation(system.inhabitants.population)}</>
+                        <> | Hab: {system.mainWorld.habitability} | {displayTL(system.inhabitants.techLevel, system.economicPresetLabel)} | Pop: {formatPopulation(system.inhabitants.population)}</>
                       )}
+                      {' | '}{system.economicPresetLabel ?? 'Mneme'}
                     </div>
                   </div>
                 </div>
@@ -724,6 +739,7 @@ function DebugBatchExport() {
         count: batchSize,
         version: APP_VERSION,
         description: 'Mneme CE World Generator — batch statistical export (QA-012)',
+        tlRollMethod: '6d6-keep-low4-div2',
         statistics: {
           meanHabitability: Math.round((totalHabitability / batchSize) * 100) / 100,
           hotJupiterSystems: hotJupiterCount,

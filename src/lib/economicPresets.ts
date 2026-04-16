@@ -1,4 +1,4 @@
-import type { TLProductivityPreset, TableWeights } from '../types';
+import type { TLProductivityPreset, TableWeights, DevelopmentLevel, WealthLevel } from '../types';
 
 // =====================
 // Constants
@@ -131,6 +131,50 @@ export function getIncomeYears(shipPriceCr: number, tl: number, preset: TLProduc
 }
 
 // =====================
+// QA-056: Development & Wealth SOC lookups
+// =====================
+
+export const DEVELOPMENT_AVG_SOC: Record<DevelopmentLevel, number> = {
+  'UnderDeveloped': 3,
+  'Developing': 5,
+  'Mature': 6,
+  'Developed': 8,
+  'Well Developed': 9,
+  'Very Developed': 10,
+};
+
+export const WEALTH_SOC_BONUS: Record<WealthLevel, number> = {
+  'Average': 0,
+  'Better-off': 1,
+  'Prosperous': 2,
+  'Affluent': 3,
+};
+
+/**
+ * Compute monthly income for any SOC at a given TL using a preset.
+ */
+export function getSocMonthlyIncome(soc: number, tl: number, preset: TLProductivityPreset): number {
+  const soc7Monthly = getSoc7MonthlyIncome(tl, preset);
+  return getIncomeForSoc(soc, soc7Monthly);
+}
+
+/**
+ * QA-056: Compute GDP per person per day for a world using its average SOC
+ * (derived from Development + Wealth) instead of hardcoded SOC 7.
+ */
+export function getGdpPerDayForWorld(
+  tl: number,
+  dev: DevelopmentLevel,
+  wealth: WealthLevel,
+  preset: TLProductivityPreset
+): number {
+  const avgSoc = DEVELOPMENT_AVG_SOC[dev] + WEALTH_SOC_BONUS[wealth];
+  const monthly = getSocMonthlyIncome(avgSoc, tl, preset);
+  const annual = monthly * 12;
+  return annual / DAYS_PER_YEAR;
+}
+
+// =====================
 // Preset builder
 // =====================
 
@@ -147,6 +191,7 @@ export function buildPresetFromBase(
   return {
     id,
     name,
+    label: name,
     description,
     baseIncome,
     baseTL,
@@ -245,6 +290,7 @@ export const STAGNANT_GOV_WEIGHTS: TableWeights = {
 export const MNEME_PRESET: TLProductivityPreset = {
   id: 'mneme',
   name: 'Mneme',
+  label: 'Mneme',
   description: 'Compounding productivity growth per TL. High automation, post-scarcity-adjacent economics.',
   baseIncome: 45_199, // TL 9 SOC 7 monthly income (legacy 1,486 Cr/day × 365 / 12)
   baseTL: 9,
@@ -260,6 +306,7 @@ export const MNEME_PRESET: TLProductivityPreset = {
 export const CE_PRESET: TLProductivityPreset = {
   id: 'ce',
   name: 'CE / Traveller',
+  label: 'CE / Traveller',
   description: 'Flat income across all TLs. Human-labour-dominant, low-compound stagnation model.',
   baseIncome: 2_000, // TL 9 SOC 7 monthly income
   baseTL: 9,
@@ -275,6 +322,7 @@ export const CE_PRESET: TLProductivityPreset = {
 export const STAGNANT_PRESET: TLProductivityPreset = {
   id: 'stagnant',
   name: 'Stagnant',
+  label: 'Stagnant',
   description: 'Flat income with tightly clustered societal outcomes. Bureaucratic equilibrium, minimal variance.',
   baseIncome: 2_000,
   baseTL: 9,
@@ -287,6 +335,53 @@ export const STAGNANT_PRESET: TLProductivityPreset = {
 };
 
 export const BUILT_IN_PRESETS: TLProductivityPreset[] = [MNEME_PRESET, CE_PRESET, STAGNANT_PRESET];
+
+// =====================
+// QA: CE TL Display Mapping
+// =====================
+
+export const MTL_TO_CE_TL: Record<number, string> = {
+  9:  '7.0',
+  10: '8.0',
+  11: '8.5',
+  12: '9.0',
+  13: '9.5',
+  14: '10.0',
+  15: '10.5',
+  16: '11.0',
+};
+
+export const CE_TL_DESCRIPTORS: Record<number, string> = {
+  9:  'Pre-Stellar',
+  10: 'Pre-Stellar',
+  11: 'Pre-Stellar',
+  12: 'Early Stellar',
+  13: 'Early Stellar',
+  14: 'Average Stellar',
+  15: 'Average Stellar',
+  16: 'High Stellar',
+};
+
+/**
+ * Display TL string based on preset. CE/Traveller shows CE TL notation.
+ */
+export function displayTL(mnemeTL: number, presetLabel?: string): string {
+  if (presetLabel === 'CE / Traveller') {
+    const ceTL = MTL_TO_CE_TL[mnemeTL];
+    return ceTL ? `CE TL ${ceTL}` : `CE TL —`;
+  }
+  return `MTL ${mnemeTL}`;
+}
+
+/**
+ * Display TL descriptor/era name based on preset.
+ */
+export function displayTLDescriptor(mnemeTL: number, presetLabel?: string): string {
+  if (presetLabel === 'CE / Traveller') {
+    return CE_TL_DESCRIPTORS[mnemeTL] ?? '—';
+  }
+  return '—';
+}
 
 // =====================
 // Import / Export

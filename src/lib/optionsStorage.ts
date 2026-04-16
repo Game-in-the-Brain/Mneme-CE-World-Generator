@@ -1,5 +1,5 @@
 import type { GeneratorOptions, StellarClass, StellarGrade, WorldType, TLProductivityPreset, TableWeights } from '../types';
-import { MNEME_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS } from './economicPresets';
+import { CE_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS } from './economicPresets';
 
 const VALID_CLASSES = new Set<string>(['random', 'O', 'B', 'A', 'F', 'G', 'K', 'M']);
 const VALID_GRADES = new Set<string>(['random', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
@@ -10,7 +10,7 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   starGrade: 'random',
   mainWorldType: 'random',
   populated: true,
-  tlProductivityPreset: MNEME_PRESET,
+  tlProductivityPreset: CE_PRESET,
   developmentWeights: DEFAULT_DEVELOPMENT_WEIGHTS,
   powerWeights: DEFAULT_POWER_WEIGHTS,
   govWeights: DEFAULT_GOV_WEIGHTS,
@@ -108,6 +108,8 @@ export function loadGeneratorOptions(): GeneratorOptions {
       : undefined;
   const goalHabitable =
     typeof stored.goalHabitable === 'boolean' ? stored.goalHabitable : undefined;
+  const allowShipsAtXPort =
+    typeof stored.allowShipsAtXPort === 'boolean' ? stored.allowShipsAtXPort : undefined;
 
   return {
     starClass,
@@ -121,6 +123,7 @@ export function loadGeneratorOptions(): GeneratorOptions {
     goalStarportMin,
     goalMinPopulation,
     goalHabitable,
+    allowShipsAtXPort,
   };
 }
 

@@ -7,7 +7,7 @@ import {
 import { APP_VERSION, APP_COMMIT, APP_DATE } from '../lib/version';
 import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
 import {
-  MNEME_PRESET,
+  CE_PRESET,
   BUILT_IN_PRESETS,
   getSoc7MonthlyIncome,
   getIncomeForSoc,
@@ -127,7 +127,7 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
   // =====================
   const [generatorOptions, setGeneratorOptions] = useState(loadGeneratorOptions);
   const [activePreset, setActivePreset] = useState<TLProductivityPreset>(
-    generatorOptions.tlProductivityPreset || MNEME_PRESET
+    generatorOptions.tlProductivityPreset || CE_PRESET
   );
   const [customPresets, setCustomPresets] = useState<TLProductivityPreset[]>(() => {
     try {

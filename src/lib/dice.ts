@@ -84,6 +84,23 @@ export function rollExploding(
 }
 
 // =====================
+// QA-053: TL Roll (6D6 keep lowest 4 ÷ 2)
+// =====================
+
+/**
+ * Roll 6D6, keep the lowest 4, sum them, divide by 2.
+ * Produces a downward-biased bell curve (range 2–12, mean ~5.8).
+ * Used for TL generation to suppress extreme high-TL outcomes.
+ */
+export function rollTL(): number {
+  const dice = Array.from({ length: 6 }, () => Math.ceil(Math.random() * 6));
+  dice.sort((a, b) => a - b);          // ascending — lowest first
+  const kept = dice.slice(0, 4);       // keep the 4 lowest
+  const sum = kept.reduce((a, b) => a + b, 0);
+  return Math.round(sum / 2);          // range 2–12
+}
+
+// =====================
 // Dice Notation Helpers
 // =====================
 

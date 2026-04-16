@@ -121,6 +121,7 @@ export interface ShipInArea {
   dt: number;
   monthlyOperatingCost: number;
   purchasePrice: number;    // FR-032: for income-years calculation
+  visitingCost: number;     // QA-058: raw visiting cost in Credits
   location: ShipLocation;
   systemPosition?: number;  // QA-024: body index 1–N, only set when location === 'System'
   trafficPool: 'small' | 'civilian' | 'warship';
@@ -192,6 +193,12 @@ export interface StarSystem {
   
   /** FR-032: the economic assumptions this world was generated with */
   economicPreset?: TLProductivityPreset;
+  /** Snapshot of preset label used at generation time */
+  economicPresetLabel?: string;
+  /** Full snapshot of preset values used at generation time */
+  economicPresetSnapshot?: TLProductivityPreset;
+  /** QA-058: allow ships to be generated at X-class ports */
+  allowShipsAtXPort?: boolean;
 }
 
 // =====================
@@ -228,6 +235,7 @@ export type ProductivityCurve = 'mneme' | 'flat' | 'linear' | 'custom';
 export interface TLProductivityPreset {
   id: string;
   name: string;
+  label?: string;
   description: string;
   /** Primary calibration: SOC 7 monthly income at the base TL */
   baseIncome: number;
@@ -264,6 +272,8 @@ export interface GeneratorOptions {
   goalStarportMin?: StarportClass;
   goalMinPopulation?: number;
   goalHabitable?: boolean;
+  /** QA-058: allow ships to be generated at X-class ports */
+  allowShipsAtXPort?: boolean;
 }
 
 export type BodyAnnotations = Record<string, { name: string; notes: string }>;

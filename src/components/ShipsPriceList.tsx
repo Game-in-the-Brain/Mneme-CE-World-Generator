@@ -3,7 +3,7 @@ import type { TLProductivityPreset } from '../types';
 import { X } from 'lucide-react';
 import shipReference from '../../mneme_ship_reference.json';
 import { loadGeneratorOptions } from '../lib/optionsStorage';
-import { getIncomeYears, MNEME_PRESET } from '../lib/economicPresets';
+import { getIncomeYears, CE_PRESET } from '../lib/economicPresets';
 
 interface ShipsPriceListProps {
   preset?: TLProductivityPreset;
@@ -21,7 +21,7 @@ interface ShipRef {
 }
 
 export function ShipsPriceList({ preset: presetProp, onClose }: ShipsPriceListProps) {
-  const preset = presetProp || loadGeneratorOptions().tlProductivityPreset || MNEME_PRESET;
+  const preset = presetProp || loadGeneratorOptions().tlProductivityPreset || CE_PRESET;
 
   const ships = useMemo(() => {
     const list = (shipReference as unknown as { ships: ShipRef[] }).ships.slice().sort((a, b) => a.total_cost_cr - b.total_cost_cr);

@@ -551,7 +551,7 @@ function minClass(a: StarportClass, b: StarportClass): StarportClass {
 export function calculateStarport(
   population: number,
   tl: number,
-  wealth: WealthLevel,
+  _wealth: WealthLevel,
   dev: DevelopmentLevel,
   weeklyRoll: number,
   gdpPerDayOverride?: number,
@@ -565,7 +565,8 @@ export function calculateStarport(
   weeklyActivity: number;
 } {
   const gdpPerDay   = gdpPerDayOverride ?? getGdpPerDay(tl);
-  const annualTrade = population * gdpPerDay * 365 * getTradeFraction(dev) * getWealthTradeMultiplier(wealth);
+  // QA-057: removed wealth multiplier to avoid double-counting (Wealth is now baked into GDP/day via SOC)
+  const annualTrade = population * gdpPerDay * 365 * getTradeFraction(dev);
 
   const pss       = Math.floor(Math.log10(Math.max(1, annualTrade))) - 10;
   const rawClass  = pssToClass(pss);

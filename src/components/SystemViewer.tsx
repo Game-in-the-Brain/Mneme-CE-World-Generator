@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult, ShipLocation } from '../types';
+import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult } from '../types';
 import { exportToDocx } from '../lib/exportDocx';
 import { FileJson, FileSpreadsheet, FileText, Map as MapIcon, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
@@ -13,9 +13,10 @@ import {
   SOURCE_OF_POWER_DESCRIPTIONS,
   TL_TABLE,
 } from '../lib/worldData';
+import { displayTL, displayTLDescriptor } from '../lib/economicPresets';
 import { generateShipsInTheArea } from '../lib/shipsInArea';
 import { STAR_COLOR_NAMES } from '../lib/stellarData';
-import { getIncomeYears, MNEME_PRESET } from '../lib/economicPresets';
+import type { ShipInArea } from '../types';
 import { ShipsPriceList } from './ShipsPriceList';
 
 interface SystemViewerProps {
@@ -291,6 +292,7 @@ function OverviewTab({ system }: { system: StarSystem }) {
             system.mainWorld.habitability > -5 ? 'habitability-marginal' :
             'habitability-hostile'
           } />
+          <DataRow label="Economic Assumptions" value={system.economicPresetLabel ?? 'Mneme'} />
         </div>
       </div>
 
@@ -304,8 +306,8 @@ function OverviewTab({ system }: { system: StarSystem }) {
             label="Tech Level"
             value={
               system.inhabitants.effectiveTL !== undefined && system.inhabitants.effectiveTL !== system.inhabitants.techLevel
-                ? `TL ${system.inhabitants.effectiveTL} (founded at TL ${system.inhabitants.foundingTL ?? system.inhabitants.techLevel})`
-                : `TL ${system.inhabitants.techLevel}`
+                ? `${displayTL(system.inhabitants.effectiveTL, system.economicPresetLabel)} (founded at ${displayTL(system.inhabitants.foundingTL ?? system.inhabitants.techLevel, system.economicPresetLabel)})`
+                : `${displayTL(system.inhabitants.techLevel, system.economicPresetLabel)}`
             }
           />
           <DataRow label="Population"  value={formatPopulation(system.inhabitants.population)} />
@@ -561,17 +563,21 @@ function CultureTraitCard({ trait }: { trait: string }) {
   );
 }
 
-function TechLevelCard({ tl, foundingTL }: { tl: number; foundingTL?: number }) {
+function TechLevelCard({ tl, foundingTL, presetLabel }: { tl: number; foundingTL?: number; presetLabel?: string }) {
   const [expanded, setExpanded] = useState(false);
   const entry = TL_TABLE[tl];
+  const isCE = presetLabel === 'CE / Traveller';
+  const primaryLabel = displayTL(tl, presetLabel);
+  const secondaryLabel = isCE ? `MTL ${tl}` : `CE TL ${entry?.ceTL ?? '—'}`;
+  const descriptor = isCE ? displayTLDescriptor(tl, presetLabel) : (entry?.eraName ?? '—');
 
   if (!entry) {
     return (
       <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
-        <span className="font-bold text-lg" style={{ color: 'var(--accent-red)' }}>MTL {tl}</span>
+        <span className="font-bold text-lg" style={{ color: 'var(--accent-red)' }}>{primaryLabel}</span>
         {foundingTL !== undefined && foundingTL !== tl && (
           <span className="ml-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-            (depressed from founding TL {foundingTL})
+            (depressed from founding {displayTL(foundingTL, presetLabel)})
           </span>
         )}
       </div>
@@ -588,17 +594,17 @@ function TechLevelCard({ tl, foundingTL }: { tl: number; foundingTL?: number }) 
       >
         <div className="flex items-center gap-3">
           <span className="font-bold text-lg" style={{ color: 'var(--accent-red)' }}>
-            MTL {entry.mtl}
+            {primaryLabel}
           </span>
           <span className="text-xs font-semibold px-2 py-0.5 rounded"
                 style={{ backgroundColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
-            CE TL {entry.ceTL}
+            {secondaryLabel}
           </span>
-          <span className="text-sm font-semibold">{entry.eraName}</span>
+          <span className="text-sm font-semibold">{descriptor}</span>
           {foundingTL !== undefined && foundingTL !== tl && (
             <span className="text-xs px-2 py-0.5 rounded"
                   style={{ backgroundColor: 'var(--warning, #ff9800)', color: '#000' }}>
-              Depressed from TL {foundingTL}
+              Depressed from {displayTL(foundingTL, presetLabel)}
             </span>
           )}
         </div>
@@ -702,6 +708,18 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
   }
 
   function handleGenerateShips() {
+    // QA-058: X-class hard gate unless explicitly allowed
+    if (inhabitants.starport.class === 'X' && !system.allowShipsAtXPort) {
+      setShipsResult({
+        budget: 0,
+        distributionRoll: 0,
+        smallCraftBudget: 0,
+        civilianBudget: 0,
+        warshipBudget: 0,
+        ships: [],
+      });
+      return;
+    }
     // QA-024: pass total body count so "In System" ships get a position index 1–N
     const totalBodies =
       (system.circumstellarDisks?.length ?? 0) +
@@ -723,7 +741,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Demographics</h3>
 
-        <TechLevelCard tl={inhabitants.effectiveTL ?? inhabitants.techLevel} foundingTL={inhabitants.foundingTL} />
+        <TechLevelCard tl={inhabitants.effectiveTL ?? inhabitants.techLevel} foundingTL={inhabitants.foundingTL} presetLabel={system.economicPresetLabel} />
 
         {/* Population — prominent */}
         <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
@@ -875,7 +893,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
             Weekly Base = Annual Port Trade ÷ 52.
             Annual Port Trade = Population × GDP/person/day × 365 × Trade Fraction × Wealth Multiplier.
             PSS = floor(log₁₀(Annual Trade)) − 10. Final class = min(PSS class, TL capability cap).
-            TL sets the capability ceiling — no amount of money lets a TL 9 world build jump drives.
+            TL sets the capability ceiling — no amount of money lets a {displayTL(9, system.economicPresetLabel)} world build jump drives.
             Roll varies week to week; this figure reflects conditions when you arrived.
           </FootnoteBlock>
         </div>
@@ -919,13 +937,12 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
               <ShipLocationGroup
                 label="In Orbit"
                 ships={shipsResult.ships.filter(s => s.location === 'Orbit')}
-                system={system}
               />
               {/* QA-024: "In System" ships shown per body position */}
               {(() => {
                 const systemShips = shipsResult.ships.filter(s => s.location === 'System');
                 if (systemShips.length === 0) return (
-                  <ShipLocationGroup label="In System" ships={[]} system={system} />
+                  <ShipLocationGroup label="In System" ships={[]} />
                 );
                 const byBody = new Map<number, typeof systemShips>();
                 for (const ship of systemShips) {
@@ -940,14 +957,12 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
                       key={`system-${pos}`}
                       label={`In System — Body ${pos}`}
                       ships={ships}
-                      system={system}
                     />
                   ));
               })()}
               <ShipLocationGroup
                 label="Docked at Starport"
                 ships={shipsResult.ships.filter(s => s.location === 'Docked')}
-                system={system}
               />
             </div>
           </div>
@@ -974,7 +989,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
   );
 }
 
-function ShipLocationGroup({ label, ships, system }: { label: string; ships: { name: string; dt: number; monthlyOperatingCost: number; purchasePrice: number; location: ShipLocation; systemPosition?: number; trafficPool: 'small' | 'civilian' | 'warship' }[]; system: StarSystem }) {
+function ShipLocationGroup({ label, ships }: { label: string; ships: ShipInArea[] }) {
   if (ships.length === 0) {
     return (
       <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
@@ -984,21 +999,23 @@ function ShipLocationGroup({ label, ships, system }: { label: string; ships: { n
     );
   }
 
-  const counts = new Map<string, { count: number; dt: number; cost: number; purchasePrice: number }>();
+  const counts = new Map<string, { count: number; dt: number; monthlyOperatingCost: number; purchasePrice: number; visitingCost: number }>();
   for (const s of ships) {
     const existing = counts.get(s.name);
     if (existing) {
       existing.count++;
-      existing.cost += s.monthlyOperatingCost;
-      existing.purchasePrice = s.purchasePrice;
     } else {
-      counts.set(s.name, { count: 1, dt: s.dt, cost: s.monthlyOperatingCost, purchasePrice: s.purchasePrice });
+      counts.set(s.name, {
+        count: 1,
+        dt: s.dt,
+        monthlyOperatingCost: s.monthlyOperatingCost,
+        purchasePrice: s.purchasePrice,
+        visitingCost: s.visitingCost,
+      });
     }
   }
 
   const totalCost = ships.reduce((sum, s) => sum + s.monthlyOperatingCost, 0);
-  const preset = system.economicPreset || MNEME_PRESET;
-  const tl = system.inhabitants.effectiveTL ?? system.inhabitants.techLevel;
 
   return (
     <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
@@ -1007,17 +1024,14 @@ function ShipLocationGroup({ label, ships, system }: { label: string; ships: { n
         <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{ships.length} ship{ships.length === 1 ? '' : 's'}</span>
       </div>
       <div className="space-y-1">
-        {Array.from(counts.entries()).map(([name, info]) => {
-          const incomeYears = getIncomeYears(info.purchasePrice, tl, preset);
-          return (
-            <div key={name} className="flex items-baseline justify-between text-sm">
-              <span>{info.count > 1 ? `${info.count}× ` : ''}{name} ({info.dt} DT)</span>
-              <span className="text-xs text-[#9e9e9e]">
-                {incomeYears === Infinity ? '—' : `${Math.round(incomeYears)} yr${Math.round(incomeYears) === 1 ? '' : 's'}`}
-              </span>
-            </div>
-          );
-        })}
+        {Array.from(counts.entries()).map(([name, info]) => (
+          <div key={name} className="flex items-baseline justify-between text-sm">
+            <span>{info.count > 1 ? `${info.count}× ` : ''}{name} ({info.dt} DT)</span>
+            <span className="text-xs text-[#9e9e9e]">
+              {formatCredits(info.visitingCost)} / {formatCredits(info.monthlyOperatingCost)}/mo
+            </span>
+          </div>
+        ))}
       </div>
       <div className="text-xs mt-2 pt-2 border-t" style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
         Total operating cost: {formatCredits(totalCost)}
@@ -1331,8 +1345,10 @@ function getWealthDevelopmentContext(wealth: import('../types').WealthLevel, dev
 }
 
 function getEconomicModelLabel(system: StarSystem): string {
+  if (system.economicPresetLabel) return system.economicPresetLabel;
   const preset = system.economicPreset;
   if (!preset) return 'Legacy / Unknown';
+  if (preset.label) return preset.label;
   if (preset.name) return preset.name;
   if (preset.id === 'mneme') return 'Mneme';
   if (preset.id === 'ce') return 'CE / Traveller';
