@@ -199,4 +199,55 @@ Contextual random encounter tables:
 2. Include: **objective**, **affected files**, **proposed UI changes**, and **acceptance criteria**.
 3. Tag with `roadmap` and either `feature-request` or `engine-change`.
 
-**Last Updated:** 2026-04-16
+**Last Updated:** 2026-04-17
+
+---
+
+## 🟢 FR-040 — Intrastellar Population Distribution
+
+**Status:** 🟢 Planned
+
+**Objective**
+Shift from a single main-world population to a **system-wide population model** where inhabitants are distributed across all habitable bodies in the star system. The main world remains the political/economic centre but no longer monopolises 100% of the population.
+
+### Core Mechanics
+
+1. **Calculate habitability for every body**
+   - Run the full habitability pipeline (gravity, atmosphere, temperature, hazard, biochem) for each terrestrial world, ice world, and gas giant in the system.
+   - Dwarf planets and circumstellar disks are generally excluded unless high TL permits artificial habitats.
+
+2. **Determine carrying capacity per body**
+   - Apply the same `productivityMultiplier` logic used for main-world population.
+   - `carryingCapacity[body] = 10^(habitability + 1) × productivityMultiplier`
+   - Bodies with `habitability ≤ 0` may still host habitats at high TL (TL 11+) scaled by `getHabitatSize()`.
+
+3. **Distribute total system population**
+   - Compute a **target system population** from the main world's habitability and TL (same formula as today).
+   - Allocate population proportionally to each body's carrying capacity:
+     ```
+     body.population = totalSystemPopulation × (body.capacity / sumOfAllCapacities)
+     ```
+   - The main world receives the **largest single share** but typically 30–70% rather than 100%.
+
+4. **TL scaling**
+   - Higher TL increases `productivityMultiplier`, which increases `totalSystemPopulation`.
+   - It also expands habitat eligibility (more hostile bodies become viable at TL 12+).
+
+### Display & Data Model
+
+- **System Viewer:** Inhabitants panel shows a new "Population Distribution" subsection listing inhabited bodies with their share %.
+- **Planetary System tab:** Each body row displays its population and habitability breakdown.
+- **DOCX export:** Includes a "Major Settlements" table with body name, type, population, and habitability.
+- **Types:** Extend `PlanetaryBody` with optional `population?: number` and `habitability?: number`.
+
+### Affected Files
+
+- `src/lib/generator.ts` — run habitability for all bodies, compute capacities, distribute population
+- `src/types/index.ts` — add `population` and `habitability` to `PlanetaryBody`
+- `src/components/SystemViewer.tsx` — new population distribution UI
+- `src/lib/exportDocx.ts` — export settlement table
+
+### Narrative Goal
+
+A TL 14 system with a main-world habitability of 6 should feel like a genuinely developed interplanetary civilisation — billions on the primary world, hundreds of millions on terraformable secondary worlds, and habitats scattered through the outer system. A CE TL 9 system should feel more frontier-like: most people on the main world, a few outposts elsewhere.
+

@@ -456,11 +456,11 @@ export function getGovernanceDM(dev: DevelopmentLevel, wealth: WealthLevel): num
 export function getTradeFraction(dev: DevelopmentLevel): number {
   switch (dev) {
     case 'UnderDeveloped': return 0.05;
-    case 'Developing':     return 0.10;
-    case 'Mature':         return 0.15;
-    case 'Developed':      return 0.20;
-    case 'Well Developed': return 0.25;
-    case 'Very Developed': return 0.30;
+    case 'Developing':     return 0.065 + (Math.floor(Math.random() * 6) + 1) * 0.01;
+    case 'Mature':         return 0.10 + (Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6) + 2) * 0.007;
+    case 'Developed':      return 0.15 + (Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6) + 2) * 0.007;
+    case 'Well Developed': return 0.20 + (Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6) + 2) * 0.007;
+    case 'Very Developed': return 0.25 + (Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6) + 2) * 0.007;
   }
 }
 

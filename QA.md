@@ -3154,6 +3154,27 @@ Instead of returning the first match or failing at 2,000 iterations, the goal-lo
 - Dashboard `useState` default changed from `|| false` to `?? true`
 - Fixed missing dependency in `useEffect` so the toggle now auto-persists to `localStorage`
 
+#### Fix 7 — Trade fraction now has variance by development level
+
+**File:** `src/lib/worldData.ts`
+
+The old `getTradeFraction()` returned a fixed constant for every world of the same development level (e.g. every `Developed` world = exactly 20%). This made starports mechanically predictable and removed meaningful differentiation.
+
+The new implementation adds controlled randomness:
+
+| Development | Formula | Mean | Range |
+|---|---|---|---|
+| UnderDeveloped | **5% (fixed)** | 5.0% | 5% |
+| Developing | **6.5% + 1D6 × 1%** | 10.0% | 7.5%–12.5% |
+| Mature | **10% + 2D6 × 0.7%** | 15.0% | 12%–18.4% |
+| Developed | **15% + 2D6 × 0.7%** | 20.0% | 17%–23.4% |
+| Well Developed | **20% + 2D6 × 0.7%** | 25.0% | 22%–28.4% |
+| Very Developed | **25% + 2D6 × 0.7%** | 30.0% | 27%–33.4% |
+
+- UnderDeveloped stays flat at 5% (no surplus to vary)
+- Developing gets wider 1D6 variance as industrialisation is unpredictable
+- Mature+ gets narrower 2D6 bands but still enough to shift PSS by 1–2 points on large-population worlds
+
 ---
 
 **Expected Results After Fix**
@@ -3192,4 +3213,5 @@ Instead of returning the first match or failing at 2,000 iterations, the goal-lo
 - [x] PSS thresholds advance one class per +1 point
 - [x] Goal mode returns best match after 2,000 iterations
 - [x] X-class ports show ships by default
+- [x] Trade fraction varies by development level (fixed 5% for UnderDeveloped, dice-driven for all others)
 

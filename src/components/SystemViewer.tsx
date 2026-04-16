@@ -891,7 +891,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
           <FootnoteBlock>
             <strong>What this means:</strong> Port Activity is a snapshot, not a steady income: (Annual Port Trade ÷ 52) × 3D6. It varies each visit.
             Weekly Base = Annual Port Trade ÷ 52.
-            Annual Port Trade = Population × GDP/person/day × 365 × Trade Fraction.
+            Annual Port Trade = Population × GDP/person/day × 365 × Trade Fraction (varies by development level).
             PSS = floor(log₁₀(Annual Trade)) − 10. Final class = min(PSS class, TL capability cap).
             TL sets the capability ceiling — no amount of money lets a {displayTL(9, system.economicPresetLabel)} world build jump drives.
             Roll varies week to week; this figure reflects conditions when you arrived.
