@@ -9,10 +9,12 @@
 ## How to View a System Map
 
 1. **Generate a system** in the Mneme CE World Generator
-2. Click the **"View System Map"** button in the System Viewer panel
-3. The map opens in a new browser tab at `https://game-in-the-brain.github.io/2d-star-system-map/`
+2. Click the **"Copy for 2D Map"** button in the System Viewer panel
+3. Open [the 2D Map](https://game-in-the-brain.github.io/2d-star-system-map/) in a new browser tab
+4. **Paste** the copied JSON into the textarea under the controls
+5. Click **"Load System"**
 
-The button encodes the current star system as a Base64 payload in the URL. The map reads this payload and renders an animated orbital view of the entire system — star, planets, dwarfs, ice worlds, gas giants, and disks, all orbiting at proportionally correct distances and periods.
+The map renders an animated orbital view of the entire system — star, planets, dwarfs, ice worlds, gas giants, and disks, all orbiting at proportionally correct distances and periods.
 
 ---
 
@@ -30,19 +32,15 @@ The button encodes the current star system as a Base64 payload in the URL. The m
 
 ---
 
-## Saving the Map as HTML
+## Saving the Map
 
-You can save any generated map as a standalone HTML file that works offline:
+You can save any loaded system as a standalone JSON file:
 
-1. Open the map in your browser (via the "View System Map" button)
-2. Wait for the map to fully render
-3. Use your browser's **Save Page** feature:
-   - **Chrome/Edge:** `Ctrl+S` (Windows/Linux) or `Cmd+S` (Mac) → choose "Webpage, Complete"
-   - **Firefox:** `Ctrl+S` → choose "Web Page, Complete"
-   - **Safari:** `File → Save As` → choose "Web Archive"
-4. The saved file contains the full system data in the URL — no internet connection needed to view it later
+1. Load a system via paste (see above)
+2. Click the **"Download JSON"** button in the map controls
+3. The `.json` file contains the full system data — you can re-paste it later
 
-**Tip:** The URL itself contains the entire star system. You can also bookmark the map tab or copy the URL to share a specific system with someone else. Anyone who opens that URL sees the same map.
+**Tip:** Save the JSON file to your device for long-term storage. The 2D Map app itself can be saved to your home screen as a PWA (Add to Home Screen on mobile, or Install on desktop).
 
 ---
 
@@ -61,12 +59,11 @@ The map is a **read-only visualizer** — it does not modify the generated syste
 
 ## Technical Details
 
-The integration between the World Generator and the 2D Map works via URL encoding:
+The integration between the World Generator and the 2D Map works via **clipboard copy/paste**:
 
-1. The "View System Map" button in `src/components/SystemViewer.tsx` wraps the current `StarSystem` object with a random starfield seed and epoch (year 2300)
-2. The payload is encoded as Unicode-safe Base64: `btoa(encodeURIComponent(json))`
-3. The map is opened at: `https://game-in-the-brain.github.io/2d-star-system-map/?system=<encoded>`
-4. The map app decodes the payload and builds a scene graph from the star system data
+1. The "Copy for 2D Map" button in `src/components/SystemViewer.tsx` copies the current `StarSystem` as formatted JSON to your clipboard
+2. The 2D Map app parses the pasted JSON and builds a scene graph from the star system data
+3. This avoids URL length limits that previously caused errors with large systems (many moons/rings)
 
 The 2D Map is a standalone Vite + TypeScript app with no React dependencies. It lives in a separate repo (`2d-star-system-map`) and has no runtime dependency on the World Generator.
 

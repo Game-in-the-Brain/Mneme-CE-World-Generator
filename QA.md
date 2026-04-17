@@ -96,7 +96,7 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 | **FR-033** | ✅ Fixed | Sector Dynamics goal-loop generation — v1.3.99 |
 | **FR-034** | ✅ Fixed | Ships Price List modal — v1.3.98 |
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
-| **FR-031** | 🟡 In Progress | 2D Animated Planetary System Map — extracted to standalone repo; MWG links to it |
+| **FR-031** | ✅ Fixed | 2D Animated Planetary System Map — clipboard paste workflow; download JSON feature |
 | **QA-048** | ✅ Fixed | Boat Years and SOC 7 Income should be independently fillable — v1.3.108 |
 | **QA-049** | 📋 Queued | Economic model toggle (Stable vs Compounding) — Settings, generator pipeline |
 | **QA-050** | 📋 Queued | Recent Systems should show Economic Assumptions used |
@@ -216,16 +216,14 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 
 MWG links to a **separate standalone repo** (`Game-in-the-Brain/2d-star-system-map`) for the animated planetary system map. The integration is a one-way URL push — MWG encodes the generated system as Base64 and opens the map in a new browser tab. The map repo has no dependency on MWG at runtime.
 
-**Trigger location:** `src/components/SystemViewer.tsx` lines ~126–135 — the "View System Map" button.
+**Trigger location:** `src/components/SystemViewer.tsx` — the "Copy for 2D Map" button.
 
 **How it works (step by step):**
 1. The button click handler takes the current `StarSystem` object (`system` prop).
 2. It builds a `MapPayload`: `{ starSystem: system, starfieldSeed: <random 8-char>, epoch: { year: 2300, month: 1, day: 1 } }`.
-3. It encodes the JSON as Unicode-safe Base64:
-   ```ts
-   btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))))
-   ```
-4. It opens `https://game-in-the-brain.github.io/2d-star-system-map/?system=<encoded>` in a new tab.
+3. It copies the JSON as plain text to the clipboard via `navigator.clipboard.writeText()`.
+4. The user opens the 2D Map and pastes into the textarea, then clicks "Load System".
+5. The map parses the JSON and renders the system. A "Download JSON" button lets users save the file.
 
 **The `StarSystem` fields the map actually reads:**
 
@@ -243,17 +241,16 @@ MWG links to a **separate standalone repo** (`Game-in-the-Brain/2d-star-system-m
 
 **Troubleshooting — map opens blank / no bodies rendered:**
 
-1. **Check the URL** — open DevTools → Network, click "View System Map", copy the URL. Paste into a new tab. If blank, the `?system=` param is missing or malformed.
-2. **Decode the payload** — in the browser console:
+1. **Check the paste** — make sure you copied from MWG using the "Copy for 2D Map" button and pasted the entire JSON block into the textarea.
+2. **Validate the JSON** — in the browser console:
    ```js
-   const p = new URLSearchParams(location.search);
-   JSON.parse(decodeURIComponent(Array.from(atob(p.get('system'))).map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')))
+   JSON.parse(document.getElementById('system-paste').value)
    ```
    Verify `starSystem.primaryStar` is populated and `terrestrialWorlds`/`gasWorlds` etc. have entries.
 3. **`gasClass` must be a number** — if MWG ever serialises `gasClass` as a string (e.g., `"IV"`), the map's `switch` falls through to `gas-i`. Check `src/types/index.ts` `gasWorlds` — it must be `gasClass: number`.
 4. **Main world missing** — `dataAdapter.ts` in the map repo explicitly adds `mainWorld` if no existing body matches its `distanceAU`. If the main world disappears, check that `system.mainWorld` is not `null` in the payload and that its `type` is `"Terrestrial"`, `"Dwarf"`, `"Ice World"`, or `"Habitat"`.
-5. **URL too long** — very large systems (many bodies) can push the Base64 string past browser URL limits (~2 000 chars). Check total body count; if > ~30 bodies the URL may silently truncate. Mitigation: switch to `sessionStorage` handoff if this becomes an issue.
-6. **Unicode in system `key`** — `btoa` throws if any character is outside Latin-1. The `encodeURIComponent` + `replace` dance in the button handler prevents this. If you see `"InvalidCharacterError"` in the console, the encoding wrapper has been accidentally removed.
+5. **Legacy URL links** — old `?system=<base64>` URLs still work for backward compatibility, but large systems may hit URL limits. Use the clipboard workflow for all new systems.
+6. **Unicode in system `key`** — the clipboard copy uses plain JSON text, so Unicode is preserved without encoding issues.
 
 **What NOT to change in this integration:**
 - The encoding dance — do not simplify to plain `btoa(json)`. It will crash on any non-ASCII world name.
