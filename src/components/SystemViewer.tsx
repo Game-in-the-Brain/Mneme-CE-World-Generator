@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult } from '../types';
 import { exportToDocx } from '../lib/exportDocx';
-import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
+import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp, Copy, Check, ExternalLink } from 'lucide-react';
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
 import {
   CULTURE_TRAIT_DESCRIPTIONS,
@@ -182,6 +182,16 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? 'Copied!' : 'Copy for 2D Map'}
           </button>
+          <a
+            href="https://game-in-the-brain.github.io/2d-star-system-map/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary flex items-center gap-2"
+            title="Open the 2D Star System Map viewer"
+          >
+            <ExternalLink size={16} />
+            Open 2D Map
+          </a>
         </div>
       </div>
 
