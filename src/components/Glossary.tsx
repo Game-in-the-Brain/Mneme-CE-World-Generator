@@ -126,6 +126,23 @@ inward — clears its zone of all other non-disk bodies." />
 gas giant class." />
       </GlossarySection>
 
+      <GlossarySection title="World Composition &amp; Atmosphere (v2)">
+        <GlossaryEntry term="Composition" unit="Geological makeup"
+          def="The raw geological material of a planetary body, rolled on 3D6 with Reactivity DM. Terrestrial worlds have 7 tiers (Iron-Silicate, Hydrous, Silicate-Basaltic, Carbonaceous, Iron-Dominant, Ceramic, Exotic). Dwarf planets have 7 tiers (Volatile-Rich, Hydrous, Silicaceous, Rubble-Pile, Metallic, Carbonaceous, Exotic). Determines density range and Reactivity DM." />
+        <GlossaryEntry term="Reactivity DM" unit="Dice Modifier"
+          def="A modifier derived from the body's composition that affects atmosphere formation, hazard generation, and biochem resource rolls. Ranges from −2 (inert Metallic) to +2 (highly reactive Volatile-Rich). More reactive worlds have denser, more complex atmospheres and richer biochemistry." />
+        <GlossaryEntry term="Atmosphere Composition" unit="Gas mixture"
+          def="The abiotic atmospheric gases present before any biosphere influence. Rolled on 3D6 — includes Carbon-Dioxide, Nitrogen-Inert, Sulfuric, Carbon-Monoxide, Methane, Ammonia, H-He, and None. Nitrogen-Oxygen (N-O) does NOT appear on the abiotic table; it is a biosignature produced only by living worlds." />
+        <GlossaryEntry term="Atmosphere Density" unit="Trace → Very Dense"
+          def="The thickness of the atmosphere, rolled on 2D6 + Reactivity DM + gravity modifier. Categories: None, Trace, Thin, Average, Dense, Very Dense. Affects temperature (greenhouse effect), habitability, and whether surface liquid water can exist." />
+        <GlossaryEntry term="Biochem" unit="Biochemical Resources"
+          def="The abundance of organic and reactive chemical compounds available for life. Rolled on 3D6 + Reactivity DM. 11-tier ladder from Scarce (−5 hab) to Inexhaustible (+5 hab). At Common+ tiers, a Biosphere Test becomes possible." />
+        <GlossaryEntry term="Biosphere Rating" unit="B0–B6"
+          def="The complexity of native life on a world. B0 = no life. B1–B2 = simple microbes. B3 = transitional (CO₂+O₂ atmosphere). B4–B5 = complex ecosystems with N-O atmosphere. B6 = post-sapient (+8 hab bonus). Rolled via escalating dice pool vs TN 20, triggered at Common+ Biochem." />
+        <GlossaryEntry term="Baseline Habitability" unit="Score"
+          def="The physical habitability of a world BEFORE technology is applied. Sum of gravity, atmosphere composition, atmosphere density, temperature, hazard, hazard intensity, biochem, and biosphere modifiers. TL modifier is added ONLY after mainworld selection — we pick the most naturally habitable world, not the most tech-augmented one." />
+      </GlossarySection>
+
       <GlossarySection title="Inhabitants &amp; Society">
         <GlossaryEntry term="TL / MTL"   unit="Tech Level"
           def="Mneme Technology Level — a scale from 9 to 18 representing the society's

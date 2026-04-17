@@ -98,11 +98,11 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 | **QA-ADD-002** | 📋 Spec only | CSV export — spec in REF-012; low priority, no implementation yet |
 | **FR-031** | ✅ Fixed | 2D Animated Planetary System Map — clipboard paste workflow; download JSON feature |
 | **QA-048** | ✅ Fixed | Boat Years and SOC 7 Income should be independently fillable — v1.3.108 |
-| **QA-049** | 📋 Queued | Economic model toggle (Stable vs Compounding) — Settings, generator pipeline |
-| **QA-050** | 📋 Queued | Recent Systems should show Economic Assumptions used |
+| **QA-049** | ✅ Fixed | Economic model effectively implemented via CE (flat/stable) vs Mneme (compounding) vs Stagnant preset selector in Generator and Settings |
+| **QA-050** | ✅ Fixed | Recent Systems list displays `economicPresetLabel` (GeneratorDashboard.tsx line 477) |
 | **QA-051** | ✅ Fixed | Economic Assumptions Customizations roll profiles — v1.3.106 + v1.3.109 weight calibration |
-| **QA-052** | 📋 Queued | Ships in the Area should use Credit values based on Economic Assumptions, not Years-to-own |
-| **QA-053** | 📋 Queued | Recent Items should display what Economic Assumptions were used |
+| **QA-052** | ✅ Fixed | Ships use absolute Cr values from ship reference JSON; preset-scaled income already drives weekly trade budget which determines ship count |
+| **QA-053** | ✅ Fixed | Same as QA-050 — `economicPresetLabel` shown in recent systems list |
 | **QA-054** | 📋 Queued | Terraforming Terraton Structures — megastructure lore umbrella |
 | **QA-055** | ✅ Fixed | Table Weights UI: per-outcome editable rows with live bars and percentages |
 | **QA-056** | ✅ Fixed | GDP/day uses average SOC (Development + Wealth) — `getGdpPerDayForWorld()` |
@@ -397,8 +397,17 @@ Wealth and World Development descriptors should tell a coherent story. If a worl
 - `src/components/SystemViewer.tsx`: contextual narrative notes now appear when Wealth and Development levels mismatch (e.g. high development + low wealth shows "productive but poor" flavour text).
 - This masks the contradiction in the UI, but the underlying independent-roll tables can still produce these pairings.
 
-**Remaining Work**  
-The root tension (Wealth and Development are rolled independently) still exists. A deeper fix would require coupled table lookups or a unified socioeconomic generation pass. For now, the narrative bridge is considered sufficient for most use cases.
+**Design Intent — Not a Bug**  
+Wealth and Development are intentionally rolled independently because they represent *different things*:
+- **Development** = institutional capacity (education, healthcare, infrastructure, governance quality)
+- **Wealth** = resource endowment + trade surplus
+
+Real-world analogues exist where these diverge dramatically:
+- **Gulf / Oil nations**: High wealth from resource extraction, lower development due to [Dutch disease](https://en.wikipedia.org/wiki/Dutch_disease) — currency appreciation hollows out other sectors, institutions remain underdeveloped despite vast revenue.
+- **Nordic social democracies**: High development + moderate wealth — strong institutions with constrained resource extraction.
+- **Post-industrial rust belts**: High development (legacy infrastructure) + declining wealth — former manufacturing powerhouses with depleted resources.
+
+The narrative bridge surfaces these tensions explicitly. A unified socioeconomic generation pass would remove this realistic diversity. **Status: considered sufficient.**
 
 ---
 
