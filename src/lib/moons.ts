@@ -277,8 +277,8 @@ export function generateLevel2Children(
     child.surfaceGravityG = phys.surfaceGravityG;
     child.escapeVelocityMs = phys.escapeVelocityMs;
 
-    // Step 5: Habitability waterfall
-    runHabitabilityWaterfall(child, lifePreset);
+    // Step 5: Habitability waterfall (pass parent for proto-star heat + tidal heating)
+    runHabitabilityWaterfall(child, lifePreset, parent);
 
     moons.push(child);
   }

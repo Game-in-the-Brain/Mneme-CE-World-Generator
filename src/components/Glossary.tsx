@@ -233,8 +233,6 @@ only producible under gas-giant conditions. At TL 13 they can skim Brown Dwarf S
             def="Humans born and raised entirely in space with no planetary origin. The first
 generation for whom Earth is an abstraction. Emerges as a distinct population at MTL 10." 
 />
-          <GlossaryEntry term="World Serpents" unit="Particle accelerator megastructure"
-            def="Synonym for Great Serpents. Particle accelerators placed on the jet streams of solar winds (radiation belts) of high-gravity objects. Named after great serpents from mythology (Bakunawa, Antaboga, Jörmungandr, etc.). Create antimatter to power jump gates. Mobile, self-extending variants unfold between star systems at MTL 13; become autonomous at MTL 16." />
           <GlossaryEntry term="Terraforming Worms" unit="MTL 9–13 biological engineering"
             def="Gene-gineered organisms (beasts great and small) that process seeded microbiomes and minerals to terraform worlds. Slow down as they grow larger. Used primarily on low-G worlds, dwarf worlds, and ice worlds where biological alteration is preferred over mechanical terraforming. Not all colonies preserve native biomes." />
         </GlossarySection>

@@ -127,9 +127,32 @@ function getCompositionQualityRank(composition?: string): number {
  * Mutates the body in place with all v2 habitability fields.
  * Returns the Baseline Habitability score (no TL).
  */
+/** Jupiter Mass in Earth Masses */
+const JM_PER_EM = 317.8;
+
+/** Compute temperature DM from parent heat (proto-stars / brown dwarfs). */
+function getProtoStarHeatDM(parent?: PlanetaryBody): number {
+  if (!parent || parent.type !== 'gas') return 0;
+  const parentMassJM = parent.mass / JM_PER_EM;
+  if (parentMassJM >= 50) return 4; // Brown Dwarf
+  if (parentMassJM >= 20) return 2; // Proto-Star
+  return 0; // Normal gas giant
+}
+
+/** Moons of gas giants (including proto-stars and brown dwarfs) experience tidal heating. */
+function getHasTidalHeating(parent?: PlanetaryBody): boolean {
+  return parent !== undefined && parent.type === 'gas';
+}
+
+/**
+ * Run the full 10-step habitability waterfall on a single body.
+ * Mutates the body in place with all v2 habitability fields.
+ * Returns the Baseline Habitability score (no TL).
+ */
 export function runHabitabilityWaterfall(
   body: PlanetaryBody,
-  lifePreset: ExtraterrestrialLifeAssumptions
+  lifePreset: ExtraterrestrialLifeAssumptions,
+  parent?: PlanetaryBody
 ): number {
   const reactivity = body.reactivityDM ?? 0;
   const gravity = body.surfaceGravityG ?? 0;
@@ -163,8 +186,7 @@ export function runHabitabilityWaterfall(
   const zoneDM = getZoneTempDM(zone);
   const atmoCompTempDM = atmoCompEntry.tempDM;
   const atmoDensityTempDM = DENSITY_GREENHOUSE_DM[atmoDensity] ?? 0;
-  // Proto-Star heat: 0 for L1 bodies; L2 moons will add parent heat later
-  const protoStarHeatDM = 0;
+  const protoStarHeatDM = getProtoStarHeatDM(parent);
 
   const tempRollRaw = roll2D6().value + zoneDM + atmoCompTempDM + atmoDensityTempDM + protoStarHeatDM;
   const tempResult = lookupTemperatureV2(tempRollRaw);
@@ -211,7 +233,7 @@ export function runHabitabilityWaterfall(
     const isHydrous = body.composition?.includes('Hydrous') ?? false;
     const isVolatileRich = body.composition?.includes('Volatile-Rich') ?? false;
     const isCold = tempResult.type === 'Cold' || tempResult.type === 'Freezing';
-    const hasTidalHeating = false; // TODO: set true for L2 moons of Gas Giants / Proto-Stars
+    const hasTidalHeating = getHasTidalHeating(parent);
 
     let effectiveTempAdjust = tempDiceAdjust;
     if ((isHydrous || isVolatileRich) && isCold && hasTidalHeating) {
