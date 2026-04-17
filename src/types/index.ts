@@ -380,6 +380,8 @@ export interface GeneratorOptions {
   v2Positioning?: boolean;
   /** FR-041: active extraterrestrial life assumptions preset ID */
   activeLifeAssumptionsId?: string;
+  /** QA-Mega+: allow Mega+ structure habitats (default OFF for CE/Traveller) */
+  allowMegaStructures?: boolean;
 }
 
 export interface ExtraterrestrialLifeAssumptions {

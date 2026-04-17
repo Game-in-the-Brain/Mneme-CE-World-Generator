@@ -65,6 +65,37 @@ function getTemperatureDiceAdjust(temp: TemperatureType): number {
 }
 
 // ---------------------
+// Zone Preference Rank (for tiebreakers)
+// ---------------------
+
+/** Lower = more desirable for habitation. Conservative is ideal. */
+function getZonePreferenceRank(zone: Zone): number {
+  switch (zone) {
+    case 'Conservative': return 0;
+    case 'Hot': return 1;
+    case 'Cold': return 2;
+    case 'Infernal': return 3;
+    case 'Outer': return 4;
+    default: return 5;
+  }
+}
+
+// ---------------------
+// Hazard Severity Rank (for tiebreakers)
+// ---------------------
+
+/** Lower = less hazardous. Used as tiebreaker. */
+function getHazardSeverityRank(hazard?: string): number {
+  if (!hazard || hazard === 'None') return 0;
+  if (hazard === 'Weather') return 1;
+  if (hazard === 'Seismic') return 2;
+  if (hazard === 'Radiation') return 3;
+  if (hazard === 'Atmospheric') return 4;
+  if (hazard === 'Biological') return 5;
+  return 6;
+}
+
+// ---------------------
 // Composition Quality Rank (for tiebreakers)
 // ---------------------
 
@@ -274,20 +305,30 @@ export function selectMainworld(bodies: PlanetaryBody[]): MainworldSelectionResu
   candidates.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
 
-    // Tiebreaker 1: Higher Biosphere Rating
+    // Tiebreaker 1: Zone preference — Conservative is ideal
+    const zoneRankA = getZonePreferenceRank(a.body.zone);
+    const zoneRankB = getZonePreferenceRank(b.body.zone);
+    if (zoneRankA !== zoneRankB) return zoneRankA - zoneRankB;
+
+    // Tiebreaker 2: Least hazardous
+    const hazardRankA = getHazardSeverityRank(a.body.hazardV2);
+    const hazardRankB = getHazardSeverityRank(b.body.hazardV2);
+    if (hazardRankA !== hazardRankB) return hazardRankA - hazardRankB;
+
+    // Tiebreaker 3: Higher Biosphere Rating
     const ratingA = a.body.biosphereRating ?? 'B0';
     const ratingB = b.body.biosphereRating ?? 'B0';
     if (ratingB !== ratingA) return ratingB.localeCompare(ratingA);
 
-    // Tiebreaker 2: Composition quality
+    // Tiebreaker 4: Composition quality
     const rankA = getCompositionQualityRank(a.body.composition);
     const rankB = getCompositionQualityRank(b.body.composition);
     if (rankB !== rankA) return rankB - rankA;
 
-    // Tiebreaker 3: Larger mass
+    // Tiebreaker 5: Larger mass
     if (b.body.mass !== a.body.mass) return b.body.mass - a.body.mass;
 
-    // Tiebreaker 4: Random (stable sort fallback)
+    // Tiebreaker 6: Random (stable sort fallback)
     return 0;
   });
 
@@ -320,7 +361,9 @@ export function selectMainworld(bodies: PlanetaryBody[]): MainworldSelectionResu
 
   const tiebreakerApplied = candidates.length > 1 &&
     candidates[0].score === candidates[1].score &&
-    (candidates[0].body.biosphereRating !== candidates[1].body.biosphereRating ||
+    (candidates[0].body.zone !== candidates[1].body.zone ||
+     candidates[0].body.hazardV2 !== candidates[1].body.hazardV2 ||
+     candidates[0].body.biosphereRating !== candidates[1].body.biosphereRating ||
      candidates[0].body.composition !== candidates[1].body.composition ||
      candidates[0].body.mass !== candidates[1].body.mass);
 

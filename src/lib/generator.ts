@@ -105,7 +105,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
       mainWorld = buildMainWorldFromV2Winner(winner);
     } else {
       // Absolute fallback: generate a v1-style mainworld
-      mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
+      mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass, opts.allowMegaStructures);
     }
 
     // Generate inhabitants (TL applied post-selection)
@@ -129,7 +129,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     };
   } else {
     // Legacy v1 pipeline: mainworld-first generation
-    mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
+    mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass, opts.allowMegaStructures);
     inhabitants = generateInhabitants(mainWorld, opts);
   }
 
@@ -254,7 +254,8 @@ function generateMainWorld(
   primaryStar: Star,
   _zones: ZoneBoundaries,
   forcedType: WorldType | 'random' = 'random',
-  _largestBodyMass: number = 1.0
+  _largestBodyMass: number = 1.0,
+  allowMegaStructures?: boolean,
 ): MainWorld {
   let worldType: WorldType;
   // eslint-disable-next-line prefer-const
@@ -283,6 +284,11 @@ function generateMainWorld(
     } else {
       worldType = 'Habitat';
     }
+  }
+
+  // QA-Mega+: gate Habitat generation
+  if (worldType === 'Habitat' && !allowMegaStructures) {
+    worldType = 'Terrestrial';
   }
 
   // Roll mass and density based on world type

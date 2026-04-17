@@ -18,6 +18,7 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   allowShipsAtXPort: true,
   v2Positioning: true,
   activeLifeAssumptionsId: 'mneme-default',
+  allowMegaStructures: false,
 };
 
 function isValidPreset(value: unknown): value is TLProductivityPreset {
@@ -123,6 +124,9 @@ export function loadGeneratorOptions(): GeneratorOptions {
       ? stored.activeLifeAssumptionsId
       : undefined;
 
+  const allowMegaStructures =
+    typeof stored.allowMegaStructures === 'boolean' ? stored.allowMegaStructures : DEFAULT_GENERATOR_OPTIONS.allowMegaStructures;
+
   return {
     starClass,
     starGrade,
@@ -138,6 +142,7 @@ export function loadGeneratorOptions(): GeneratorOptions {
     allowShipsAtXPort,
     v2Positioning,
     activeLifeAssumptionsId,
+    allowMegaStructures,
   };
 }
 

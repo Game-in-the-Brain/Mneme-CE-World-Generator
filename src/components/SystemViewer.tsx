@@ -1097,7 +1097,8 @@ function PlanetarySystemTab({
     l1Ice.length +
     l1Gas.length +
     (system.mainWorld ? 1 : 0) +
-    (system.moons?.length ?? 0);
+    (system.moons?.length ?? 0) +
+    (system.rings?.length ?? 0);
 
   // QA-008: Ice Worlds label (typeLabel uses "Ice Worlds" not "Ice")
   type BodyWithExtras = PlanetaryBody & { 
@@ -1171,7 +1172,7 @@ function PlanetarySystemTab({
       </div>
 
       <div className="text-center" style={{ color: 'var(--text-secondary)' }}>
-        Total Planetary Bodies: <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalBodies}</span>
+        Total Planetary Bodies + Moons: <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalBodies}</span>
       </div>
 
       {/* Ejected Bodies (V2) */}

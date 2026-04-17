@@ -407,14 +407,59 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
     physSections.push(line('Surface Gravity', `${physBody.surfaceGravityG ?? (physBody as PlanetaryBody).gravity ?? '?'} G`));
     const ev = physBody.escapeVelocityMs ?? (physBody as PlanetaryBody).escapeVelocityMs;
     physSections.push(line('Escape Velocity', `${ev != null ? formatNumber(ev) : '?'} m/s`));
-    if (isMainWorld) {
-      physSections.push(line('Atmosphere',   physBody.atmosphere ?? '—'));
-      physSections.push(line('Temperature',  physBody.temperature ?? '—'));
-      physSections.push(line('Habitability', physBody.habitability !== undefined ? `${physBody.habitability}` : '—'));
-    }
-    // FR-044: show habitability for moons too (QA-063)
-    if (!isMainWorld && !isRing && (physBody as PlanetaryBody).baselineHabitability !== undefined) {
-      physSections.push(line('Habitability', `${(physBody as PlanetaryBody).baselineHabitability}`));
+    // QA-DOCX: v2 details for all bodies with physics data
+    if (!isRing) {
+      const pb = physBody as PlanetaryBody;
+      if (pb.composition) {
+        physSections.push(line('Composition', pb.composition));
+      }
+      if (pb.reactivityDM !== undefined) {
+        physSections.push(line('Reactivity DM', `${pb.reactivityDM >= 0 ? '+' : ''}${pb.reactivityDM}`));
+      }
+      if (pb.atmosphereCompositionAbiotic) {
+        const atmoLine = pb.atmosphereComposition && pb.atmosphereComposition !== pb.atmosphereCompositionAbiotic
+          ? `${pb.atmosphereCompositionAbiotic} → ${pb.atmosphereComposition} (converted)`
+          : pb.atmosphereCompositionAbiotic;
+        physSections.push(line('Atmosphere Composition', atmoLine));
+      }
+      if (pb.atmosphereDensityV2) {
+        physSections.push(line('Atmosphere Density', pb.atmosphereDensityV2));
+      }
+      if (pb.temperatureV2) {
+        physSections.push(line('Temperature', pb.temperatureV2));
+      }
+      if (pb.hazardV2 && pb.hazardV2 !== 'None') {
+        const intensity = pb.hazardIntensityV2 ?? 'Low';
+        physSections.push(line('Hazard', `${pb.hazardV2} — ${intensity}`));
+      } else if (pb.hazardV2 === 'None') {
+        physSections.push(line('Hazard', 'None'));
+      }
+      if (pb.biochem) {
+        physSections.push(line('Biochem Resources', pb.biochem));
+      }
+      if (pb.biosphereRating && pb.biosphereRating !== 'B0') {
+        const biosphereDetail = pb.biosphereRoll !== undefined && pb.biosphereTN !== undefined
+          ? `${pb.biosphereRating} (roll ${pb.biosphereRoll} vs TN ${pb.biosphereTN})`
+          : pb.biosphereRating;
+        physSections.push(line('Biosphere', biosphereDetail));
+      }
+      if (isMainWorld && physBody.habitability !== undefined) {
+        physSections.push(line('Habitability', `${physBody.habitability}`));
+      }
+      if (!isMainWorld && pb.baselineHabitability !== undefined) {
+        physSections.push(line('Baseline Habitability', `${pb.baselineHabitability >= 0 ? '+' : ''}${pb.baselineHabitability}`));
+      }
+      if (pb.habitabilityBreakdown) {
+        const bd = pb.habitabilityBreakdown;
+        const parts: string[] = [];
+        parts.push(`Gravity ${bd.gravity >= 0 ? '+' : ''}${bd.gravity}`);
+        parts.push(`Atmo ${bd.atmosphereComp >= 0 ? '+' : ''}${bd.atmosphereComp}/${bd.atmosphereDensity >= 0 ? '+' : ''}${bd.atmosphereDensity}`);
+        parts.push(`Temp ${bd.temperature >= 0 ? '+' : ''}${bd.temperature}`);
+        parts.push(`Hazard ${bd.hazard >= 0 ? '+' : ''}${bd.hazard}/${bd.hazardIntensity >= 0 ? '+' : ''}${bd.hazardIntensity}`);
+        parts.push(`Biochem ${bd.biochem >= 0 ? '+' : ''}${bd.biochem}`);
+        parts.push(`Biosphere ${bd.biosphere >= 0 ? '+' : ''}${bd.biosphere}`);
+        physSections.push(line('Habitability Breakdown', parts.join(' · ')));
+      }
     }
     if (ann?.notes) physSections.push(line('Notes', ann.notes));
   });

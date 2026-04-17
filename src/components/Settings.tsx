@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import type { StarSystem, TLProductivityPreset, ExtraterrestrialLifeAssumptions } from '../types';
 import {
   Upload, Download, Trash2, FileJson, Info, Search, Eye, ChevronLeft, ChevronRight,
-  Database, Bug, DollarSign, Settings2, ChevronDown, ChevronUp, FlaskConical, Orbit
+  Database, Bug, DollarSign, Settings2, ChevronDown, ChevronUp, FlaskConical, Orbit, Building2
 } from 'lucide-react';
 import { APP_VERSION, APP_COMMIT, APP_DATE } from '../lib/version';
 import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
@@ -169,6 +169,15 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
     }
   });
 
+  // QA-Mega+: Mega+ Structures toggle
+  const [allowMegaStructures, setAllowMegaStructures] = useState(() => {
+    try {
+      return loadGeneratorOptions().allowMegaStructures ?? false;
+    } catch {
+      return false;
+    }
+  });
+
   useEffect(() => {
     const current = loadGeneratorOptions();
     saveGeneratorOptions({ ...current, activeLifeAssumptionsId: activeLifePreset.id });
@@ -184,6 +193,12 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
     saveGeneratorOptions({ ...current, v2Positioning });
     setGeneratorOptions({ ...current, v2Positioning });
   }, [v2Positioning]);
+
+  useEffect(() => {
+    const current = loadGeneratorOptions();
+    saveGeneratorOptions({ ...current, allowMegaStructures });
+    setGeneratorOptions({ ...current, allowMegaStructures });
+  }, [allowMegaStructures]);
 
   // =====================
   // Table Weights State (QA-029)
@@ -1224,6 +1239,36 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
               }`}
             >
               {v2Positioning ? 'ON' : 'OFF'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* QA-Mega+: Mega+ Structures Toggle */}
+      <div className="card space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Building2 className="text-[#e53935]" size={20} />
+          Mega+ Structures
+        </h3>
+        <div className="p-4 bg-white/5 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium">Allow Mega+ Structure Habitats</h4>
+              <p className="text-sm text-[#9e9e9e]">
+                When ON, the generator can produce Habitat-type main worlds (O'Neill cylinders,
+                orbital habs, etc.). When OFF, random Habitat rolls become Terrestrial worlds.
+              </p>
+              <p className="text-xs text-[#9e9e9e] mt-1">
+                Default OFF — CE / Traveller economic assumptions cannot support megastructures
+              </p>
+            </div>
+            <button
+              onClick={() => setAllowMegaStructures(!allowMegaStructures)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                allowMegaStructures ? 'bg-[#e53935] text-white' : 'bg-white/10 text-[#9e9e9e] hover:bg-white/20'
+              }`}
+            >
+              {allowMegaStructures ? 'ON' : 'OFF'}
             </button>
           </div>
         </div>
