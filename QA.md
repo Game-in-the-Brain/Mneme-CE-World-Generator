@@ -21,6 +21,52 @@ Mneme CE World Generator — React 19 + TypeScript 5.8 + Vite PWA that generates
 Working directory: `/home/justin/opencode260220/Mneme-CE-World-Generator`  
 Build command: `npm run build` (runs `tsc && vite build` — must pass with zero TypeScript errors).
 
+### ★ Project State (2026-04-17) — Two Layers
+
+**Layer 1 — IMPLEMENTED (the running app):**
+The current codebase is stable and working. All QA issues through QA-061 are fixed. The economic system (presets, GDP/day, PSS starports, ships) is complete. The generation pipeline works: star → zones → companions → planetary system → main world (independent) → inhabitants. `repoAnalysis.md` documents the actual code.
+
+**Layer 2 — DESIGNED BUT NOT IMPLEMENTED (the v2 pipeline redesign):**
+Three design specs define a complete pipeline rewrite that reverses the generation order — system first, mainworld selected by competitive habitability scoring:
+
+| FR | Design Spec | What It Does |
+|---|---|---|
+| **FR-041** | `260417-00 MWG-REDESIGN-composition-atmosphere-biosphere.md` | Adds 3D6 composition tables (7-tier for Terrestrial, 7-tier for Dwarf) with Reactivity DM → density range → abiotic atmosphere composition → 11-tier biochem → Biosphere Test (5D6 dis+2 vs TN) → B0–B6 rating → atmosphere conversion (B3+ → N-O). N-O atmospheres are a biosignature, not a lucky roll. |
+| **FR-042** | `2600417-01 MWG-REDESIGN-positioning.md` | Replaces zone placement with unified 3D6 roll, 4-phase algorithm (anchor → disks first → remaining mass-descending → moons), 10-zone system (5 inner + 5 outer O1–O5), Hill sphere conflict with 5-reroll ejection → rogue worlds, reversed Hot Jupiter stability roll (~0.5% rate), disk-blocking, Proto-Star/Brown Dwarf promotion. |
+| **FR-043** | `260417-02 MWG-REDESIGN-habitability-application.md` | 10-step habitability waterfall on every Dwarf/Terrestrial candidate. Temperature gets zone DMs (Infernal +5 to O5 −8) + atmosphere + greenhouse + Proto-Star heat. Biosphere test gains temperature dice adjustment (Average adv+2, Freezing dis+3) + subsurface ocean override (Europa-type). Highest Baseline Habitability wins → mainworld. TL applies only after selection. |
+
+**Key architectural shift:** Under v1 the mainworld is generated first and the system is built around it. Under v2 the entire system is generated first, every candidate runs through the habitability waterfall, and the most habitable body *emerges* as the mainworld. A Europa-type Dwarf moon can beat an inner-system Terrestrial.
+
+### What To Read (in order)
+
+1. **`repoAnalysis.md`** — current code architecture, types, pipeline, economic system
+2. **`260410-Changes.md`** — all mechanics deviations from the book (§1–14 = implemented; §15–17 = proposed/not implemented)
+3. **`260409-v02 Mneme-CE-World-Generator-FRD.md`** — full feature spec (§1–13 = implemented; §14.2–14.4 = planned FR-041/042/043)
+4. **The three design specs above** (FR-041 → FR-042 → FR-043 in that order) — only if working on the v2 pipeline
+
+### Implementation Plan (8 phases, if assigned v2 work)
+
+| Phase | What | Files | Breaking? |
+|---|---|---|---|
+| 1 | Type system — add optional fields | `types/index.ts` | No |
+| 2 | Composition-density tables | `worldData.ts`, `physicalProperties.ts`, `generator.ts` | No |
+| 3 | Positioning system (highest risk) | NEW `positioning.ts`, `generator.ts`, `stellarData.ts` | Yes (feature flag) |
+| 4 | Habitability pipeline | NEW `habitabilityPipeline.ts`, `worldData.ts` | No |
+| 5 | Pipeline integration (big-bang) | `generator.ts` | Yes |
+| 6 | Life Assumptions settings | NEW `lifePresets.ts`, `Settings.tsx`, `optionsStorage.ts` | No |
+| 7 | UI updates | `SystemViewer.tsx`, `GeneratorDashboard.tsx`, `exportDocx.ts` | No |
+| 8 | Migration (legacy saved systems) | `db.ts` | No |
+
+**Build order:** 1 → 2 → 6 (parallel) → 3 → 4 → 5 → 7 → 8. Zone rename (`Cold`→`Cool`, `Outer`→O1–O5) is the riskiest change — touches CSS, every zone switch, stellarData, worldData.
+
+### Critical Constraints
+
+- `npm run build` must pass with zero TS errors at every commit
+- `tsconfig.json`: `strict: true`, `noUnusedLocals: true`, `noUnusedParameters: true`
+- Use `catch` (bare) not `catch (error)` when error variable unused
+- Economic presets (Mneme/CE/Stagnant) are the most important user-facing setting — income is a proxy for productivity, not wages. See `repoAnalysis.md §6.5` for the full theoretical framework.
+- The `optionsStorage.ts` is the single gateway to `mneme_generator_options` — never access localStorage directly for generator options
+
 ### All Issues Resolved — Current Open Items
 
 | # | Status | Notes |
@@ -63,7 +109,95 @@ Build command: `npm run build` (runs `tsc && vite build` — must pass with zero
 | **QA-057** | ✅ Fixed | Wealth multiplier removed from `annualTrade` — baked into GDP/day via SOC |
 | **QA-058** | ✅ Fixed | Ships in the Area: X-port toggle default ON, Boat Years scarcity removed, Credits display |
 | **QA-061** | ✅ Fixed | Population redesign: productivity ratio replaces `TL_POP_MOD`; +1 exponent; forgiving PSS mapping |
+| **FR-041** | 📋 Planned | Composition–Atmosphere–Biosphere Pipeline Redesign — see below |
 
+### FR-041 — Composition–Atmosphere–Biosphere Pipeline Redesign
+
+**Status:** 📋 Planned — design spec in `260417-00 MWG-REDESIGN-composition-atmosphere-biosphere.md`  
+**Scope:** Replaces §6.2–§6.8 of the current pipeline for all Habitability Candidates (Dwarfs + Terrestrials at Level 1 or 2).
+
+**Pipeline:** Mass → **Composition** (3D6, 7-tier with Reactivity DM) → Density (2D6 within composition range) → Physics → **Atmosphere Composition** (3D6, abiotic gas table) → **Atmosphere Density** (2D6 + modifiers) → Temperature → Hazard → **Biochem** (3D6, 11-tier ladder −5 to +5) → **Biosphere Test** (escalating dice pool vs TN 20, triggered at Common+) → **Biosphere Rating** (B0–B6) → **Atmosphere Conversion** (B3+ converts abiotic → transitional/N-O) → Habitability Score
+
+**New subsystems:**
+- FR-041a: Composition tables (Terrestrial 7-tier + Dwarf 7-tier, each with density range + Reactivity DM)
+- FR-041b: Atmosphere Composition (3D6 abiotic gas table — N-O deliberately absent; it's a biosignature)
+- FR-041c: Biochem 11-tier ladder (3D6 + Reactivity DM, Scarce→Inexhaustible, linear −5 to +5)
+- FR-041d: Biosphere Test + Rating (base 5D6 dis+2 vs TN; Biochem mod adjusts dice pool — each +1 removes 1 dis level, becoming adv if surplus: Common=7D6 keep low 5, Rich=5D6 plain, Inexhaustible=8D6 keep high 5; B0–B6 tier from degree of pass)
+- FR-041e: Atmosphere Conversion matrix (B3 = transitional CO₂+O₂; B4+ = Nitrogen-Oxygen)
+- FR-041f: Extraterrestrial Life Assumptions settings panel (TN, disadvantage, min biochem, transitional toggle, offset rule; built-in presets: Mneme Default / Rare Earth / Panspermia)
+
+**Key design shift:** System generated first → baseline habitability for every candidate body → winner selected as mainworld. N-O atmospheres emerge from biosphere conversion (~3–10% of candidates under default settings).
+
+**Depends on:** Locked terminology (INRAS = Level 1 IntRAstellar bodies)  
+**Enables:** FR-040 (Intrastellar Population Distribution)  
+**Full spec:** `260417-03 MWG-REDESIGN-consolidated-v1.md` (supersedes `260417-00`)
+
+| **FR-042** | 📋 Planned | Positioning System Redesign — see below |
+
+### FR-042 — Positioning System Redesign
+
+**Status:** 📋 Planned — design spec in `2600417-01 MWG-REDESIGN-positioning.md` (v0.3)  
+**Scope:** Replaces REF-003 (orbit table) and REF-005 (world position table) for Level 1 body placement.  
+**Depends on:** FR-041 (composition must run before positioning; habitability pipeline runs after positioning)
+
+**4-Phase placement algorithm:**
+
+- **Phase A — Anchors:** Largest Gas/Ice Giant placed at frost line with 3D6 jitter; largest Terrestrial rolls unified 3D6
+- **Phase B — Disks first:** Disks placed before planets to establish zone density; disks block Terrestrials but not Dwarfs
+- **Phase C — Remaining bodies (mass-descending):** Unified 3D6 → zone; Hill sphere conflict check → reroll if blocked; 5-reroll limit → ejection (rogue worlds)
+- **Phase D — Moons (Level 2):** Handled by separate Moons/Parent-Child Limit thread
+
+**Sub-items:**
+- FR-042a: Zone system — Inner (Infernal/Hot/Conservative/Cool/Frost Line) + Outer (O1–O5 geometric growth to heliopause)
+- FR-042b: Unified 3D6 position roll (3→Infernal, 4–7→Hot, 8–11→Conservative, 12–13→Cool, 14→Frost Line, 15–18→Outer)
+- FR-042c: Hill sphere conflict + disk-blocking + 5-reroll ejection mechanic (rogue worlds)
+- FR-042d: Ice Worlds hard outer-only rule (skip unified 3D6, roll Outer table directly)
+- FR-042e: Hot Jupiter stability roll (reversed from QA-011 — 5D6 keep lowest 3 vs TN 5, ~0.5–0.6% rate; mass absorption + shepherding + Proto-Star/Brown Dwarf class upgrade)
+- FR-042f: Disk generation formula (3D6 exploding keep lowest 2 ÷ 2 − 1, stellar class modifier)
+- FR-042g: Brown Dwarf promotion (≥50 JM → Level 0 companion, relocated to outer orbit per REF-003)
+- FR-042h: Data model additions (OuterZoneBoundaries, ejectedBodies, consumedBodies, ZoneId expansion to O1–O5)
+
+**Replaces:** QA-011 (Hot Jupiter Migration) with richer stability-roll mechanic  
+**Full spec:** `260417-03 MWG-REDESIGN-consolidated-v1.md` (supersedes `2600417-01`)
+
+| **FR-043** | 📋 Planned | Habitability Application & Mainworld Selection — see below |
+
+### FR-043 — Habitability Application & Mainworld Selection
+
+**Status:** 📋 Planned — design spec in `260417-02 MWG-REDESIGN-habitability-application.md` (v0.1)  
+**Scope:** The selection pipeline that runs after all bodies are generated and positioned. Computes Baseline Habitability for every candidate, ranks them, selects the winner as mainworld.  
+**Depends on:** FR-041 (composition/biosphere), FR-042 (positioning/zones)  
+**Part of:** Redesign sequence: Composition (FR-041) → Positioning (FR-042) → Habitability (this) → Habitats → Megastructures
+
+**10-step habitability waterfall (per candidate body):**
+1. Atmosphere Composition (3D6, abiotic — from FR-041)
+2. Atmosphere Density (2D6 + modifiers)
+3. Temperature (2D6 + zone DM + atmo comp DM + atmo density DM + Proto-Star heat DM)
+4. Hazard (2D6 + Reactivity DM + atmosphere hazard bias)
+5. Hazard Intensity (2D6)
+6. Biochem Resources (3D6 + Reactivity DM, 11-tier — from FR-041)
+7. Biosphere Test (5D6 dis+2 + Biochem adjustment + Temperature adjustment + Subsurface override)
+8. Biosphere Rating (B0–B6 from degree of pass)
+9. Atmosphere Conversion (B3+ → transitional/N-O)
+10. Baseline Habitability Score (sum of all mods — NO TL)
+
+**Sub-items:**
+- FR-043a: Temperature zone DMs (Infernal +5 through O5 −8) + atmosphere density greenhouse DMs + Proto-Star heat DMs
+- FR-043b: Revised hazard table (None→Radioactive with Reactivity + atmo hazard bias stacking)
+- FR-043c: Revised hazard intensity (Trace/Light/Moderate/Heavy/Extreme, new tier names)
+- FR-043d: Biosphere Test temperature dice adjustment (Average adv+2, Cold/Hot dis+2, Freezing/Inferno dis+3)
+- FR-043e: Subsurface Ocean Override (Hydrous/Volatile-Rich + Cold/Freezing + tidal heating → halve temp penalty)
+- FR-043f: Revised gravity habitability ladder (symmetric −3 to 0 to −3 around 0.7–1.3G)
+- FR-043g: Mainworld selection algorithm (highest baseline hab wins; tiebreakers: biosphere > composition quality > mass > random)
+- FR-043h: MVT/GVT fallback (all candidates ≤ 0 → artificial habitat path)
+- FR-043i: Data model (baselineHabitability, habitabilityBreakdown, mainworldSelectionLog, wasSelectedAsMainworld)
+- FR-043j: Post-selection inhabitants pass (TL applied only after selection, Effective Hab = Baseline + TL mod)
+
+**Key design principle:** TL is NOT part of Baseline Habitability — it applies only after mainworld selection. We pick the most physically habitable world, not the most tech-augmented one.
+
+**Open question:** B6 Post-Sapient worlds give +8 hab bonus but do NOT auto-generate Inhabitants. Does B6 auto-select as mainworld, or compete normally? Currently: competes normally (B6 is just a strong candidate). See FRD §14.2 and §14.4 Open Questions.
+
+**Full spec:** `260417-03 MWG-REDESIGN-consolidated-v1.md` (supersedes `260417-02`)
 
 ### Key Files
 

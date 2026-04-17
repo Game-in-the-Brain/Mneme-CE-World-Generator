@@ -2,7 +2,7 @@
 
 # Mneme CE World Generator — Function Requirements Document (FRD)
 
-**Version 1.4** | **Date:** 2026-04-10  
+**Version 2.6** | **Date:** 2026-04-17  
 **Project:** Mneme CE World Generator PWA (Cepheus Engine variant)  
 **GitHub Repository:** [github.com/Game-in-the-Brain/Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator)  
 **Book Series:** [DriveThruRPG — Game in the Brain](https://www.drivethrurpg.com/en/publisher/17858/game-in-the-brain)
@@ -27,7 +27,12 @@
 11. [Data Management](#11-data-management)
 12. [PWA Features](#12-pwa-features)
 13. [Milestone Plan](#13-milestone-plan)
-14. [Reference Documents](#14-reference-documents)
+14. [Planned Extensions](#14-planned-extensions)
+    - 14.1 FR-040 Intrastellar Population Distribution
+    - 14.2 FR-041 Composition–Atmosphere–Biosphere Pipeline Redesign
+    - 14.3 FR-042 Positioning System Redesign
+    - 14.4 FR-043 Habitability Application & Mainworld Selection
+15. [Reference Documents](#15-reference-documents)
 
 ---
 
@@ -536,38 +541,31 @@ See [REF-013: Technology Level Reference](./references/REF-013-tech-level.md) fo
 
 | Function | Inputs | Output |
 |----------|--------|--------|
-| `calculatePopulation(envHab, techLevel, roll)` | EnvHab (without TL), Tech Level, 2D6 | Population number |
+| `generateInhabitants(envHab, techLevel, preset, ...)` | EnvHab (without TL), Tech Level, TLProductivityPreset | Population number |
 
-**Formula:**
+**Formula (QA-061 — productivity-ratio model):**
 ```
-Pop = 10^(EnvHab + TLmod) × 2D6
-effectiveHab = max(0, EnvHab + TLmod)
+productivityMultiplier = getSoc7MonthlyIncome(TL, preset)
+                       / getSoc7MonthlyIncome(preset.baseTL, preset)
+
+Natural world (envHab > 0):
+  maxPop     = 10^(envHab + 1) × productivityMultiplier × rollExploding(2,6)
+  population = max(10, floor(roll3D6 × maxPop × 0.05))
+
+Hostile world (envHab ≤ 0):
+  population = max(10, floor(habitatResult.population × productivityMultiplier))
+  (use MVT/GVT table for habitat type — see 7.2.1)
 ```
 
-- **EnvHab** = Gravity + Atmosphere + Temperature + Hazard + Hazard Intensity + Biochemical Resources (habitability components without the TL modifier)
-- **TLmod** = from the productivity lookup table below
-- **Clamp:** `effectiveHab = max(0, EnvHab + TLmod)`. If effectiveHab ≤ 0, use MVT/GVT table (see 7.2.1).
+- **EnvHab** = Gravity + Atmosphere + Temperature + Hazard + Hazard Intensity + Biochemical Resources (without TL modifier)
+- **productivityMultiplier** scales with TL only for presets with compounding growth curves
+  - **CE/Traveller preset:** multiplier = 1.0 at every TL — populations depend purely on EnvHab
+  - **Mneme preset:** multiplier follows the compounding income curve (1× at TL 7 → ~389 000× at TL 16)
+- The `+1` in the exponent shifts the base population scale to playable Traveller levels for CE worlds
 
-**TLmod Lookup Table (Productivity-Derived):**
+> **`TL_POP_MOD` table deleted (QA-061):** The old lookup table (TL7→+5 … TL16→+13) was Mneme-only and caused CE/Traveller worlds to generate trillion-person populations. It has been removed.
 
-| TL | TLmod | Productivity Regime |
-|----|-------|---------------------|
-| 7  | +5    | Demographic Expansion — pre-automation, subsistence ~14% |
-| 8  | +6    | HC Constraint Peak — M=1×, TFR suppressed |
-| 9  | +6    | Demographic Plateau — M=3.16×, same cap as TL 8 |
-| 10 | +7    | Automation Relief — M=10×, ectogenesis, cis-lunar |
-| 11 | +8    | Expansion — M=31.6×, inner solar system |
-| 12 | +9    | Full Solar System — M=100×, Jovian independent |
-| 13 | +10   | Outer System — M=316×, full system developed |
-| 14 | +11   | Interstellar — M=1,000×, multi-system totals |
-| 15 | +12   | Interstellar Colonisation — M=3,162×, 100B+ outside Sol |
-| 16 | +13   | Megastructures — M=10,000×, self-directing expansion |
-
-> **Fallback (TL outside table):** `TLmod = max(5, TL − 3)`
-
-> **Design Note — TL 8/9 Plateau:** TL 9 shares TLmod +6 with TL 8. At TL 8–9 (2000–2050 CE) human capital costs (education, childcare, housing, training) consume population growth capacity the same way subsistence farming did at lower TLs — robots do not reduce this cost because **time** is the scarce input. The plateau breaks at TL 10: ectogenesis removes the time bottleneck, cis-lunar space opens new living capacity, and cooperative AI childcare allows TFR recovery.
-
-> **Starport note:** Population and starport use **different TL scaling**. Population uses the productivity TLmod lookup table (total carrying capacity). Starport uses GDP-derived PSS with TL capability cap — TL sets the ceiling on what can be built, GDP/population sets the economic scale. See Section 7.8.
+> **Starport note:** Population and starport use **different scaling paths**. Population uses the preset productivity ratio (carrying capacity). Starport uses `getGdpPerDayForWorld(TL, dev, wealth, preset)` with TL capability cap — wealth/development affect per-capita income, not just a multiplier. See Section 7.8.
 
 #### 7.2.1 MVT/GVT Table (Hab ≤ 0)
 
@@ -694,14 +692,17 @@ Two independent steps — economic scale and capability ceiling.
 #### Step 1 — Port Size Score (PSS)
 
 ```
-GDP/year = Population × GDP/person/day × 365
-Annual Port Trade = GDP/year × Trade Fraction × Wealth Multiplier
+GDP/day = getGdpPerDayForWorld(TL, development, wealth, preset)
+                               ← avg SOC from dev + wealth (QA-056)
+GDP/year = Population × GDP/day × 365
+Annual Port Trade = GDP/year × getTradeFraction(development)
+                   ← wealthMultiplier removed (QA-057); wealth is in GDP/day
 PSS = floor( log10(Annual Port Trade) ) − 10
 ```
 
-**GDP/person/day by TL** (2030 anchor: $1 = 1 Cr):
+**GDP/day by dev+wealth (example — Mneme preset at SOC 7 = Mature/Average):**
 
-| TL | GDP/person/day | TL | GDP/person/day |
+| TL | SOC 7 GDP/day | TL | SOC 7 GDP/day |
 |----|---------------|----|---------------|
 | 7 | 205 Cr | 12 | 210,000 Cr |
 | 8 | 552 Cr | 13 | 1,500,000 Cr |
@@ -709,36 +710,29 @@ PSS = floor( log10(Annual Port Trade) ) − 10
 | 10 | 4,000 Cr | 15 | 80,000,000 Cr |
 | 11 | 29,000 Cr | 16 | 578,000,000 Cr |
 
-**Trade Fraction by Development:**
+SOC mapping: `avgSoc = DEVELOPMENT_AVG_SOC[dev] + WEALTH_SOC_BONUS[wealth]`. GDP/day scales proportionally: UnderDeveloped/Average (SOC ~3.5) earns ~4% of SOC 7; Very Developed/Affluent (SOC ~13, capped 12) earns ~20×.
 
-| Development | Trade Fraction |
-|-------------|---------------|
-| UnderDeveloped | 5% |
+**Trade Fraction by Development** (mean; actual result rolls a dice band around this — QA-061):
+
+| Development | Mean Fraction |
+|-------------|--------------|
+| UnderDeveloped | 5% (fixed) |
 | Developing | 10% |
 | Mature | 15% |
 | Developed | 20% |
 | Well Developed | 25% |
 | Very Developed | 30% |
 
-**Wealth Trade Multiplier:**
-
-| Wealth | Multiplier |
-|--------|-----------|
-| Average | ×1.0 |
-| Better-off | ×1.2 |
-| Prosperous | ×1.5 |
-| Affluent | ×2.0 |
-
-**PSS to Raw Class:**
+**PSS to Raw Class (updated QA-061):**
 
 | PSS | Raw Class |
 |-----|-----------|
-| <4 | X |
-| 4–5 | E |
-| 6–7 | D |
-| 8–9 | C |
-| 10–11 | B |
-| ≥12 | A |
+| < 3 | X |
+| 3–4 | E |
+| 5   | D |
+| 6   | C |
+| 7   | B |
+| ≥ 8 | A |
 
 #### Step 2 — TL Capability Cap
 
@@ -760,11 +754,11 @@ Final Class = min(PSS-derived class, TL capability cap)
 #### Step 3 — Weekly Port Activity (×3D6)
 
 ```
-Weekly Base     = Annual Port Trade ÷ 364
+Weekly Base     = Annual Port Trade ÷ 52
 Weekly Activity = Weekly Base × 3D6
 ```
 
-3D6 (range 3–18, median 10–11) reflects week-to-week variation. The ÷364 divisor means average annual throughput ≈ 1.43× calculated trade — the transit multiplier (goods counted on arrival and departure, like real ports).
+3D6 (range 3–18, median 10–11) reflects week-to-week variation. ÷52 gives a true weekly rate. (Earlier drafts and a stale JSDoc said ÷364 — that was a daily rate; corrected in QA-027 v1.3.81.)
 
 #### Step 4 — Weekly Activity Roll Button (FR-029) *(📋 Open)*
 
@@ -1450,38 +1444,40 @@ An expandable grid shows **SOC 1 through SOC 60** for the selected TL.
 
 The generator uses a four-step pipeline to derive starport size from economic assumptions:
 
-**Step 1 — Per-Capita Income**
+**Step 1 — Per-Capita Income (QA-056)**
 ```
-SOC 7 annual income = Boat Price / boatYears
-gdpPerDay = SOC 7 annual income / 365
+avgSoc    = DEVELOPMENT_AVG_SOC[development] + WEALTH_SOC_BONUS[wealth]  (capped at 12)
+gdpPerDay = getGdpPerDayForWorld(TL, development, wealth, preset)
+          = getSocMonthlyIncome(avgSoc, TL, preset) × 12 / 365
 ```
+
+Development and Wealth now drive the per-capita income baseline via average SOC. An UnderDeveloped/Average world earns ~4% of SOC 7; a Very Developed/Affluent world earns ~20×.
 
 **Step 2 — Gross Domestic Product**
 ```
 GDP/year = Population × gdpPerDay × 365
 ```
 
-**Step 3 — Port Trade Volume**
+**Step 3 — Port Trade Volume (QA-057)**
 ```
-Annual Port Trade = GDP/year × TradeFraction(development) × WealthMultiplier(wealth)
+Annual Port Trade = GDP/year × getTradeFraction(development)
 ```
 
-Trade Fraction:
-- UnderDeveloped: 5% | Developing: 10% | Mature: 15% | Developed: 20% | Well Developed: 25% | Very Developed: 30%
+`wealthMultiplier` removed — Wealth is fully expressed through avg SOC in GDP/day (double-counting eliminated).
 
-Wealth Multiplier:
-- Average: ×1.0 | Better-off: ×1.2 | Prosperous: ×1.5 | Affluent: ×2.0
+Trade Fraction (mean; dice variance added per level in QA-061):
+- UnderDeveloped: 5% | Developing: ~10% | Mature: ~15% | Developed: ~20% | Well Developed: ~25% | Very Developed: ~30%
 
 **Step 4 — Port Size Score (PSS) & Ships**
 ```
 PSS = floor( log10(Annual Port Trade) ) − 10
-Raw Class = f(PSS) → X / E / D / C / B / A
+Raw Class = pssToClass(PSS)  →  < 3=X, 3–4=E, 5=D, 6=C, 7=B, ≥8=A  (QA-061 thresholds)
 Final Class = min(Raw Class, TL Capability Cap)
-Weekly Base = Annual Port Trade ÷ 364
+Weekly Base = Annual Port Trade ÷ 52                    ← true weekly rate (QA-027)
 Weekly Activity = Weekly Base × 3D6
 ```
 
-`Weekly Activity` is the budget passed to `shipsInArea.ts`. Lower `gdpPerDay` (e.g. CE mode) shrinks this budget and produces far fewer/larger ships.
+`Weekly Activity` is the budget passed to `shipsInArea.ts`. Lower `gdpPerDay` (e.g. CE mode) naturally shrinks this budget — no separate Boat Years scarcity multiplier needed (QA-058).
 
 #### 10.4.6 Table Customization
 
@@ -1610,7 +1606,421 @@ The Mneme CE World Generator is a Progressive Web App (PWA) that can be installe
 
 ---
 
-## 14. Reference Documents
+## 14. Planned Extensions
+
+### 14.1 FR-040 — Intrastellar Population Distribution *(🟢 Planned)*
+
+**Status:** Planned — spec in [ROADMAP.md](./ROADMAP.md#fr-040--intrastellar-population-distribution)
+
+**Objective:** Shift from a single main-world population to a system-wide model where inhabitants are distributed proportionally across all habitable bodies. The main world remains the political and economic centre but no longer monopolises 100% of the population.
+
+#### Core Mechanics
+
+1. **Calculate habitability for every body** — run the full habitability pipeline (gravity, atmosphere, temperature, hazard, biochem) for each terrestrial, ice world, and gas giant in the system. Dwarfs and disks excluded unless high TL permits artificial habitats.
+
+2. **Determine carrying capacity per body**
+   ```
+   carryingCapacity[body] = 10^(habitability + 1) × productivityMultiplier
+   ```
+   Bodies with `habitability ≤ 0` may still host habitats at TL 11+ (scaled by `getHabitatSize()`).
+
+3. **Distribute total system population**
+   ```
+   body.population = totalSystemPopulation × (body.capacity / sumOfAllCapacities)
+   ```
+   The main world receives the largest single share — typically 30–70%.
+
+4. **TL scaling** — higher TL increases `productivityMultiplier`, raising total system population and expanding habitat eligibility to more hostile bodies.
+
+#### Display & Data Model
+
+- **System Viewer — Inhabitants panel:** "Population Distribution" subsection listing inhabited bodies with their share %.
+- **Planetary System tab:** each body row shows its population and habitability breakdown.
+- **DOCX export:** "Major Settlements" table with body name, type, population, habitability.
+- **Types:** extend `PlanetaryBody` with optional `population?: number` and `habitability?: number`.
+
+#### Affected Files
+
+| File | Change |
+|------|--------|
+| `src/lib/generator.ts` | Run habitability for all bodies, compute capacities, distribute population |
+| `src/types/index.ts` | Add `population?` and `habitability?` to `PlanetaryBody` |
+| `src/components/SystemViewer.tsx` | Population distribution UI in Inhabitants panel |
+| `src/lib/exportDocx.ts` | Settlement table export |
+
+---
+
+### 14.2 FR-041 — Composition–Atmosphere–Biosphere Pipeline Redesign *(📋 Planned)*
+
+**Status:** Planned — full design spec in [`260417-03 MWG-REDESIGN-consolidated-v1.md`](./260417-03%20MWG-REDESIGN-consolidated-v1.md) (supersedes FR-041/042/043 drafts).  
+**Replaces:** Current §6.2 (Lesser Earth Type), §6.3 (Density), §6.4 (Atmosphere), §6.8 (Biochem)  
+**Enables:** FR-040 (Intrastellar Population Distribution)
+
+#### Motivation
+
+The current pipeline generates the mainworld first and builds the system around it. The PWA can now generate the **entire system first**, compute baseline habitability for every candidate body, and select the winner as mainworld — more physically honest. This requires a composition → atmosphere → biosphere chain for every candidate.
+
+#### Pipeline (13 Steps)
+
+```
+1. Mass              (existing, 2D6 with stellar-class modifier)
+2. Composition       (NEW — 3D6, 7-tier tables for Terrestrial + Dwarf)
+                     Output: density range + Reactivity DM
+3. Density           (2D6 within composition-defined range)
+4. Derived Physics   (existing — gravity, radius, escape velocity)
+5. Atmosphere Comp   (NEW — 3D6 abiotic gas table: HH/CH₄/N₂/CO₂/H₂O/H₂SO₄/Exotic)
+                     N-O deliberately absent — it's a biosignature
+6. Atmosphere Density(2D6 + gravity/composition/Reactivity modifiers)
+7. Temperature       (existing, modified by atmosphere composition + zone)
+8. Hazard            (2D6 + Reactivity DM)
+9. Biochem Resources (NEW — 3D6 + Reactivity DM, 11-tier: Scarce→Inexhaustible, −5 to +5)
+10. Biosphere Test   (NEW — 5D6 dis+2 vs TN 20; triggered at Common+)
+                     Biochem mod reduces disadvantage (mod +N removes N dis levels)
+11. Biosphere Rating (NEW — B0–B6 from degree of pass; hab mods 0 to +8)
+12. Atmo Conversion  (NEW — B3+ converts abiotic atmosphere toward N-O)
+13. Habitability     (sum of all modifiers)
+```
+
+#### Key Tables
+
+**Terrestrial Composition (3D6):**
+
+| 3D6 | Composition | Density (g/cm³) | Reactivity DM |
+|---|---|---|---|
+| 3 | Exotic (Heavy-Element) | 7.5–9.5 | +2 |
+| 4–5 | Iron-Dominant | 6.0–7.5 | −1 |
+| 6–8 | Iron-Silicate (Earth-type) | 5.0–6.0 | +1 |
+| 9–12 | Silicate-Basaltic (Mars-type) | 3.8–5.0 | 0 |
+| 13–15 | Hydrous / Ocean | 2.5–3.8 | +2 |
+| 16–17 | Carbonaceous | 2.0–3.0 | +1 |
+| 18 | Ceramic / Silicate-Pure | 3.0–4.0 | 0 |
+
+**Dwarf Composition (3D6):**
+
+| 3D6 | Composition | Density (g/cm³) | Reactivity DM |
+|---|---|---|---|
+| 3 | Exotic | 1.5–4.0 | +1 |
+| 4–5 | Metallic (M-type) | 5.0–7.5 | −1 |
+| 6–8 | Silicaceous (S-type) | 2.8–3.8 | 0 |
+| 9–12 | Hydrous / Icy-Rock | 1.5–2.5 | +2 |
+| 13–15 | Carbonaceous (C-type) | 1.8–2.5 | +1 |
+| 16–17 | Rubble-Pile | 1.5–2.2 | 0 |
+| 18 | Volatile-Rich | 1.2–2.0 | +2 |
+
+**Abiotic Atmosphere Composition (3D6):**
+
+| 3D6 | Primary Gas | Temp DM | Hazard Bias |
+|---|---|---|---|
+| 3 | Hydrogen-Helium | −2 | None |
+| 4–5 | Methane / Ammonia | −1 | Toxic +1 |
+| 6–8 | Nitrogen-Inert (N₂, Ar, CO) | 0 | None |
+| 9–12 | Carbon Dioxide | +1 | None |
+| 13–15 | Water Vapor / Steam | +2 | Corrosive +1 |
+| 16–17 | Sulfuric | +2 | Corrosive +2, Toxic +1 |
+| 18 | Exotic / Unknown | Variable | Variable |
+
+**Biochem Resources (3D6 + Reactivity DM, 11-tier):**
+
+| 3D6 | Tier | Hab Mod |
+|---|---|---|
+| 3 | Scarce | −5 |
+| 4 | Rare | −4 |
+| 5 | Uncommon | −3 |
+| 6–7 | Poor | −2 |
+| 8–9 | Deficient | −1 |
+| 10–11 | Common | 0 |
+| 12–13 | Abundant | +1 |
+| 14 | Rich | +2 |
+| 15 | Bountiful | +3 |
+| 16 | Prolific | +4 |
+| 17–18 | Inexhaustible | +5 |
+
+**Biosphere Test (triggered at Common+):**
+
+| Biochem Tier | Dice Pool | P(≥ TN 20) |
+|---|---|---|
+| Common (0) | 7D6 keep low 5 (dis+2) | ~12% |
+| Abundant (+1) | 6D6 keep low 5 (dis+1) | ~22% |
+| Rich (+2) | 5D6 plain | ~41% |
+| Bountiful (+3) | 6D6 keep high 5 (adv+1) | ~68% |
+| Prolific (+4) | 7D6 keep high 5 (adv+2) | ~85% |
+| Inexhaustible (+5) | 8D6 keep high 5 (adv+3) | ~94% |
+
+**Biosphere Rating (B0–B6):**
+
+| Degree | Rating | Name | Atmo Effect | Hab Mod |
+|---|---|---|---|---|
+| < TN−5 | B0 | None | — | 0 |
+| TN−5 to TN−1 | B1 | Pre-Biotic | — | 0 |
+| TN to TN+2 | B2 | Microbial | Trace O₂ | +1 |
+| TN+3 to TN+5 | B3 | Photosynthetic | CO₂ → transitional | +2 |
+| TN+6 to TN+8 | B4 | Complex | → **Nitrogen-Oxygen** | +4 |
+| TN+9 to TN+11 | B5 | Advanced | Stable N-O | +6 |
+| ≥ TN+12 | B6 | Post-Sapient | Engineered | +8 |
+
+#### Extraterrestrial Life Assumptions Settings
+
+New settings panel (parallel to Economic Presets):
+
+```typescript
+interface ExtraterrestrialLifeAssumptions {
+  id: string
+  name: string
+  description: string
+  biosphereTN: number                    // default 20, range 15–35
+  biosphereDisadvantage: number          // default 2, range 0–5
+  minBiochemForBiosphereRoll: 'Common' | 'Abundant' | 'Rich'
+  enableTransitionalAtmospheres: boolean
+  biochemOffsetRule: 'standard' | 'halved' | 'none'
+}
+```
+
+**Built-in presets:**
+
+| Preset | TN | Dis | Min Biochem | Transitional | N-O emergence |
+|---|---|---|---|---|---|
+| Mneme Default | 20 | 2 | Common | yes | ~3–10% of candidates |
+| Rare Earth | 28 | 3 | Abundant | no | < 1% |
+| Panspermia | 15 | 0 | Common | yes | ~15–30% |
+
+**localStorage:** `mneme_life_assumptions_presets` (custom presets), active ID in `mneme_generator_options`
+
+#### Affected Files
+
+| File | Change |
+|------|--------|
+| `src/types/index.ts` | Add `composition`, `atmosphereComposition`, `biosphereRating`, `ExtraterrestrialLifeAssumptions` types |
+| `src/lib/worldData.ts` | Composition tables, atmosphere composition table, 11-tier biochem, biosphere test/rating |
+| `src/lib/physicalProperties.ts` | Accept composition-driven density (override random sampling); existing function remains as fallback for gas/ice/disk |
+| `src/lib/generator.ts` | Rewrite habitability pipeline for all candidates; mainworld selection by best hab score |
+| `src/lib/lifePresets.ts` | NEW — Life assumptions preset builder + built-in presets (Mneme Default / Rare Earth / Panspermia) |
+| `src/lib/optionsStorage.ts` | Persist active life assumptions preset |
+| `src/components/Settings.tsx` | Life Assumptions panel (TN slider, dis slider, biochem minimum, preset save/load) |
+| `src/components/SystemViewer.tsx` | Display composition, atmosphere composition, biosphere rating per body |
+| `src/components/GeneratorDashboard.tsx` | Life assumptions preset selector |
+
+#### Open Questions (Deferred)
+
+- B6 Post-Sapient: auto-mainworld or compete normally?
+- HH inheritance from Gas Giant parent (captured-atmosphere edge case)
+- Composition–zone correlation (Hydrous/Volatile beyond frost line)
+- Temperature DM integration with existing temperature mechanic
+
+---
+
+### 14.3 FR-042 — Positioning System Redesign *(📋 Planned)*
+
+**Status:** Planned — full design spec in [`260417-03 MWG-REDESIGN-consolidated-v1.md`](./260417-03%20MWG-REDESIGN-consolidated-v1.md) (supersedes FR-041/042/043 drafts).  
+**Replaces:** REF-003 (orbit table), REF-005 (world position table), QA-011 (Hot Jupiter migration)  
+**Depends on:** FR-041 (composition runs before positioning; habitability pipeline runs after)
+
+#### Zone Architecture
+
+**Inner System (5 zones):**
+
+| Zone | Boundary |
+|---|---|
+| Infernal | Stellar radius × 2 to √L × 0.4 AU |
+| Hot | √L × 0.4 to 0.8 AU |
+| Conservative | √L × 0.8 to 1.2 AU |
+| Cool | √L × 1.2 to 2.0 AU |
+| Frost Line | √L × 4.85 AU (anchor) |
+
+**Outer System (5 zones, geometric growth to heliopause = 120 × √L AU):**
+
+| Zone | Width % of outer span |
+|---|---|
+| O1 | 3.125% (Kuiper-Belt density) |
+| O2 | 6.25% |
+| O3 | 12.5% |
+| O4 | 25% |
+| O5 | 50% (Oort-cloud sparseness) |
+
+#### Unified 3D6 Position Roll
+
+| 3D6 | Zone | Probability |
+|---|---|---|
+| 3 | Infernal | 0.46% |
+| 4–7 | Hot | 15.3% |
+| 8–11 | Conservative | 43.5% |
+| 12–13 | Cool | 16.2% |
+| 14 | Frost Line | 9.7% |
+| 15–18 | Outer (second 3D6 for O1–O5) | 14.8% |
+
+#### 4-Phase Placement
+
+- **Phase A — Anchors:** Largest Gas/Ice Giant at frost line (3D6 jitter ±7%); largest Terrestrial via unified 3D6
+- **Phase B — Disks first:** Disks placed before planets; block Terrestrials + Gas/Ice Giants; Dwarfs coexist
+- **Phase C — Remaining bodies (mass-descending):** Hill sphere conflict (4× max r_H separation); disk-blocking; 5-reroll limit → ejection to rogue worlds
+- **Phase D — Moons:** Level 2 within parent Hill sphere (separate thread)
+
+#### Hot Jupiter — Stability Roll (replaces QA-011)
+
+**Trigger:** Gas Giant rolls inner zone + all 4 inner zones filled + stability roll fails (5D6 keep lowest 3, TN 5, ~5.5% failure per trigger → ~0.5–0.6% per system)
+
+**Consequences:** Mass absorption of consumed bodies (between original and final position), shepherded bodies lose 6–26% distance (70 + 4D6, stellar-class-dependent Adv/Dis). Class upgrades: ≥20 JM → Proto-Star trait; ≥50 JM → Brown Dwarf (Level 0 companion, relocated per REF-003).
+
+#### Data Model Additions
+
+```typescript
+interface OuterZoneBoundaries {
+  o1: { minAU: number; maxAU: number }
+  o2: { minAU: number; maxAU: number }
+  o3: { minAU: number; maxAU: number }
+  o4: { minAU: number; maxAU: number }
+  o5: { minAU: number; maxAU: number }
+}
+
+type ZoneId = 'Infernal' | 'Hot' | 'Conservative' | 'Cool'
+  | 'FrostLine' | 'O1' | 'O2' | 'O3' | 'O4' | 'O5'
+
+// StarSystem additions:
+heliopauseAU: number           // 120 × √(L/L☉)
+frostLineAU: number            // 4.85 × √(L/L☉)
+outerSystemZones: OuterZoneBoundaries
+ejectedBodies: Body[]          // rogue worlds from saturation
+consumedBodies: Body[]         // absorbed by Hot Jupiter
+
+// Body additions:
+positionRoll: number           // debug — 3D6 result
+positionRerollCount: number    // how many rerolls
+wasEjected?: boolean
+ejectionReason?: string        // 'saturation' | 'gravitational'
+```
+
+#### Affected Files
+
+| File | Change |
+|------|--------|
+| `src/types/index.ts` | `OuterZoneBoundaries`, expanded `ZoneId`, `ejectedBodies`, `consumedBodies`, body position fields |
+| `src/lib/generator.ts` | Rewrite `generatePlanetarySystem()` with 4-phase placement, anchor logic, ejection, Hot Jupiter stability |
+| `src/lib/worldData.ts` | Unified 3D6 zone table, outer zone table, disk count formula, shepherding roll |
+| `src/lib/stellarData.ts` | `heliopauseAU`, `frostLineAU` calculations |
+| `src/components/SystemViewer.tsx` | Rogue Worlds panel, consumed bodies display, Proto-Star indicators |
+| `src/components/GeneratorDashboard.tsx` | Batch export: ejection stats, Hot Jupiter rate validation |
+
+#### Open Questions
+
+- Shepherded body temperature re-evaluation post-shepherding
+- Promoted Brown Dwarf sub-system generation (deferred — v1 keeps only original moons)
+- Brown Dwarf positioning after Hot Jupiter promotion (proposed: relocate to standard outer orbit)
+- Consumed body narrative display in UI
+
+---
+
+### 14.4 FR-043 — Habitability Application & Mainworld Selection *(📋 Planned)*
+
+**Status:** Planned — full design spec in [`260417-03 MWG-REDESIGN-consolidated-v1.md`](./260417-03%20MWG-REDESIGN-consolidated-v1.md) (supersedes FR-041/042/043 drafts).  
+**Replaces:** Current §6.4–6.9 (atmosphere, temperature, hazard, biochem, habitability) and mainworld-first generation  
+**Depends on:** FR-041 (composition), FR-042 (positioning — provides zone assignments)  
+**Part of:** Redesign sequence: Composition → Positioning → **Habitability (this)** → Habitats → Megastructures
+
+#### Core Change: Mainworld Emerges from System
+
+Every Dwarf and Terrestrial (Level 1 and 2) runs through a 10-step habitability waterfall. The body with the highest **Baseline Habitability** wins. TL applies only after selection. A Level 2 moon can beat a Level 1 planet.
+
+#### The 10-Step Habitability Waterfall
+
+**Step 1 — Atmosphere Composition (3D6, abiotic):**
+From FR-041. Hab mods: CO₂ −1, Steam −2, Sulfuric −3, Exotic −3, N-Inert 0, H-He 0.
+
+**Step 2 — Atmosphere Density (2D6 + modifiers):**
+Trace −3, Thin −1, Average 0, Dense −1, Crushing −3. Modified by Reactivity, gravity, Ceramic.
+
+**Step 3 — Temperature (2D6 + stacked modifiers):**
+Freezing −5, Cold −2, Average 0, Hot −2, Inferno −5.
+
+Zone DMs: Infernal +5, Hot +3, Conservative 0, Cool −2, Frost Line −3, O1 −4, O2 −5, O3 −6, O4 −7, O5 −8.
+Plus atmosphere composition DM, atmosphere density greenhouse DM, Proto-Star heat DM (+1 to +3 for moons).
+Shepherded bodies re-roll temperature with new zone DM.
+
+**Step 4 — Hazard (2D6 + Reactivity DM + atmo hazard bias):**
+≤3 None(0), 4–6 Polluted(−1), 7–8 Corrosive(−2), 9 Biohazard(−2), 10 Toxic(−3), 11–12 Radioactive(−4).
+
+**Step 5 — Hazard Intensity (2D6):**
+2–3 Trace(0), 4–6 Light(0), 7–9 Moderate(−1), 10–11 Heavy(−2), 12 Extreme(−3).
+
+**Step 6 — Biochem Resources (3D6 + Reactivity DM):**
+11-tier from FR-041. Scarce(−5) through Inexhaustible(+5).
+
+**Step 7 — Biosphere Test (dice pool with three modifiers):**
+Base: 5D6 dis+2 vs TN 20.
+- (A) Biochem: each +1 mod removes 1 dis level
+- (B) Temperature: Average adv+2, Cold/Hot dis+2, Freezing/Inferno dis+3
+- (C) Subsurface Ocean Override: Hydrous/Volatile-Rich + Cold/Freezing + tidal heating → halve temperature penalty
+
+**Step 8 — Biosphere Rating (B0–B6):**
+From degree of pass. B0 None(0), B1 Pre-Biotic(0), B2 Microbial(+1), B3 Photosynthetic(+2), B4 Complex(+4), B5 Advanced(+6), B6 Post-Sapient(+8).
+
+**Step 9 — Atmosphere Conversion:**
+B3+ converts abiotic atmosphere. CO₂/N-Inert → N-O at B4+. Removes atmosphere hab penalty.
+
+**Step 10 — Baseline Habitability:**
+`Gravity + AtmoComp + AtmoDensity + Temperature + Hazard + HazardIntensity + Biochem + Biosphere`
+
+#### Gravity Modifier (revised, symmetric)
+
+| Gravity | Hab Mod |
+|---|---|
+| 0.0–0.1G | −3 |
+| 0.1–0.3G | −2 |
+| 0.3–0.7G | −1 |
+| 0.7–1.3G | 0 |
+| 1.3–1.7G | −1 |
+| 1.7–2.5G | −2 |
+| ≥2.5G | −3 |
+
+#### Mainworld Selection
+
+1. Highest Baseline Habitability wins (Level 1 or Level 2)
+2. Tiebreakers: Biosphere Rating > Composition quality > Mass > Random
+3. If no candidate > 0: MVT/GVT fallback (artificial habitats)
+4. Post-selection: TL rolled, Effective Hab = Baseline + TL mod, Inhabitants generated
+
+#### Data Model Additions
+
+```typescript
+// Body additions:
+baselineHabitability: number
+habitabilityBreakdown: {
+  gravity: number; atmosphereComp: number; atmosphereDensity: number
+  temperature: number; hazard: number; hazardIntensity: number
+  biochem: number; biosphere: number
+}
+atmosphereCompositionAbiotic: AtmosphereComposition  // pre-conversion
+wasSelectedAsMainworld: boolean
+hasSubsurfaceOceanOverride: boolean
+wasShepherded: boolean
+
+// StarSystem additions:
+mainworldId: string
+mainworldSelectionLog: {
+  candidates: Array<{ id: string; score: number; rank: number }>
+  tiebreakerApplied: boolean
+  fallbackTriggered: boolean
+}
+```
+
+#### Affected Files
+
+| File | Change |
+|------|--------|
+| `src/lib/habitabilityPipeline.ts` | NEW — 10-step waterfall + mainworld selection |
+| `src/lib/worldData.ts` | Revised temperature/hazard/intensity tables, zone DM table, gravity ladder |
+| `src/lib/generator.ts` | Replace `generateMainWorld` with candidate scoring + selection |
+| `src/types/index.ts` | `baselineHabitability`, `habitabilityBreakdown`, `mainworldSelectionLog` |
+| `src/components/SystemViewer.tsx` | Candidate ranking display, habitability breakdown per body |
+
+#### Open Questions
+
+- Zone DM values (Infernal +5 through O5 −8) need batch validation
+- Shepherded body re-evaluation: temperature only, or also hazard/biochem?
+- B3→B4 boundary jump (+2 to +4) may cause tie clustering
+- Should extreme negative scores have a floor, or let MVT/GVT handle arbitrarily hostile worlds?
+
+---
+
+## 16. Reference Documents
 
 The following reference documents contain detailed tables and implementation notes:
 
@@ -1650,3 +2060,7 @@ The following reference documents contain detailed tables and implementation not
 | 2.0 | 2026-04-14 | Open items audit: FR-028/QA-018, FR-029, FR-030, QA-022 confirmed open and implementation-ready; QA-023 proposed/pending approval; all specs verified complete against reference data |
 | 2.1 | 2026-04-14 | FR-030 Step 3: traffic_pool values corrected to short lowercase keys (`"small"`, `"civilian"`, `"warship"`) to match shipsInArea.ts implementation |
 | 2.2 | 2026-04-14 | FR-030 Step 5: "In System" ships now roll a body index 1–N (total planetary bodies); display as "In System — Body N"; zero-body fallback to Orbit; see QA-024 |
+| 2.3 | 2026-04-17 | QA-056/057/058/061: §7.2 population rewritten for productivity-ratio model (QA-061); §7.8 Starport PSS formula updated (avg-SOC GDP, wealthMult removed, ÷364→÷52, new class thresholds); §10.4.5 pipeline updated to match; §14.1 FR-040 Intrastellar Population Distribution spec added |
+| 2.4 | 2026-04-17 | §14.2 FR-041 Composition–Atmosphere–Biosphere Pipeline Redesign added — full spec with composition tables, abiotic atmosphere, 11-tier biochem, biosphere test/rating (B0–B6), atmosphere conversion, and Extraterrestrial Life Assumptions settings |
+| 2.5 | 2026-04-17 | §14.3 FR-042 Positioning System Redesign added — unified 3D6 roll, 4-phase placement, O1–O5 outer zones, reversed Hot Jupiter stability roll, disk-blocking, rogue worlds, Proto-Star/Brown Dwarf promotion |
+| 2.6 | 2026-04-17 | §14.4 FR-043 Habitability Application & Mainworld Selection added — 10-step waterfall, TL separated from Baseline, zone temperature DMs, biosphere-temperature link, subsurface ocean override, competitive selection with tiebreakers, revised gravity ladder |

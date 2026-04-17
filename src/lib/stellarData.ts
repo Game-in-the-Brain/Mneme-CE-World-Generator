@@ -1,4 +1,4 @@
-import type { StellarClass, StellarGrade, ZoneBoundaries, Zone } from '../types';
+import type { StellarClass, StellarGrade, ZoneBoundaries, Zone, OuterZoneBoundaries } from '../types';
 
 // =====================
 // Stellar Mass by Class and Grade (M☉)
@@ -147,6 +147,42 @@ export function getZoneForDistance(distance: number, zones: ZoneBoundaries): Zon
   if (distance < zones.outer.min) return 'Cold';
   return 'Outer';
 }
+
+// =====================
+// V2 Zone Architecture (FR-042)
+// =====================
+
+export interface V2ZoneData {
+  heliopauseAU: number;
+  frostLineAU: number;
+  outerSystemZones: OuterZoneBoundaries;
+}
+
+export function calculateV2Zones(luminosity: number): V2ZoneData {
+  const sqrtL = Math.sqrt(luminosity);
+  const frostLineAU = round(sqrtL * 4.85, 2);
+  const heliopauseAU = round(sqrtL * 120, 2);
+  const outerSpan = heliopauseAU - frostLineAU;
+
+  // Geometric growth: O1=3.125%, O2=6.25%, O3=12.5%, O4=25%, O5=50%
+  const o1Width = outerSpan * 0.03125;
+  const o2Width = outerSpan * 0.0625;
+  const o3Width = outerSpan * 0.125;
+  const o4Width = outerSpan * 0.25;
+  // O5 gets the remainder
+
+  const outerSystemZones: OuterZoneBoundaries = {
+    o1: { minAU: frostLineAU, maxAU: round(frostLineAU + o1Width, 2) },
+    o2: { minAU: round(frostLineAU + o1Width, 2), maxAU: round(frostLineAU + o1Width + o2Width, 2) },
+    o3: { minAU: round(frostLineAU + o1Width + o2Width, 2), maxAU: round(frostLineAU + o1Width + o2Width + o3Width, 2) },
+    o4: { minAU: round(frostLineAU + o1Width + o2Width + o3Width, 2), maxAU: round(frostLineAU + o1Width + o2Width + o3Width + o4Width, 2) },
+    o5: { minAU: round(frostLineAU + o1Width + o2Width + o3Width + o4Width, 2), maxAU: heliopauseAU },
+  };
+
+  return { heliopauseAU, frostLineAU, outerSystemZones };
+}
+
+
 
 // =====================
 // Companion Star Logic

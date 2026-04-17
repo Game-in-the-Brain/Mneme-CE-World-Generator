@@ -8,7 +8,7 @@ import { getGdpPerDayForWorld, getSoc7MonthlyIncome, CE_PRESET, DEFAULT_DEVELOPM
 import { roll5D6, roll2D6, roll3D6, rollExploding, rollKeep, rollD6, rollTL } from './dice';
 import {
   getClassFromRoll, getGradeFromRoll, getStellarMass, getStellarLuminosity,
-  calculateZoneBoundaries, getCompanionTarget,
+  calculateZoneBoundaries, calculateV2Zones, getCompanionTarget,
   constrainCompanionClass, constrainCompanionGrade, getCompanionOrbitDistance,
   STAR_COLORS
 } from './stellarData';
@@ -21,9 +21,13 @@ import {
   getWealth, getPowerStructure, getDevelopment, getSourceOfPower,
   getGovernanceDM, calculateStarport, rollForBase, determineTravelZone,
   generateCultureTraits, POWER_CULTURE_CONFLICTS, getBodyCount, getGasWorldClass, calculateWorldPosition,
-  getWorldTypeRoll, getHabitatSize, calculateDepressionPenalty
+  getWorldTypeRoll, getHabitatSize, calculateDepressionPenalty,
+  rollComposition,
 } from './worldData';
-import { calculatePhysicalProperties } from './physicalProperties';
+import { calculatePhysicalProperties, recalculatePhysicalProperties } from './physicalProperties';
+import { placeBodiesV2 } from './positioning';
+import { runHabitabilityWaterfall, selectMainworld } from './habitabilityPipeline';
+import { getLifePresetById, BUILT_IN_LIFE_PRESETS } from './lifePresets';
 
 // =====================
 // Star System Generator
@@ -55,13 +59,68 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
   const companionStars = generateCompanionStars(primaryStar);
 
   // Generate planetary system FIRST to determine largest body mass (for Habitat sizing)
-  const { disks, dwarfs, terrestrials, ices, gases, largestBodyMass } = generatePlanetarySystem(primaryStar, zones);
+  const planetaryResult = generatePlanetarySystem(
+    primaryStar, zones, opts.v2Positioning ?? true
+  );
+  const { disks, dwarfs, terrestrials, ices, gases, largestBodyMass } = planetaryResult;
 
-  // Generate main world (Habitats use largestBodyMass if applicable)
-  const mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
+  // Load active life preset (used in both v1 and v2 paths)
+  const lifePreset = getLifePresetById(opts.activeLifeAssumptionsId ?? 'mneme-default')
+    ?? BUILT_IN_LIFE_PRESETS[0];
 
-  // Generate inhabitants
-  const inhabitants = generateInhabitants(mainWorld, opts);
+  // Run habitability waterfall on EVERY Dwarf and Terrestrial body
+  // regardless of v1/v2 path so all worlds have habitability scores (QA-063)
+  const allBodiesForHab = [...disks, ...dwarfs, ...terrestrials, ...ices, ...gases];
+  for (const body of allBodiesForHab) {
+    if (body.type === 'dwarf' || body.type === 'terrestrial') {
+      runHabitabilityWaterfall(body, lifePreset);
+    }
+  }
+
+  let mainWorld: MainWorld;
+  let inhabitants: Inhabitants;
+  let v2SystemFields: Partial<StarSystem> = {};
+
+  if (opts.v2Positioning) {
+    // FR-043: v2 pipeline — system-first generation + competitive mainworld selection
+    const allBodies = [...disks, ...dwarfs, ...terrestrials, ...ices, ...gases];
+
+    // Select mainworld by highest Baseline Habitability
+    const selection = selectMainworld(allBodies);
+
+    // Build MainWorld from winner
+    const winner = allBodies.find(b => b.id === selection.mainworldId);
+    if (winner) {
+      mainWorld = buildMainWorldFromV2Winner(winner);
+    } else {
+      // Absolute fallback: generate a v1-style mainworld
+      mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
+    }
+
+    // Generate inhabitants (TL applied post-selection)
+    inhabitants = generateInhabitants(mainWorld, opts);
+
+    // Populate v2 fields on StarSystem
+    const v2Zones = calculateV2Zones(primaryStar.luminosity);
+    v2SystemFields = {
+      heliopauseAU: v2Zones.heliopauseAU,
+      frostLineAU: v2Zones.frostLineAU,
+      outerSystemZones: v2Zones.outerSystemZones,
+      ejectedBodies: planetaryResult.ejectedBodies,
+      consumedBodies: planetaryResult.consumedBodies,
+      mainworldId: selection.mainworldId,
+      mainworldSelectionLog: {
+        candidates: selection.candidates,
+        tiebreakerApplied: selection.tiebreakerApplied,
+        fallbackTriggered: selection.fallbackTriggered,
+        fallbackReason: selection.fallbackReason,
+      },
+    };
+  } else {
+    // Legacy v1 pipeline: mainworld-first generation
+    mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass);
+    inhabitants = generateInhabitants(mainWorld, opts);
+  }
 
   return {
     id,
@@ -80,6 +139,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     economicPresetLabel: opts.tlProductivityPreset?.label ?? opts.tlProductivityPreset?.name ?? 'Mneme',
     economicPresetSnapshot: opts.tlProductivityPreset ? { ...opts.tlProductivityPreset } : undefined,
     allowShipsAtXPort: opts.allowShipsAtXPort,
+    ...v2SystemFields,
   };
 }
 
@@ -447,6 +507,93 @@ function generateInhabitants(
 }
 
 // =====================
+// V2 MainWorld Builder (FR-043)
+// =====================
+
+/** Map v2 HazardIntensity to v1 HazardIntensityType. */
+function mapHazardIntensity(v2: string | undefined): import('../types').HazardIntensityType {
+  switch (v2) {
+    case 'Trace': return 'Very Mild';
+    case 'Light': return 'Mild';
+    case 'Moderate': return 'Serious';
+    case 'Heavy': return 'High';
+    case 'Extreme': return 'Intense';
+    default: return 'Very Mild';
+  }
+}
+
+/** Map v2 BiochemTier to v1 ResourceLevel. */
+function mapBiochemToResource(v2: string | undefined): import('../types').ResourceLevel {
+  switch (v2) {
+    case 'Scarce': return 'Scarce';
+    case 'Rare': return 'Rare';
+    case 'Uncommon':
+    case 'Poor':
+    case 'Deficient':
+    case 'Common': return 'Uncommon';
+    case 'Abundant':
+    case 'Rich':
+    case 'Bountiful': return 'Abundant';
+    case 'Prolific':
+    case 'Inexhaustible': return 'Inexhaustible';
+    default: return 'Uncommon';
+  }
+}
+
+/** Build a v1 MainWorld from a v2 winning PlanetaryBody. */
+function buildMainWorldFromV2Winner(body: PlanetaryBody): MainWorld {
+  // Roll TL post-selection (v2 spec: TL applies only after mainworld selection)
+  const tlRoll = rollTL();
+  const techLevel = getTechLevel(tlRoll);
+  const tlModifier = Math.max(0, Math.min(9, techLevel - 7));
+
+  const baseline = body.baselineHabitability ?? 0;
+  const effectiveHab = baseline + tlModifier;
+
+  const bd = body.habitabilityBreakdown;
+  const habitabilityComponents = bd ? {
+    gravity: bd.gravity,
+    atmosphere: bd.atmosphereComp + bd.atmosphereDensity,
+    temperature: bd.temperature,
+    hazard: bd.hazard,
+    hazardIntensity: bd.hazardIntensity,
+    biochem: bd.biochem + bd.biosphere,
+    techLevel: tlModifier,
+  } : {
+    gravity: 0, atmosphere: 0, temperature: 0,
+    hazard: 0, hazardIntensity: 0, biochem: 0, techLevel: tlModifier,
+  };
+
+  // Derive world type from body type
+  const worldType: import('../types').WorldType =
+    body.type === 'dwarf' ? 'Dwarf' : 'Terrestrial';
+
+  return {
+    type: worldType,
+    size: Math.round(body.diameterKm ?? body.radiusKm ? (body.radiusKm! * 2) : 1000),
+    lesserEarthType: undefined,
+    massEM: body.mass,
+    densityGcm3: body.densityGcm3 ?? 0,
+    gravity: body.surfaceGravityG ?? 0,
+    radius: body.radiusKm ?? 0,
+    escapeVelocity: body.escapeVelocityMs ? Math.round((body.escapeVelocityMs / 1000) * 100) / 100 : 0,
+    atmosphere: (body.atmosphereDensityV2 ?? 'Trace') as import('../types').AtmosphereType,
+    atmosphereTL: 0,
+    temperature: (body.temperatureV2 ?? 'Average') as import('../types').TemperatureType,
+    temperatureTL: 0,
+    hazard: (body.hazardV2 ?? 'None') as import('../types').HazardType,
+    hazardIntensity: mapHazardIntensity(body.hazardIntensityV2),
+    hazardIntensityTL: 0,
+    biochemicalResources: mapBiochemToResource(body.biochem),
+    techLevel,
+    habitability: effectiveHab,
+    habitabilityComponents,
+    zone: body.zone,
+    distanceAU: body.distanceAU,
+  };
+}
+
+// =====================
 // Planetary System Generation
 // =====================
 
@@ -619,7 +766,7 @@ function verifySpacing(
   return { violations: violationCount, log: violations };
 }
 
-function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
+function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries, useV2: boolean = false) {
   const stellarClass = primaryStar.class;
   const starMass = primaryStar.mass;
 
@@ -655,41 +802,88 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
     gases.push(generateBody('gas', primaryStar, zones));
   }
 
-  // Combine all bodies for Hot Jupiter processing
-  let allBodies: PlanetaryBody[] = [
-    ...disks, ...dwarfs, ...terrestrials, ...ices, ...gases,
-  ];
+  // FR-042: v2 composition — roll for each Dwarf and Terrestrial body
+  for (const body of dwarfs) {
+    const comp = rollComposition('dwarf', roll3D6().value, roll2D6().value);
+    body.composition = comp.composition;
+    body.reactivityDM = comp.reactivityDM;
+    const phys = recalculatePhysicalProperties(body.mass, comp.densityGcm3);
+    body.densityGcm3 = phys.densityGcm3;
+    body.radiusKm = phys.radiusKm;
+    body.diameterKm = phys.diameterKm;
+    body.surfaceGravityG = phys.surfaceGravityG;
+    body.escapeVelocityMs = phys.escapeVelocityMs;
+  }
+  for (const body of terrestrials) {
+    const comp = rollComposition('terrestrial', roll3D6().value, roll2D6().value);
+    body.composition = comp.composition;
+    body.reactivityDM = comp.reactivityDM;
+    const phys = recalculatePhysicalProperties(body.mass, comp.densityGcm3);
+    body.densityGcm3 = phys.densityGcm3;
+    body.radiusKm = phys.radiusKm;
+    body.diameterKm = phys.diameterKm;
+    body.surfaceGravityG = phys.surfaceGravityG;
+    body.escapeVelocityMs = phys.escapeVelocityMs;
+  }
 
-  // Apply Hot Jupiter migration sweep BEFORE spacing enforcement (QA-011)
-  const hjResult = applyHotJupiterMigration(allBodies);
-  allBodies = hjResult.bodies;
+  let allBodies: PlanetaryBody[];
+  let v2Ejected: PlanetaryBody[] = [];
+  let v2Consumed: PlanetaryBody[] = [];
 
-  // Enforce Hill sphere spacing with minimum floor (QA-006)
-  allBodies = resolveConflicts(allBodies, starMass);
+  if (useV2) {
+    // FR-042: v2 positioning system
+    const v2Result = placeBodiesV2(disks, dwarfs, terrestrials, ices, gases, primaryStar, zones);
+    allBodies = v2Result.placedBodies;
+    v2Ejected = v2Result.ejectedBodies;
+    v2Consumed = v2Result.consumedBodies;
 
-  // Verify spacing and log violations
-  const spacingCheck = verifySpacing(allBodies, starMass);
+    if (import.meta.env.DEV) {
+      console.log('[Planetary System V2] Generated:', {
+        total: allBodies.length,
+        disks: allBodies.filter(b => b.type === 'disk').length,
+        dwarfs: allBodies.filter(b => b.type === 'dwarf').length,
+        terrestrials: allBodies.filter(b => b.type === 'terrestrial').length,
+        ices: allBodies.filter(b => b.type === 'ice').length,
+        gases: allBodies.filter(b => b.type === 'gas').length,
+        ejected: v2Ejected.length,
+        consumed: v2Consumed.length,
+      });
+    }
+  } else {
+    // Legacy positioning
+    allBodies = [
+      ...disks, ...dwarfs, ...terrestrials, ...ices, ...gases,
+    ];
+
+    // Apply Hot Jupiter migration sweep BEFORE spacing enforcement (QA-011)
+    const hjResult = applyHotJupiterMigration(allBodies);
+    allBodies = hjResult.bodies;
+
+    // Enforce Hill sphere spacing with minimum floor (QA-006)
+    allBodies = resolveConflicts(allBodies, starMass);
+
+    // Verify spacing and log violations
+    const spacingCheck = verifySpacing(allBodies, starMass);
+
+    if (import.meta.env.DEV) {
+      console.log('[Planetary System] Generated:', {
+        total: allBodies.length,
+        disks: allBodies.filter(b => b.type === 'disk').length,
+        dwarfs: allBodies.filter(b => b.type === 'dwarf').length,
+        terrestrials: allBodies.filter(b => b.type === 'terrestrial').length,
+        ices: allBodies.filter(b => b.type === 'ice').length,
+        gases: allBodies.filter(b => b.type === 'gas').length,
+        hotJupiterCleared: hjResult.clearedZones,
+        hillViolations: spacingCheck.violations,
+      });
+    }
+  }
 
   // Find largest body mass for Habitat sizing (excluding stars)
   const nonDiskBodies = allBodies.filter(b => b.type !== 'disk');
-  const largestBodyMass = nonDiskBodies.length > 0 
+  const largestBodyMass = nonDiskBodies.length > 0
     ? Math.max(...nonDiskBodies.map(b => b.mass))
     : 1.0; // Default to 1 EM if only disks exist
-
-  // Log summary in dev mode
-  if (import.meta.env.DEV) {
-    console.log('[Planetary System] Generated:', {
-      total: allBodies.length,
-      disks: allBodies.filter(b => b.type === 'disk').length,
-      dwarfs: allBodies.filter(b => b.type === 'dwarf').length,
-      terrestrials: allBodies.filter(b => b.type === 'terrestrial').length,
-      ices: allBodies.filter(b => b.type === 'ice').length,
-      gases: allBodies.filter(b => b.type === 'gas').length,
-      largestBodyMass: largestBodyMass.toFixed(3) + ' EM',
-      hotJupiterCleared: hjResult.clearedZones,
-      hillViolations: spacingCheck.violations,
-    });
-  }
 
   return {
     disks:        allBodies.filter(b => b.type === 'disk'),
@@ -698,6 +892,8 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries) {
     ices:         allBodies.filter(b => b.type === 'ice'),
     gases:        allBodies.filter(b => b.type === 'gas'),
     largestBodyMass,
+    ejectedBodies: v2Ejected,
+    consumedBodies: v2Consumed,
   };
 }
 
@@ -706,9 +902,9 @@ function generateBody(type: BodyType, primaryStar: Star, _zones: ZoneBoundaries)
   const id = uuidv4();
   const sqrtL = Math.sqrt(primaryStar.luminosity);
 
-  let zone: Zone;
-  let distanceAU: number;
-  let mass: number;
+  let zone: Zone = 'Outer';
+  let distanceAU = 0;
+  let mass = 0;
   let gasClass: GasWorldClass | undefined;
   let lesserEarthType: LesserEarthType | undefined;
 

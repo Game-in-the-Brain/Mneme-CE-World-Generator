@@ -14,7 +14,17 @@ export type AtmosphereType = 'Average' | 'Thin' | 'Trace' | 'Dense' | 'Crushing'
 export type TemperatureType = 'Average' | 'Cold' | 'Freezing' | 'Hot' | 'Inferno';
 export type HazardType = 'None' | 'Polluted' | 'Corrosive' | 'Biohazard' | 'Toxic' | 'Radioactive';
 export type HazardIntensityType = 'Very Mild' | 'Mild' | 'Serious' | 'High' | 'Intense';
+export type HazardIntensity = 'Trace' | 'Light' | 'Moderate' | 'Heavy' | 'Extreme';
 export type ResourceLevel = 'Scarce' | 'Rare' | 'Uncommon' | 'Abundant' | 'Inexhaustible';
+
+// FR-041: v2 composition / atmosphere / biosphere types
+export type CompositionTerrestrial = 'Exotic' | 'Iron-Dominant' | 'Iron-Silicate' | 'Silicate-Basaltic' | 'Hydrous' | 'Carbonaceous' | 'Ceramic';
+export type CompositionDwarf = 'Exotic' | 'Metallic' | 'Silicaceous' | 'Hydrous' | 'Carbonaceous' | 'Rubble-Pile' | 'Volatile-Rich';
+export type AtmosphereComp = 'H-He' | 'Methane-Ammonia' | 'Nitrogen-Inert' | 'Carbon-Dioxide' | 'Water-Steam' | 'Sulfuric' | 'Exotic' | 'None';
+export type AtmoDensity = 'Trace' | 'Thin' | 'Average' | 'Dense' | 'Crushing';
+export type BiochemTier = 'Scarce' | 'Rare' | 'Uncommon' | 'Poor' | 'Deficient' | 'Common' | 'Abundant' | 'Rich' | 'Bountiful' | 'Prolific' | 'Inexhaustible';
+export type BiosphereRating = 'B0' | 'B1' | 'B2' | 'B3' | 'B4' | 'B5' | 'B6';
+export type RingProminence = 'faint' | 'moderate' | 'prominent' | 'brilliant' | 'massive';
 
 export type WealthLevel = 'Average' | 'Better-off' | 'Prosperous' | 'Affluent';
 export type PowerStructure = 'Anarchy' | 'Confederation' | 'Federation' | 'Unitary State';
@@ -24,7 +34,8 @@ export type StarportClass = 'X' | 'E' | 'D' | 'C' | 'B' | 'A';
 export type TravelZone = 'Green' | 'Amber' | 'Red';
 
 export type GasWorldClass = 'I' | 'II' | 'III' | 'IV' | 'V';
-export type BodyType = 'disk' | 'dwarf' | 'terrestrial' | 'ice' | 'gas';
+export type BodyType = 'star' | 'disk' | 'dwarf' | 'terrestrial' | 'ice' | 'gas' | 'ring';
+export type OrbitLevel = 0 | 1 | 2;
 
 // =====================
 // Core Interfaces
@@ -48,6 +59,17 @@ export interface ZoneBoundaries {
   conservative: { min: number; max: number };
   cold: { min: number; max: number };
   outer: { min: number; max: null };
+}
+
+// FR-042: v2 zone architecture
+export type ZoneId = 'Infernal' | 'Hot' | 'Conservative' | 'Cool' | 'FrostLine' | 'O1' | 'O2' | 'O3' | 'O4' | 'O5';
+
+export interface OuterZoneBoundaries {
+  o1: { minAU: number; maxAU: number };
+  o2: { minAU: number; maxAU: number };
+  o3: { minAU: number; maxAU: number };
+  o4: { minAU: number; maxAU: number };
+  o5: { minAU: number; maxAU: number };
 }
 
 export interface MainWorld {
@@ -171,6 +193,55 @@ export interface PlanetaryBody {
   diameterKm?: number;
   surfaceGravityG?: number;
   escapeVelocityMs?: number;
+
+  // FR-041/042/043: v2 optional fields (additive, non-breaking)
+  orbitLevel?: OrbitLevel;
+  parentId?: string;
+
+  // Composition
+  composition?: string;
+  reactivityDM?: number;
+
+  // Atmosphere (v2)
+  atmosphereCompositionAbiotic?: AtmosphereComp;
+  atmosphereComposition?: AtmosphereComp;
+  atmosphereDensityV2?: AtmoDensity;
+
+  // Habitability waterfall (v2)
+  temperatureV2?: TemperatureType;
+  hazardV2?: HazardType;
+  hazardIntensityV2?: HazardIntensity;
+  biochem?: BiochemTier;
+  biosphereRating?: BiosphereRating;
+  biosphereRoll?: number;
+  biosphereTN?: number;
+  hasSubsurfaceOceanOverride?: boolean;
+
+  baselineHabitability?: number;
+  habitabilityBreakdown?: {
+    gravity: number;
+    atmosphereComp: number;
+    atmosphereDensity: number;
+    temperature: number;
+    hazard: number;
+    hazardIntensity: number;
+    biochem: number;
+    biosphere: number;
+  };
+
+  // Positioning (v2)
+  positionRoll?: number;
+  positionRerollCount?: number;
+  wasEjected?: boolean;
+  ejectionReason?: 'saturation' | 'gravitational';
+  wasShepherded?: boolean;
+
+  // Selection (v2)
+  wasSelectedAsMainworld?: boolean;
+  tiebreakerRank?: number;
+
+  // Rings (v2)
+  ringProminence?: RingProminence;
 }
 
 export interface StarSystem {
@@ -199,6 +270,22 @@ export interface StarSystem {
   economicPresetSnapshot?: TLProductivityPreset;
   /** QA-058: allow ships to be generated at X-class ports */
   allowShipsAtXPort?: boolean;
+
+  // FR-042: v2 positioning fields (additive, non-breaking)
+  heliopauseAU?: number;
+  frostLineAU?: number;
+  outerSystemZones?: OuterZoneBoundaries;
+  ejectedBodies?: PlanetaryBody[];
+  consumedBodies?: PlanetaryBody[];
+
+  // FR-043: v2 mainworld selection
+  mainworldId?: string;
+  mainworldSelectionLog?: {
+    candidates: Array<{ id: string; score: number; rank: number }>;
+    tiebreakerApplied: boolean;
+    fallbackTriggered: boolean;
+    fallbackReason?: string;
+  };
 }
 
 // =====================
@@ -274,6 +361,21 @@ export interface GeneratorOptions {
   goalHabitable?: boolean;
   /** QA-058: allow ships to be generated at X-class ports */
   allowShipsAtXPort?: boolean;
+  /** FR-042: v2 positioning feature flag */
+  v2Positioning?: boolean;
+  /** FR-041: active extraterrestrial life assumptions preset ID */
+  activeLifeAssumptionsId?: string;
+}
+
+export interface ExtraterrestrialLifeAssumptions {
+  id: string;
+  name: string;
+  description: string;
+  biosphereTN: number;
+  biosphereDisadvantage: number;
+  minBiochemForBiosphereRoll: 'Common' | 'Abundant' | 'Rich';
+  enableTransitionalAtmospheres: boolean;
+  biochemOffsetRule: 'standard' | 'halved' | 'none';
 }
 
 export type BodyAnnotations = Record<string, { name: string; notes: string }>;

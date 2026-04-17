@@ -120,23 +120,23 @@ Allow the main world to orbit a **companion star** instead of the primary, when 
 
 ## 🟢 QA-049 — Economic Model Toggle (Stable vs Compounding)
 
-**Status:** 🟢 Planned — queued after QA-056/057/058
+**Status:** 🟢 Planned — prerequisites (QA-056/057/058/061) now complete
 
 ### Objective
-Replace large-scale language in Wealth and Development descriptions with scalable terms that work for colonies of 12 people up to trillions.
+Surface the active economic curve (Stable / Compounding) as a **first-class user choice** alongside the preset selector in Settings. Currently the Mneme vs CE preset already controls this, but the toggle should make the distinction explicit for users who don't understand what "Mneme" vs "CE" means.
 
-### Proposed Mapping
-| Old | New |
-|-----|-----|
-| Economy | Fiscal condition / framework / resource base |
-| Middle class | Specialist groups / core communal groups |
-| Consumer goods | Vital supplies / surplus goods |
-| Investment capital | Communal resources / shared reserves |
-| Poverty | Scarcity / hardship |
-| Ruling class | Dominant circle / leading families |
+### Proposed UI
+- In the "Economic Assumptions" panel in Settings: add a toggle/radio labelled **"Growth Model"**
+  - **Compounding** — productivity compounds per TL (Mneme default). Each TL step multiplies per-capita income ~3.3×.
+  - **Stable** — flat income across all TLs (CE/Traveller). Only habitability and dev/wealth drive starport class.
+- Selecting a model pre-fills the preset to the matching built-in (Mneme or CE) but still allows further customization.
+- Badge on System Viewer Overview shows "Compounding" or "Stable" next to the preset name.
 
 ### Files Affected
-- `src/lib/worldData.ts` (`WEALTH_DESCRIPTIONS`, `DEVELOPMENT_DESCRIPTIONS`, `CULTURE_TRAIT_DESCRIPTIONS`)
+- `src/components/Settings.tsx` — add growth model toggle
+- `src/lib/economicPresets.ts` — expose curve type as a first-class query
+- `src/lib/optionsStorage.ts` — persist toggle choice
+- `src/components/SystemViewer.tsx` — update economic model badge
 
 ---
 
@@ -199,7 +199,7 @@ Contextual random encounter tables:
 2. Include: **objective**, **affected files**, **proposed UI changes**, and **acceptance criteria**.
 3. Tag with `roadmap` and either `feature-request` or `engine-change`.
 
-**Last Updated:** 2026-04-17
+**Last Updated:** 2026-04-17 (QA-049 body corrected; FR-040 added by user)
 
 ---
 

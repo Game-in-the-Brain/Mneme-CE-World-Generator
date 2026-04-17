@@ -189,7 +189,7 @@ function buildInhabitants(s: StarSystem, shipsInArea?: ShipsInAreaResult | null)
     line('Power Structure', inh.powerStructure),
     line('Source of Power', inh.sourceOfPower),
     line('Governance DM',   govSign),
-    line('Starport Class',  `Class ${inh.starport.class} (PSS ${inh.starport.pss}, TL cap ${inh.starport.tlCap})`),
+    line('Primary Starport',  `Class ${inh.starport.class} (PSS ${inh.starport.pss}, TL cap ${inh.starport.tlCap})`),
     line('Weekly Activity', formatCredits(inh.starport.weeklyActivity)),
     line('Bases',           bases.join(', ') || 'None'),
     line('Travel Zone',     inh.travelZone + (inh.travelZoneReason ? ` — ${inh.travelZoneReason}` : '')),

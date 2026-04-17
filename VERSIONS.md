@@ -4,6 +4,60 @@
 
 ---
 
+## v1.3.113 — QA-061 Population Redesign (2026-04-17)
+
+### Fixes
+- **QA-061:** Complete population system redesign — `TL_POP_MOD` hardcoded table and `GDP_PER_DAY_BY_TL` legacy table both deleted from `worldData.ts`
+- Population now scales by `productivityMultiplier = getSoc7MonthlyIncome(TL, preset) / getSoc7MonthlyIncome(baseTL, preset)`
+  - CE preset: multiplier = 1.0 at every TL — populations depend purely on habitability
+  - Mneme preset: multiplier follows the exact SOC-income compounding curve (1× to ~389 000×)
+- Natural-world formula: `10^(envHab + 1) × productivityMultiplier × roll` — `+1` exponent restores CE populations to playable Traveller scale
+- Hostile-world formula (envHab ≤ 0): habitat population scaled by `productivityMultiplier`
+- `pssToClass()` thresholds revised (PSS < 3 → X, ≤ 4 → E, ≤ 5 → D, ≤ 6 → C, ≤ 7 → B, else A)
+- `gdpPerDayOverride` made **required** in `calculateStarport()` — removes any fallback to dead code
+- Trade fraction gains controlled variance per development level (UnderDeveloped fixed 5%; others add dice band around mean)
+- Goal-loop redesigned: generates up to 2 000 candidates, scores each, returns **closest match** instead of failing
+- `allowShipsAtXPort` defaults to `true` in `DEFAULT_GENERATOR_OPTIONS`
+- Build passes with zero TypeScript errors
+
+---
+
+## v1.3.112 — QA-058 Ships in Area Rework (2026-04-17)
+
+### Fixes
+- **QA-058:** Ships in Area redesigned after QA-056/057 prerequisites completed
+- Boat Years scarcity multiplier removed from `shipsInArea.ts` — CE worlds naturally produce smaller budgets from lower GDP/day
+- X-class port gate converted to user toggle: `allowShipsAtXPort` field in `GeneratorOptions` (default `false` at spec time; overridden to `true` by QA-061)
+- Ships table now displays **Credit Value** (`visiting_cost_cr`) and **Monthly Op. Cost** (`monthly_operating_cost_cr`) instead of income-years
+- E-class gate (10% budget cap, small craft only, max 5 ships) unchanged
+- `src/lib/shipsInArea.ts`, `src/components/SystemViewer.tsx`, `src/components/GeneratorDashboard.tsx`, `src/types/index.ts`
+- Build passes with zero TypeScript errors
+
+---
+
+## v1.3.111 — QA-057 Annual Trade — wealthMultiplier Removed (2026-04-17)
+
+### Fixes
+- **QA-057:** `wealthMultiplier[wealth]` removed from `annualTrade` formula in `worldData.ts`
+- Wealth is now fully expressed through average SOC in `getGdpPerDayForWorld()` (QA-056 upstream); applying it again to trade volume was double-counting
+- `tradeFraction[dev]` retained as the "economic openness" modifier — development still shapes how much of GDP flows through the port
+- `src/lib/worldData.ts`, `src/lib/generator.ts`
+- Build passes with zero TypeScript errors
+
+---
+
+## v1.3.110 — QA-056 GDP/Day from Average SOC (2026-04-17)
+
+### Features
+- **QA-056:** `getGdpPerDayForWorld(tl, development, wealth, preset)` added to `src/lib/economicPresets.ts`
+- Derives `avgSoc = DEVELOPMENT_AVG_SOC[dev] + WEALTH_SOC_BONUS[wealth]` (capped at SOC 12)
+- Scales SOC 7 base income by `getSocIncomeRatio(avgSoc)` — an UnderDeveloped world (SOC ~3.5) earns ~4% of SOC 7; a Very Developed + Affluent world (SOC 13, capped 12) earns ~20× more
+- Replaces `getGdpPerDayFromPreset()` in `generator.ts` for all inhabited worlds
+- New helpers: `DEVELOPMENT_AVG_SOC`, `WEALTH_SOC_BONUS`, `getSocIncomeRatio()`, `getSocMonthlyIncome()`
+- Build passes with zero TypeScript errors
+
+---
+
 ## v1.3.109 — QA-051 Table-Weight Calibration Pass (2026-04-16)
 
 ### Fixes

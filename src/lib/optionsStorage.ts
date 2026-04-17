@@ -4,6 +4,7 @@ import { CE_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_
 const VALID_CLASSES = new Set<string>(['random', 'O', 'B', 'A', 'F', 'G', 'K', 'M']);
 const VALID_GRADES = new Set<string>(['random', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 const VALID_TYPES = new Set<string>(['random', 'Terrestrial', 'Dwarf', 'Habitat']);
+const VALID_LIFE_PRESET_IDS = new Set<string>(['mneme-default', 'rare-earth', 'panspermia']);
 
 export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   starClass: 'random',
@@ -15,6 +16,8 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   powerWeights: DEFAULT_POWER_WEIGHTS,
   govWeights: DEFAULT_GOV_WEIGHTS,
   allowShipsAtXPort: true,
+  v2Positioning: true,
+  activeLifeAssumptionsId: 'mneme-default',
 };
 
 function isValidPreset(value: unknown): value is TLProductivityPreset {
@@ -112,6 +115,14 @@ export function loadGeneratorOptions(): GeneratorOptions {
   const allowShipsAtXPort =
     typeof stored.allowShipsAtXPort === 'boolean' ? stored.allowShipsAtXPort : undefined;
 
+  const v2Positioning =
+    typeof stored.v2Positioning === 'boolean' ? stored.v2Positioning : undefined;
+
+  const activeLifeAssumptionsId =
+    stored.activeLifeAssumptionsId && VALID_LIFE_PRESET_IDS.has(stored.activeLifeAssumptionsId)
+      ? stored.activeLifeAssumptionsId
+      : undefined;
+
   return {
     starClass,
     starGrade,
@@ -125,6 +136,8 @@ export function loadGeneratorOptions(): GeneratorOptions {
     goalMinPopulation,
     goalHabitable,
     allowShipsAtXPort,
+    v2Positioning,
+    activeLifeAssumptionsId,
   };
 }
 

@@ -13,12 +13,15 @@ function getGitVersion() {
     const commitHash = execSync('git rev-parse --short HEAD').toString().trim()
     // Get commit date
     const commitDate = execSync('git log -1 --format=%cs').toString().trim()
+    // Check for uncommitted changes
+    const dirty = execSync('git status --porcelain').toString().trim().length > 0
+    const suffix = dirty ? '-dirty' : ''
     
     return {
-      version: `1.3.${commitCount}`,
+      version: `1.3.${commitCount}${suffix}`,
       commitHash,
       commitDate,
-      fullVersion: `1.3.${commitCount}-${commitHash}`
+      fullVersion: `1.3.${commitCount}-${commitHash}${suffix}`
     }
   } catch (_e) {
     // Fallback if git fails

@@ -194,3 +194,23 @@ export function clamp(value: number, min: number, max: number): number {
 export function round(value: number, decimals: number = 2): number {
   return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
+
+/** Roll exploding dice: when a die rolls max, roll again and add. */
+export function rollExplodingD6(count: number): number[] {
+  const results: number[] = [];
+  for (let i = 0; i < count; i++) {
+    let roll = Math.floor(Math.random() * 6) + 1;
+    results.push(roll);
+    while (roll === 6) {
+      roll = Math.floor(Math.random() * 6) + 1;
+      results.push(roll);
+    }
+  }
+  return results;
+}
+
+/** Sum the lowest N values from an array. */
+export function sumLowest(values: number[], keep: number): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted.slice(0, keep).reduce((s, v) => s + v, 0);
+}

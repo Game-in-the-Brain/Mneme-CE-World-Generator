@@ -158,7 +158,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
               };
               const json = JSON.stringify(payload);
               const encoded = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
-              const url = new URL(`/?system=${encoded}`, 'https://game-in-the-brain.github.io/2d-star-system-map/');
+              const url = new URL(`?system=${encoded}`, 'https://game-in-the-brain.github.io/2d-star-system-map/');
               window.open(url.toString(), '_blank');
             }}
             className="btn-primary flex items-center gap-2"
@@ -319,11 +319,11 @@ function OverviewTab({ system }: { system: StarSystem }) {
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Anchor style={{ color: 'var(--accent-red)' }} size={20} />
-          Starport & Travel
+          Primary Starport & Travel
         </h3>
         <div className="space-y-2">
           <DataRow
-            label="Starport"
+            label="Primary Starport"
             value={
               system.inhabitants.starport.foundingClass && system.inhabitants.starport.foundingClass !== system.inhabitants.starport.class
                 ? `Class ${system.inhabitants.starport.class} (founded Class ${system.inhabitants.starport.foundingClass})`
@@ -341,6 +341,39 @@ function OverviewTab({ system }: { system: StarSystem }) {
             system.inhabitants.travelZone === 'Amber' ? 'habitability-marginal' :
             'habitability-hostile'
           } />
+
+          {/* Port Network note (QA-055) */}
+          {(() => {
+            const cls = system.inhabitants.starport.class;
+            if (cls === 'X') {
+              return (
+                <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+                  No prepared interstellar facilities. Informal landing only.
+                </p>
+              );
+            }
+            if (cls === 'E') {
+              return (
+                <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+                  Minimal prepared infrastructure. No repair or fuel services beyond unrefined.
+                  Regional fuel depots and basic orbital points may exist at lower tiers.
+                </p>
+              );
+            }
+            const secondaryMap: Record<string, string> = {
+              D: 'Regional pads, orbital stations, and fuel depots exist at lower service tiers.',
+              C: 'Multiple D-class regional ports and orbital facilities support the primary port.',
+              B: 'Full port network with multiple C/D regional facilities and orbital yards.',
+              A: 'Extensive port network: multiple B/C hubs, orbital shipyards, and cargo terminals.',
+            };
+            return (
+              <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+                Secondary facilities (regional ports, orbital depots, landing pads) exist
+                across the world at lower service tiers. This class reflects the primary
+                interstellar facility only. {secondaryMap[cls] ?? ''}
+              </p>
+            );
+          })()}
         </div>
       </div>
 
@@ -1103,8 +1136,8 @@ function PlanetarySystemTab({
     <div className="space-y-6">
       <div className="grid grid-cols-5 gap-4">
         <BodyCountCard label="Disks"       count={system.circumstellarDisks.length} />
-        <BodyCountCard label="Dwarfs"      count={system.dwarfPlanets.length} />
-        <BodyCountCard label="Terrestrial" count={system.terrestrialWorlds.length} />
+        <BodyCountCard label="Dwarfs"      count={system.dwarfPlanets.length} sub={compositionBreakdown(system.dwarfPlanets)} />
+        <BodyCountCard label="Terrestrial" count={system.terrestrialWorlds.length} sub={compositionBreakdown(system.terrestrialWorlds)} />
         <BodyCountCard label="Ice Worlds"  count={system.iceWorlds.length} />
         <BodyCountCard label="Gas Giants"  count={system.gasWorlds.length} />
       </div>
@@ -1112,6 +1145,53 @@ function PlanetarySystemTab({
       <div className="text-center" style={{ color: 'var(--text-secondary)' }}>
         Total Planetary Bodies: <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalBodies}</span>
       </div>
+
+      {/* Ejected Bodies (V2) */}
+      {system.ejectedBodies && system.ejectedBodies.length > 0 && (
+        <div className="card">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span>☄️</span> Rogue Worlds ({system.ejectedBodies.length})
+          </h3>
+          <div className="space-y-2">
+            {system.ejectedBodies.map((body) => (
+              <div key={body.id} className="flex items-center justify-between p-2 rounded text-sm" style={{ backgroundColor: 'var(--row-hover)' }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium">{body.type}</span>
+                  <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{body.composition ?? ''}</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  <span>{body.mass.toFixed(4)} M⊕</span>
+                  <span className="px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--border-color)' }}>
+                    {body.ejectionReason === 'saturation' ? 'Saturation eject' : 'Gravitational'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Consumed Bodies (V2) */}
+      {system.consumedBodies && system.consumedBodies.length > 0 && (
+        <div className="card">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span>💥</span> Absorbed Worlds ({system.consumedBodies.length})
+          </h3>
+          <div className="space-y-2">
+            {system.consumedBodies.map((body) => (
+              <div key={body.id} className="flex items-center justify-between p-2 rounded text-sm" style={{ backgroundColor: 'var(--row-hover)' }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium">{body.type}</span>
+                  <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{body.composition ?? ''}</span>
+                </div>
+                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  {body.mass.toFixed(4)} M⊕ — absorbed by Hot Jupiter
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3 className="text-lg font-semibold mb-4">All Bodies by Distance</h3>
@@ -1187,9 +1267,22 @@ function BodyRow({
           <span className={`text-xs zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
           <span className="text-xs">{body.distanceAU} AU</span>
           {!isMainWorld && <span className="text-xs">{formatValue(body.mass, 'M⊕')}</span>}
-          {isMainWorld && body.habitability !== undefined && (
-            <span className="text-xs">Hab {body.habitability >= 0 ? '+' : ''}{body.habitability}</span>
-          )}
+          {/* Habitability badge — main world uses v1 habitability; v2 bodies use baselineHabitability */}
+          {(() => {
+            const v2Body = body as PlanetaryBody;
+            const hab = v2Body.baselineHabitability ?? body.habitability;
+            if (hab === undefined) return null;
+            const cls =
+              hab > 5  ? 'habitability-excellent' :
+              hab > 0  ? 'habitability-good' :
+              hab > -5 ? 'habitability-marginal' :
+              'habitability-hostile';
+            return (
+              <span className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>
+                Hab {hab >= 0 ? '+' : ''}{hab}
+              </span>
+            );
+          })()}
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
       </div>
@@ -1226,12 +1319,61 @@ function BodyRow({
               <PhysProp label="Escape Velocity" value={`${formatNumber(body.escapeVelocityMs!)} m/s`} />
             </div>
           )}
-          {/* Main World — environment details */}
-          {isMainWorld && body.atmosphere && (
+          {/* Environment details — main world (v1) or any body with v2 atmosphere data */}
+          {(isMainWorld && body.atmosphere) || (body as PlanetaryBody).atmosphereCompositionAbiotic ? (
             <div className="grid grid-cols-3 gap-2 text-xs">
-              <PhysProp label="Atmosphere"   value={body.atmosphere} />
-              <PhysProp label="Temperature"  value={body.temperature ?? '—'} />
-              <PhysProp label="Habitability" value={body.habitability !== undefined ? `${body.habitability >= 0 ? '+' : ''}${body.habitability}` : '—'} />
+              <PhysProp
+                label="Atmosphere"
+                value={
+                  isMainWorld && body.atmosphere
+                    ? body.atmosphere
+                    : ((body as PlanetaryBody).atmosphereComposition ?? (body as PlanetaryBody).atmosphereCompositionAbiotic ?? '—')
+                }
+              />
+              <PhysProp
+                label="Temperature"
+                value={
+                  isMainWorld && body.temperature
+                    ? body.temperature
+                    : ((body as PlanetaryBody).temperatureV2 ?? '—')
+                }
+              />
+              <PhysProp
+                label="Habitability"
+                value={(() => {
+                  const hab = isMainWorld && body.habitability !== undefined
+                    ? body.habitability
+                    : (body as PlanetaryBody).baselineHabitability;
+                  return hab !== undefined ? `${hab >= 0 ? '+' : ''}${hab}` : '—';
+                })()}
+              />
+            </div>
+          ) : null}
+
+          {/* V2 Fields — Composition, Biosphere, Atmosphere Composition */}
+          {((body as PlanetaryBody).composition || (body as PlanetaryBody).atmosphereCompositionAbiotic || (body as PlanetaryBody).biosphereRating) && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold" style={{ color: 'var(--accent-red)' }}>Composition & Biosphere</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <PhysProp label="Composition" value={(body as PlanetaryBody).composition ?? '—'} />
+                <PhysProp label="Reactivity" value={`${((body as PlanetaryBody).reactivityDM ?? 0) > 0 ? '+' : ''}${(body as PlanetaryBody).reactivityDM ?? 0}`} />
+                <PhysProp label="Abiotic Atmosphere" value={(body as PlanetaryBody).atmosphereCompositionAbiotic ?? '—'} />
+                <PhysProp label="Atmosphere (post-bio)" value={(body as PlanetaryBody).atmosphereComposition ?? '—'} />
+                <PhysProp label="Atmosphere Density" value={(body as PlanetaryBody).atmosphereDensityV2 ?? '—'} />
+                <PhysProp label="Biochem" value={(body as PlanetaryBody).biochem ?? '—'} />
+                <PhysProp label="Biosphere" value={(body as PlanetaryBody).biosphereRating ?? '—'} />
+                <PhysProp label="Baseline Hab" value={(body as PlanetaryBody).baselineHabitability !== undefined ? `${(body as PlanetaryBody).baselineHabitability! >= 0 ? '+' : ''}${(body as PlanetaryBody).baselineHabitability}` : '—'} />
+              </div>
+              {(body as PlanetaryBody).wasEjected && (
+                <div className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
+                  ⚠️ Ejected — {((body as PlanetaryBody).ejectionReason === 'saturation' ? 'System saturation' : 'Gravitational ejection')}
+                </div>
+              )}
+              {(body as PlanetaryBody).wasShepherded && (
+                <div className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--border-color)', color: 'var(--text-secondary)' }}>
+                  🔄 Shepherded inward by Hot Jupiter migration
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1286,13 +1428,29 @@ function HabitabilityBox({ label, value }: { label: string; value: number }) {
   );
 }
 
-function BodyCountCard({ label, count }: { label: string; count: number }) {
+function BodyCountCard({ label, count, sub }: { label: string; count: number; sub?: string }) {
   return (
     <div className="card text-center p-4">
       <div className="text-2xl font-bold" style={{ color: 'var(--accent-red)' }}>{count}</div>
       <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{label}</div>
+      {sub && <div className="text-[10px] mt-1 leading-tight" style={{ color: 'var(--text-secondary)' }}>{sub}</div>}
     </div>
   );
+}
+
+/** Build a comma-separated composition breakdown string for a body array. */
+function compositionBreakdown(bodies: PlanetaryBody[]): string | undefined {
+  const comps = bodies
+    .map((b) => b.composition)
+    .filter((c): c is string => !!c);
+  if (comps.length === 0) return undefined;
+  const counts: Record<string, number> = {};
+  for (const c of comps) {
+    counts[c] = (counts[c] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([name, n]) => `${n} ${name.split(' ')[0]}`)
+    .join(', ');
 }
 
 // ============================================================
