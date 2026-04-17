@@ -242,6 +242,17 @@ export interface PlanetaryBody {
 
   // Rings (v2)
   ringProminence?: RingProminence;
+
+  // FR-044: Level 2 children (moons)
+  level?: 0 | 1 | 2;
+  wasCapturedTerrestrial?: boolean;
+  massCapApplied?: boolean;
+  originalRolledMass?: number;
+  parentDistanceAU?: number; // parent's star-distance, used when moon wins mainworld
+  moonOrbitAU?: number;      // orbital distance from parent (for moons)
+
+  // FR-044: Ring classification
+  ringClass?: 'faint' | 'visible' | 'showpiece' | 'great';
 }
 
 export interface StarSystem {
@@ -286,6 +297,10 @@ export interface StarSystem {
     fallbackTriggered: boolean;
     fallbackReason?: string;
   };
+
+  // FR-044: Level 2 children (moons and rings)
+  moons?: PlanetaryBody[];
+  rings?: PlanetaryBody[];
 }
 
 // =====================

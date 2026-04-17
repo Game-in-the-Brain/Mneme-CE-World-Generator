@@ -3,7 +3,7 @@ import {
   Table, TableRow, TableCell,
   AlignmentType, WidthType,
 } from 'docx';
-import type { StarSystem, ShipsInAreaResult, BodyAnnotations } from '../types';
+import type { StarSystem, ShipsInAreaResult, BodyAnnotations, PlanetaryBody } from '../types';
 import { formatNumber, formatPopulation, formatCredits } from './format';
 
 // ── Colour palette (visible on white paper) ──────────────────────────────────
@@ -252,6 +252,20 @@ function buildInhabitants(s: StarSystem, shipsInArea?: ShipsInAreaResult | null)
   return sections;
 }
 
+function getChildTypeLabel(child: { type: string; ringClass?: string }): string {
+  if (child.type === 'ring') {
+    const rc = child.ringClass;
+    if (rc === 'faint') return 'Ring (Faint)';
+    if (rc === 'visible') return 'Ring (Visible)';
+    if (rc === 'showpiece') return 'Ring (Showpiece)';
+    if (rc === 'great') return 'Ring (Great)';
+    return 'Ring';
+  }
+  if (child.type === 'dwarf') return 'Dwarf Moon';
+  if (child.type === 'terrestrial') return 'Terrestrial Moon';
+  return child.type;
+}
+
 function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Paragraph | Table)[] {
   const mw = s.mainWorld;
   const mainWorldEntry = {
@@ -274,7 +288,7 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
     isMainWorld: true,
   };
 
-  const allBodies = [
+  const l1Bodies = [
     ...s.circumstellarDisks.map(b   => ({ ...b, typeLabel: 'Disk',        isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
     ...s.dwarfPlanets.map(b         => ({ ...b, typeLabel: 'Dwarf',       isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
     ...s.terrestrialWorlds.map(b    => ({ ...b, typeLabel: 'Terrestrial', isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
@@ -282,6 +296,26 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
     ...s.gasWorlds.map(b            => ({ ...b, typeLabel: `Gas ${b.gasClass}`, isMainWorld: false, atmosphere: undefined, temperature: undefined, habitability: undefined })),
     mainWorldEntry,
   ].sort((a, b) => a.distanceAU - b.distanceAU);
+
+  // FR-044: parent → children map for moons and rings
+  const parentChildren = new Map<string, PlanetaryBody[]>();
+  for (const moon of (s.moons ?? [])) {
+    if (moon.parentId) {
+      const arr = parentChildren.get(moon.parentId) ?? [];
+      arr.push(moon);
+      parentChildren.set(moon.parentId, arr);
+    }
+  }
+  for (const ring of (s.rings ?? [])) {
+    if (ring.parentId) {
+      const arr = parentChildren.get(ring.parentId) ?? [];
+      arr.push(ring);
+      parentChildren.set(ring.parentId, arr);
+    }
+  }
+  for (const arr of parentChildren.values()) {
+    arr.sort((a, b) => (a.moonOrbitAU ?? 0) - (b.moonOrbitAU ?? 0));
+  }
 
   // Column widths (must sum to 100)
   const W = [5, 16, 14, 13, 13, 18, 21];
@@ -293,11 +327,17 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
     ),
   });
 
-  const bodyRows = allBodies.map((body, idx) => {
+  // Build rows: L1 bodies interleaved with their children
+  const bodyRows: TableRow[] = [];
+  let rowIdx = 0;
+  const allPhysBodies: { body: typeof l1Bodies[number] | PlanetaryBody; idx: number; isMainWorld: boolean }[] = [];
+
+  for (const body of l1Bodies) {
     const ann = annotations[body.id];
-    return new TableRow({
+    rowIdx++;
+    bodyRows.push(new TableRow({
       children: [
-        tCell((idx + 1).toString(), W[0]),
+        tCell(rowIdx.toString(), W[0]),
         tCell(body.typeLabel,        W[1]),
         tCell(body.zone,             W[2]),
         tCell(`${body.distanceAU}`,  W[3]),
@@ -305,8 +345,28 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
         tCell(ann?.name   ?? '—',    W[5]),
         tCell(ann?.notes  ?? '—',    W[6]),
       ],
-    });
-  });
+    }));
+    allPhysBodies.push({ body, idx: rowIdx, isMainWorld: !!body.isMainWorld });
+
+    const children = parentChildren.get(body.id) ?? [];
+    for (const child of children) {
+      const childAnn = annotations[child.id];
+      const childType = getChildTypeLabel(child);
+      rowIdx++;
+      bodyRows.push(new TableRow({
+        children: [
+          tCell(`${rowIdx}*`, W[0]),
+          tCell(`└─ ${childType}`, W[1]),
+          tCell(body.zone,   W[2]),  // inherits parent zone
+          tCell(`${child.moonOrbitAU ?? child.distanceAU ?? '?'}`, W[3]),
+          tCell(`${child.mass}`, W[4]),
+          tCell(childAnn?.name ?? '—', W[5]),
+          tCell(childAnn?.notes ?? '—', W[6]),
+        ],
+      }));
+      allPhysBodies.push({ body: child, idx: rowIdx, isMainWorld: false });
+    }
+  }
 
   const table = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -324,29 +384,37 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
 
   // Physical properties detail section — one entry per body that has physics data
   const physSections: Paragraph[] = [];
-  allBodies.forEach((body, idx) => {
-    if (body.radiusKm == null) return;
-    const ann = annotations[body.id];
-    const displayName = ann?.name ? `${ann.name} (${body.typeLabel})` : body.typeLabel;
+  allPhysBodies.forEach(({ body, idx, isMainWorld }) => {
+    const physBody = body as typeof l1Bodies[number] & PlanetaryBody;
+    if (physBody.radiusKm == null) return;
+    const ann = annotations[physBody.id];
+    const isRing = physBody.type === 'ring';
+    const typeLabel = (physBody as typeof l1Bodies[number]).typeLabel ?? getChildTypeLabel(physBody);
+    const displayName = ann?.name ? `${ann.name} (${typeLabel})` : typeLabel;
     physSections.push(
       new Paragraph({
         children: [
-          run(`${idx + 1}. `, { bold: true, color: GREY, size: 18 }),
+          run(`${idx}. `, { bold: true, color: GREY, size: 18 }),
           run(displayName, { bold: true, size: 18 }),
-          run(`  —  ${body.zone}  ·  ${body.distanceAU} AU`, { color: GREY, size: 18 }),
+          run(`  —  ${physBody.zone ?? body.zone ?? '—'}  ·  ${physBody.distanceAU} AU`, { color: GREY, size: 18 }),
         ],
         spacing: { before: 120, after: 40 },
       }),
     );
-    if (body.densityGcm3 != null) physSections.push(line('Density', `${body.densityGcm3} g/cm³`));
-    physSections.push(line('Radius',          `${formatNumber(body.radiusKm)} km`));
-    physSections.push(line('Diameter',        `${formatNumber(body.diameterKm!)} km`));
-    physSections.push(line('Surface Gravity', `${body.surfaceGravityG} G`));
-    physSections.push(line('Escape Velocity', `${formatNumber(body.escapeVelocityMs!)} m/s`));
-    if (body.isMainWorld) {
-      physSections.push(line('Atmosphere',   body.atmosphere ?? '—'));
-      physSections.push(line('Temperature',  body.temperature ?? '—'));
-      physSections.push(line('Habitability', body.habitability !== undefined ? `${body.habitability}` : '—'));
+    if (physBody.densityGcm3 != null) physSections.push(line('Density', `${physBody.densityGcm3} g/cm³`));
+    physSections.push(line('Radius',          `${formatNumber(physBody.radiusKm)} km`));
+    physSections.push(line('Diameter',        `${formatNumber(physBody.diameterKm ?? physBody.radiusKm * 2)} km`));
+    physSections.push(line('Surface Gravity', `${physBody.surfaceGravityG ?? (physBody as PlanetaryBody).gravity ?? '?'} G`));
+    const ev = physBody.escapeVelocityMs ?? (physBody as PlanetaryBody).escapeVelocityMs;
+    physSections.push(line('Escape Velocity', `${ev != null ? formatNumber(ev) : '?'} m/s`));
+    if (isMainWorld) {
+      physSections.push(line('Atmosphere',   physBody.atmosphere ?? '—'));
+      physSections.push(line('Temperature',  physBody.temperature ?? '—'));
+      physSections.push(line('Habitability', physBody.habitability !== undefined ? `${physBody.habitability}` : '—'));
+    }
+    // FR-044: show habitability for moons too (QA-063)
+    if (!isMainWorld && !isRing && (physBody as PlanetaryBody).baselineHabitability !== undefined) {
+      physSections.push(line('Habitability', `${(physBody as PlanetaryBody).baselineHabitability}`));
     }
     if (ann?.notes) physSections.push(line('Notes', ann.notes));
   });
@@ -358,6 +426,8 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
     countPara('Terrestrial Worlds',  s.terrestrialWorlds.length),
     countPara('Ice Worlds',          s.iceWorlds.length),
     countPara('Gas Giants',          s.gasWorlds.length),
+    countPara('Moons',               s.moons?.length ?? 0),
+    countPara('Rings',               s.rings?.length ?? 0),
     blank(),
     table,
     blank(),

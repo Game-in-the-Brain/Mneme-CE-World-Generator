@@ -1084,13 +1084,20 @@ function PlanetarySystemTab({
   annotations: BodyAnnotations;
   onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
 }) {
+  // FR-044: count only L1 bodies (no parentId) in the type cards
+  const l1Dwarfs = system.dwarfPlanets.filter(b => !b.parentId);
+  const l1Terrestrials = system.terrestrialWorlds.filter(b => !b.parentId);
+  const l1Ice = system.iceWorlds.filter(b => !b.parentId);
+  const l1Gas = system.gasWorlds.filter(b => !b.parentId);
+
   const totalBodies =
     system.circumstellarDisks.length +
-    system.dwarfPlanets.length +
-    system.terrestrialWorlds.length +
-    system.iceWorlds.length +
-    system.gasWorlds.length +
-    (system.mainWorld ? 1 : 0); // QA-036: main world is independent, must be counted
+    l1Dwarfs.length +
+    l1Terrestrials.length +
+    l1Ice.length +
+    l1Gas.length +
+    (system.mainWorld ? 1 : 0) +
+    (system.moons?.length ?? 0);
 
   // QA-008: Ice Worlds label (typeLabel uses "Ice Worlds" not "Ice")
   type BodyWithExtras = PlanetaryBody & { 
@@ -1103,43 +1110,64 @@ function PlanetarySystemTab({
 
   const mainWorldBody: BodyWithExtras = {
     id:          `${system.id}-mainworld`,
-    type:        'terrestrial' as const,  // Main world is always terrestrial type for body purposes
+    type:        'terrestrial' as const,
     typeLabel:   system.mainWorld.type,
     isMainWorld: true,
-    mass:        system.mainWorld.massEM,   // mass in Earth Masses (LM for Dwarf, EM for Terrestrial)
+    mass:        system.mainWorld.massEM,
     zone:        system.mainWorld.zone,
     distanceAU:  system.mainWorld.distanceAU,
-    // physics from main world
     radiusKm:    system.mainWorld.radius,
     diameterKm:  system.mainWorld.radius * 2,
     surfaceGravityG: system.mainWorld.gravity,
-    escapeVelocityMs: system.mainWorld.escapeVelocity * 1000, // km/s → m/s
+    escapeVelocityMs: system.mainWorld.escapeVelocity * 1000,
     densityGcm3: system.mainWorld.densityGcm3,
     gasClass:    undefined,
     lesserEarthType: system.mainWorld.lesserEarthType,
-    // extras
     atmosphere:  system.mainWorld.atmosphere,
     temperature: system.mainWorld.temperature,
     habitability: system.mainWorld.habitability,
   };
 
-  const allBodies: BodyWithExtras[] = [
+  // FR-044: Build parent→children map from moons and rings
+  const parentChildren = new Map<string, PlanetaryBody[]>();
+  for (const moon of (system.moons ?? [])) {
+    if (moon.parentId) {
+      const arr = parentChildren.get(moon.parentId) ?? [];
+      arr.push(moon);
+      parentChildren.set(moon.parentId, arr);
+    }
+  }
+  for (const ring of (system.rings ?? [])) {
+    if (ring.parentId) {
+      const arr = parentChildren.get(ring.parentId) ?? [];
+      arr.push(ring);
+      parentChildren.set(ring.parentId, arr);
+    }
+  }
+  // Sort children by mass descending within each parent
+  for (const [, arr] of parentChildren) {
+    arr.sort((a, b) => b.mass - a.mass);
+  }
+
+  const allL1Bodies: BodyWithExtras[] = [
     ...system.circumstellarDisks.map(b => ({ ...b, typeLabel: 'Disk',        isMainWorld: false as const })),
-    ...system.dwarfPlanets.map(b =>       ({ ...b, typeLabel: 'Dwarf',       isMainWorld: false as const })),
-    ...system.terrestrialWorlds.map(b =>  ({ ...b, typeLabel: 'Terrestrial', isMainWorld: false as const })),
-    ...system.iceWorlds.map(b =>          ({ ...b, typeLabel: 'Ice Worlds',  isMainWorld: false as const })),
-    ...system.gasWorlds.map(b =>          ({ ...b, typeLabel: `Gas ${b.gasClass}`, isMainWorld: false as const })),
+    ...l1Dwarfs.map(b =>                       ({ ...b, typeLabel: 'Dwarf',       isMainWorld: false as const })),
+    ...l1Terrestrials.map(b =>                ({ ...b, typeLabel: 'Terrestrial', isMainWorld: false as const })),
+    ...l1Ice.map(b =>                         ({ ...b, typeLabel: 'Ice Worlds',  isMainWorld: false as const })),
+    ...l1Gas.map(b =>                         ({ ...b, typeLabel: `Gas ${b.gasClass}`, isMainWorld: false as const })),
     mainWorldBody,
   ].sort((a, b) => a.distanceAU - b.distanceAU);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-5 md:grid-cols-7 gap-4">
         <BodyCountCard label="Disks"       count={system.circumstellarDisks.length} />
-        <BodyCountCard label="Dwarfs"      count={system.dwarfPlanets.length} sub={compositionBreakdown(system.dwarfPlanets)} />
-        <BodyCountCard label="Terrestrial" count={system.terrestrialWorlds.length} sub={compositionBreakdown(system.terrestrialWorlds)} />
-        <BodyCountCard label="Ice Worlds"  count={system.iceWorlds.length} />
-        <BodyCountCard label="Gas Giants"  count={system.gasWorlds.length} />
+        <BodyCountCard label="Dwarfs"      count={l1Dwarfs.length} sub={compositionBreakdown(l1Dwarfs)} />
+        <BodyCountCard label="Terrestrial" count={l1Terrestrials.length} sub={compositionBreakdown(l1Terrestrials)} />
+        <BodyCountCard label="Ice Worlds"  count={l1Ice.length} />
+        <BodyCountCard label="Gas Giants"  count={l1Gas.length} />
+        <BodyCountCard label="Moons"       count={system.moons?.length ?? 0} />
+        <BodyCountCard label="Rings"       count={system.rings?.length ?? 0} />
       </div>
 
       <div className="text-center" style={{ color: 'var(--text-secondary)' }}>
@@ -1195,38 +1223,135 @@ function PlanetarySystemTab({
 
       <div className="card">
         <h3 className="text-lg font-semibold mb-4">All Bodies by Distance</h3>
-        <div className="space-y-2 max-h-[600px] overflow-y-auto">
-          {allBodies.map((body, index) => (
-            <BodyRow key={body.id} body={body} index={index} annotations={annotations} onAnnotation={onAnnotation} isMainWorld={body.isMainWorld} />
-          ))}
-        </div>
+        <ParentBodyList
+          bodies={allL1Bodies}
+          parentChildren={parentChildren}
+          annotations={annotations}
+          onAnnotation={onAnnotation}
+        />
       </div>
     </div>
   );
 }
 
+/** Render L1 bodies with indented L2 children. */
+function ParentBodyList({
+  bodies,
+  parentChildren,
+  annotations,
+  onAnnotation,
+}: {
+  bodies: (PlanetaryBody & { typeLabel: string; isMainWorld: boolean; atmosphere?: string; temperature?: string; habitability?: number })[];
+  parentChildren: Map<string, PlanetaryBody[]>;
+  annotations: BodyAnnotations;
+  onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) => {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <div className="space-y-2 max-h-[600px] overflow-y-auto">
+      {bodies.map((body, index) => {
+        const children = parentChildren.get(body.id) ?? [];
+        const hasChildren = children.length > 0;
+        const isCollapsed = collapsed.has(body.id);
+
+        return (
+          <div key={body.id}>
+            <BodyRow
+              body={body}
+              index={index}
+              annotations={annotations}
+              onAnnotation={onAnnotation}
+              isMainWorld={body.isMainWorld}
+              hasChildren={hasChildren}
+              isCollapsed={isCollapsed}
+              onToggleCollapse={hasChildren ? () => toggle(body.id) : undefined}
+            />
+            {hasChildren && !isCollapsed && (
+              <div className="ml-4 md:ml-6 border-l-2 pl-3 md:pl-4 space-y-1 mt-1" style={{ borderColor: 'var(--border-color)' }}>
+                {children.map((child, cidx) => (
+                  <BodyRow
+                    key={child.id}
+                    body={{ ...child, typeLabel: getChildTypeLabel(child) }}
+                    index={cidx}
+                    annotations={annotations}
+                    onAnnotation={onAnnotation}
+                    isMainWorld={false}
+                    indentLevel={1}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function getChildTypeLabel(child: PlanetaryBody): string {
+  if (child.type === 'ring') {
+    const rc = child.ringClass;
+    if (rc === 'faint') return 'Ring (Faint)';
+    if (rc === 'visible') return 'Ring (Visible)';
+    if (rc === 'showpiece') return 'Ring (Showpiece)';
+    if (rc === 'great') return 'Ring (Great)';
+    return 'Ring';
+  }
+  if (child.type === 'dwarf') return 'Dwarf Moon';
+  if (child.type === 'terrestrial') return 'Terrestrial Moon';
+  return child.type;
+}
+
 // Individual body row — always expandable; inline Name + Notes annotation fields + physical properties (QA-009)
 function BodyRow({
   body, index, annotations, onAnnotation, isMainWorld,
+  indentLevel = 0, hasChildren, isCollapsed, onToggleCollapse,
 }: {
   body: PlanetaryBody & { typeLabel: string; atmosphere?: string; temperature?: string; habitability?: number };
   index: number;
   annotations: BodyAnnotations;
   onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
   isMainWorld?: boolean;
+  indentLevel?: number;
+  hasChildren?: boolean;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasPhysics = body.radiusKm != null;
   const ann = annotations[body.id] ?? { name: '', notes: '' };
+  const isRing = body.type === 'ring';
 
   return (
-    <div className="rounded text-sm" style={{ backgroundColor: 'var(--row-hover)' }}>
+    <div className="rounded text-sm" style={{ backgroundColor: indentLevel > 0 ? 'transparent' : 'var(--row-hover)' }}>
       <div
         className="flex items-center justify-between p-2 cursor-pointer"
         onClick={() => setExpanded(e => !e)}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
+          {indentLevel > 0 && (
+            <span className="text-xs shrink-0" style={{ color: 'var(--text-secondary)' }}>└─</span>
+          )}
           <span className="w-5 shrink-0 text-xs" style={{ color: 'var(--text-secondary)' }}>{index + 1}</span>
+          {hasChildren && onToggleCollapse && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
+              className="shrink-0"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            </button>
+          )}
           <span className="font-medium shrink-0 text-xs">{body.typeLabel}</span>
           {body.gasClass && (
             <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: 'var(--border-color)' }}>
@@ -1236,6 +1361,11 @@ function BodyRow({
           {body.lesserEarthType && (
             <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: 'var(--border-color)' }}>
               {body.lesserEarthType}
+            </span>
+          )}
+          {body.wasCapturedTerrestrial && (
+            <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: 'var(--accent-red)', color: 'white' }}>
+              Captured
             </span>
           )}
           {/* Inline name input — always visible, auto-saved */}
@@ -1264,11 +1394,13 @@ function BodyRow({
               MAIN WORLD
             </span>
           )}
-          <span className={`text-xs zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
-          <span className="text-xs">{body.distanceAU} AU</span>
-          {!isMainWorld && <span className="text-xs">{formatValue(body.mass, 'M⊕')}</span>}
+          {!isRing && (
+            <span className={`text-xs zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
+          )}
+          {!isRing && <span className="text-xs">{body.distanceAU} AU</span>}
+          {!isMainWorld && !isRing && <span className="text-xs">{formatValue(body.mass, 'M⊕')}</span>}
           {/* Habitability badge — main world uses v1 habitability; v2 bodies use baselineHabitability */}
-          {(() => {
+          {!isRing && (() => {
             const v2Body = body as PlanetaryBody;
             const hab = v2Body.baselineHabitability ?? body.habitability;
             if (hab === undefined) return null;

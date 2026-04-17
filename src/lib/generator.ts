@@ -28,6 +28,7 @@ import { calculatePhysicalProperties, recalculatePhysicalProperties } from './ph
 import { placeBodiesV2 } from './positioning';
 import { runHabitabilityWaterfall, selectMainworld } from './habitabilityPipeline';
 import { getLifePresetById, BUILT_IN_LIFE_PRESETS } from './lifePresets';
+import { generateLevel2Children } from './moons';
 
 // =====================
 // Star System Generator
@@ -77,15 +78,25 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     }
   }
 
+  // FR-044: Generate Level 2 children (moons + rings) for all L1 parents
+  const allMoons: PlanetaryBody[] = [];
+  const allRings: PlanetaryBody[] = [];
+  const l1Parents = [...terrestrials, ...ices, ...gases];
+  for (const parent of l1Parents) {
+    const l2 = generateLevel2Children(parent, primaryStar, lifePreset);
+    allMoons.push(...l2.moons);
+    allRings.push(...l2.rings);
+  }
+
   let mainWorld: MainWorld;
   let inhabitants: Inhabitants;
   let v2SystemFields: Partial<StarSystem> = {};
 
   if (opts.v2Positioning) {
     // FR-043: v2 pipeline — system-first generation + competitive mainworld selection
-    const allBodies = [...disks, ...dwarfs, ...terrestrials, ...ices, ...gases];
+    const allBodies = [...disks, ...dwarfs, ...terrestrials, ...ices, ...gases, ...allMoons];
 
-    // Select mainworld by highest Baseline Habitability
+    // Select mainworld by highest Baseline Habitability (L1 + L2 candidates)
     const selection = selectMainworld(allBodies);
 
     // Build MainWorld from winner
@@ -139,6 +150,8 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     economicPresetLabel: opts.tlProductivityPreset?.label ?? opts.tlProductivityPreset?.name ?? 'Mneme',
     economicPresetSnapshot: opts.tlProductivityPreset ? { ...opts.tlProductivityPreset } : undefined,
     allowShipsAtXPort: opts.allowShipsAtXPort,
+    moons: allMoons,
+    rings: allRings,
     ...v2SystemFields,
   };
 }
@@ -589,7 +602,7 @@ function buildMainWorldFromV2Winner(body: PlanetaryBody): MainWorld {
     habitability: effectiveHab,
     habitabilityComponents,
     zone: body.zone,
-    distanceAU: body.distanceAU,
+    distanceAU: (body as PlanetaryBody).parentDistanceAU ?? body.distanceAU,
   };
 }
 
