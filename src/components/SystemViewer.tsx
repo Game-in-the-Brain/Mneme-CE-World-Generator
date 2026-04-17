@@ -1413,7 +1413,13 @@ function BodyRow({
           {!isRing && (
             <span className={`text-xs zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
           )}
-          {!isRing && <span className="text-xs">{body.distanceAU} AU</span>}
+          {!isRing && (
+            <span className="text-xs">
+              {indentLevel > 0 && (body as PlanetaryBody).moonOrbitAU != null
+                ? `${(body as PlanetaryBody).moonOrbitAU} AU orbit`
+                : `${body.distanceAU} AU`}
+            </span>
+          )}
           {!isMainWorld && !isRing && <span className="text-xs">{formatValue(body.mass, 'M⊕')}</span>}
           {/* Habitability badge — main world uses v1 habitability; v2 bodies use baselineHabitability */}
           {!isRing && (() => {

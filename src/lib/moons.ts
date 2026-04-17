@@ -176,7 +176,9 @@ export function positionChildrenInHillSphere(
       const t = (roll2d6 - 2) / 10;
       const distanceFromParent = rocheLimit + t * (maxOrbit - rocheLimit);
 
-      child.distanceAU = Math.round(distanceFromParent * 100000) / 100000;
+      const orbitAU = Math.round(distanceFromParent * 100000) / 100000;
+      child.distanceAU = orbitAU;
+      child.moonOrbitAU = orbitAU;
 
       // Check spacing against already-placed siblings (simple separation check)
       let conflict = false;
@@ -197,7 +199,9 @@ export function positionChildrenInHillSphere(
 
     if (!placedSuccessfully) {
       // Ejected — place at Hill edge as fallback (loggable but still present)
-      child.distanceAU = Math.round(maxOrbit * 0.95 * 100000) / 100000;
+      const orbitAU = Math.round(maxOrbit * 0.95 * 100000) / 100000;
+      child.distanceAU = orbitAU;
+      child.moonOrbitAU = orbitAU;
       child.wasEjected = true;
       child.ejectionReason = 'gravitational';
       placed.push(child);

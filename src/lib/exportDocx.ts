@@ -358,7 +358,7 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
           tCell(`${rowIdx}*`, W[0]),
           tCell(`└─ ${childType}`, W[1]),
           tCell(body.zone,   W[2]),  // inherits parent zone
-          tCell(`${child.moonOrbitAU ?? child.distanceAU ?? '?'}`, W[3]),
+          tCell(`${child.moonOrbitAU ?? child.distanceAU ?? '?'} orbit`, W[3]),
           tCell(`${child.mass}`, W[4]),
           tCell(childAnn?.name ?? '—', W[5]),
           tCell(childAnn?.notes ?? '—', W[6]),
@@ -396,7 +396,7 @@ function buildPlanetarySystem(s: StarSystem, annotations: BodyAnnotations): (Par
         children: [
           run(`${idx}. `, { bold: true, color: GREY, size: 18 }),
           run(displayName, { bold: true, size: 18 }),
-          run(`  —  ${physBody.zone ?? body.zone ?? '—'}  ·  ${physBody.distanceAU} AU`, { color: GREY, size: 18 }),
+          run(`  —  ${physBody.zone ?? body.zone ?? '—'}  ·  ${(physBody as PlanetaryBody).moonOrbitAU != null ? (physBody as PlanetaryBody).moonOrbitAU + ' AU orbit' : physBody.distanceAU + ' AU'}`, { color: GREY, size: 18 }),
         ],
         spacing: { before: 120, after: 40 },
       }),
