@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult } from '../types';
 import { exportToDocx } from '../lib/exportDocx';
-import { FileJson, FileSpreadsheet, FileText, Map as MapIcon, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
 import {
   CULTURE_TRAIT_DESCRIPTIONS,
@@ -99,6 +99,31 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
     await exportToDocx(system, annotations, shipsResult);
   }, [system, annotations, shipsResult]);
 
+  const [copied, setCopied] = useState(false);
+  const handleCopyFor2DMap = useCallback(async () => {
+    const payload = {
+      starSystem: system,
+      starfieldSeed: generateSeed(),
+      epoch: { year: 2300, month: 1, day: 1 },
+    };
+    const json = JSON.stringify(payload, null, 2);
+    try {
+      await navigator.clipboard.writeText(json);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for browsers without clipboard API
+      const textarea = document.createElement('textarea');
+      textarea.value = json;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [system]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -150,22 +175,12 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
             DOCX
           </button>
           <button
-            onClick={() => {
-              const payload = {
-                starSystem: system,
-                starfieldSeed: generateSeed(),
-                epoch: { year: 2300, month: 1, day: 1 },
-              };
-              const json = JSON.stringify(payload);
-              const encoded = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
-              const url = new URL(`?system=${encoded}`, 'https://game-in-the-brain.github.io/2d-star-system-map/');
-              window.open(url.toString(), '_blank');
-            }}
+            onClick={handleCopyFor2DMap}
             className="btn-primary flex items-center gap-2"
-            title="Open 2D system map"
+            title="Copy system data for 2D map (paste into 2d-star-system-map)"
           >
-            <MapIcon size={16} />
-            Map
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+            {copied ? 'Copied!' : 'Copy for 2D Map'}
           </button>
         </div>
       </div>
