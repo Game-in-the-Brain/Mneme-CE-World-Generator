@@ -488,11 +488,11 @@ const CLASS_ORDER: Record<StarportClass, number> = { X: 0, E: 1, D: 2, C: 3, B: 
 const ORDER_TO_CLASS: Record<number, StarportClass> = { 0: 'X', 1: 'E', 2: 'D', 3: 'C', 4: 'B', 5: 'A' };
 
 function pssToClass(pss: number): StarportClass {
-  if (pss < 3)  return 'X';
-  if (pss <= 4) return 'E';
-  if (pss <= 5) return 'D';
-  if (pss <= 6) return 'C';
-  if (pss <= 7) return 'B';
+  if (pss < 4.0)  return 'X';
+  if (pss < 4.35) return 'E';
+  if (pss < 4.7)  return 'D';
+  if (pss < 5.05) return 'C';
+  if (pss < 5.4)  return 'B';
   return 'A';
 }
 
@@ -527,7 +527,7 @@ export function calculateStarport(
   // QA-057: removed wealth multiplier to avoid double-counting (Wealth is now baked into GDP/day via SOC)
   const annualTrade = population * gdpPerDay * 365 * getTradeFraction(dev);
 
-  const pss       = Math.floor(Math.log10(Math.max(1, annualTrade))) - 10;
+  const pss       = Math.floor(Math.log10(Math.max(1, annualTrade)) * 100) / 100 - 10;
   const rawClass  = pssToClass(pss);
   const tlCap     = getTLCapClass(tl);
   const finalClass = minClass(rawClass, tlCap);
