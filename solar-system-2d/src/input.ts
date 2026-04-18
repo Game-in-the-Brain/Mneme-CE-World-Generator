@@ -1,5 +1,5 @@
 import type { AppState } from './types';
-import { zoomTo, pan, resetCamera } from './camera';
+import { zoomTo, pan } from './camera';
 
 export function initInputHandlers(state: AppState, onReset: () => void): void {
   const canvas = state.canvas;

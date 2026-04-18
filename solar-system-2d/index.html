@@ -12,6 +12,9 @@
       <canvas id="starmap"></canvas>
       <div id="controls" class="control-panel">
         <div class="control-row">
+          <a href="https://game-in-the-brain.github.io/Mneme-CE-World-Generator/" target="_blank" rel="noopener noreferrer" class="btn small" style="width: 100%; text-decoration: none; display: inline-block; text-align: center;">🌍 Generate Worlds →</a>
+        </div>
+        <div class="control-row">
           <button id="btn-play" class="btn" aria-label="Play">▶</button>
           <button id="btn-pause" class="btn" aria-label="Pause" style="display:none">⏸</button>
           <button id="btn-reverse" class="btn" aria-label="Reverse">⏮</button>
@@ -48,6 +51,16 @@
         <div class="control-row seed-row">
           <input id="seed-paste" type="text" placeholder="Paste seed…" maxlength="8" />
           <button id="btn-seed-apply" class="btn small">Apply</button>
+        </div>
+        <div class="control-row" style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+          <button id="btn-generate-system" class="btn" style="width: 100%;">🎲 Generate Random System</button>
+        </div>
+        <div class="control-row" style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+          <textarea id="system-paste" placeholder="Paste system JSON from MWG…" rows="3" style="width: 100%; font-family: monospace; font-size: 10px; resize: vertical;"></textarea>
+        </div>
+        <div class="control-row">
+          <button id="btn-load-system" class="btn small" style="flex: 1;">Load System</button>
+          <button id="btn-download-system" class="btn small" style="flex: 1; margin-left: 4px;">Download JSON</button>
         </div>
       </div>
       <div id="loading" class="loading-overlay" style="display:none">

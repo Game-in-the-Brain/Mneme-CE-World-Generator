@@ -3,6 +3,9 @@
  * These mirror the MWG StarSystem shape where needed.
  */
 
+import type { ZoneBoundaries } from '../../src/types/index';
+export type { ZoneBoundaries } from '../../src/types/index';
+
 export interface MapPayload {
   starSystem: import('../../src/types/index').StarSystem;
   starfieldSeed: string;
@@ -29,7 +32,8 @@ export type BodyType =
   | 'gas-ii'
   | 'gas-iii'
   | 'gas-iv'
-  | 'gas-v';
+  | 'gas-v'
+  | 'moon';
 
 export interface DiskPoint {
   angle: number; // radians offset from disk's orbital angle
@@ -47,11 +51,16 @@ export interface SceneBody {
   radiusPx: number;
   colour: string;
   strokeColour: string;
-  angle: number; // radians
+  angle: number; // radians at epoch (2300-01-01)
   periodDays: number;
   isMainWorld: boolean;
   orbitDelta?: number; // visual nudge if needed
   diskPoints?: DiskPoint[];
+
+  // Moon / child fields
+  parentId?: string;
+  moonOrbitAU?: number;
+  velocityKms?: number;
 }
 
 export interface CameraState {
@@ -74,4 +83,5 @@ export interface AppState {
   lastFrameTime: number;
   width: number;
   height: number;
+  zones?: ZoneBoundaries;
 }
