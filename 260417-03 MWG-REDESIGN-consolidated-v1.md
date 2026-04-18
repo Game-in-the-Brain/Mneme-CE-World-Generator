@@ -494,6 +494,93 @@ Rings displayed in System Viewer as a visual indicator on the parent body card. 
 
 ---
 
+## 5b. Moon Zone Positioning (FR-044 — Phase D)
+
+Moons (Level 2) are placed within discrete zones inside their parent's Hill sphere, analogous to stellar zone placement for Level 1 bodies.
+
+### 5b.1 Hill Sphere Boundaries
+
+```
+hillRadius = parentAU × ∛(parentMass / (3 × starMass))
+stableMax  = hillRadius × 0.5     // stable region is ~50% of Hill radius
+rocheLimit = stableMax × 0.08     // inner boundary (~4% of Hill radius)
+```
+
+### 5b.2 Six Moon Zones (2D6)
+
+| 2D6 | Zone | Name | Range (fraction of stableMax) | Character |
+|---|---|---|---|---|
+| 2 | Z0 | Roche | rocheLimit → 0.12× | Tidal danger — survival check required |
+| 3–4 | Z1 | Inner | 0.12× → 0.30× | Close moon (Io-like) |
+| 5–7 | Z2 | Near | 0.30× → 0.50× | Near moon (Europa-like) — peak probability 41.7% |
+| 8–9 | Z3 | Mid | 0.50× → 0.70× | Mid moon (Ganymede-like) |
+| 10–11 | Z4 | Outer | 0.70× → 0.88× | Outer moon (Callisto-like) |
+| 12 | Z5 | Hill Edge | 0.88× → 0.98× | Barely stable; capture risk |
+
+Within a zone: `moonAU = parentAU ± (zoneMin + random() × (zoneMax − zoneMin))`.
+
+### 5b.3 Zone Occupancy + Nudging
+
+One moon per zone. On conflict: roll 1D6 for direction (1–3 = inward, 4–6 = outward), try adjacent zones. If all 6 zones occupied → rogue moon (see §5b.5).
+
+### 5b.4 Roche Zone Survival (Z0)
+
+Moons landing in Z0 (2D6 = 2) must pass a survival check:
+- Roll 2D6 + mass bonus ≥ 9
+- Mass bonus: parent ≥ 50 JM → +2, ≥ 10 JM → +1, else +0
+- P(survive): 28% base, 42% for ≥10 JM, 58% for ≥50 JM
+
+**Failure → Ring Creation:** If the moon fails the Roche survival check:
+1. Moon is destroyed (removed from moon list)
+2. If parent has no rings: create rings at Faint prominence
+3. If parent already has rings: upgrade prominence by one tier (Faint→Moderate→Prominent→Brilliant→Massive, capped at Massive)
+4. Log: `"Moon sheared into ring material at Roche limit"`
+
+This creates a feedback loop: systems with many moons produce more Roche failures → more prominent rings.
+
+### 5b.5 Rogue Moons
+
+If all 6 zones are occupied and nudging exhausts all directions:
+- Moon gains `status: 'rogue'`
+- `parentId` set to `undefined`
+- Moon enters system-level dwarf pool with `wasEjected: true`, `ejectionReason: 'rogue-moon'`
+- Rogue moons skip parent-dependent heating (no Proto-Star heat DM, no tidal heating)
+
+v1: rogue moons become independent dwarfs. Re-capture by another planet is a post-v1 feature.
+
+### 5b.6 Ring Proximity Hazard
+
+Habitability candidates (Dwarfs/Terrestrials) orbiting a parent with rings receive a **ring debris hazard** modifier if they are in Z0 or Z1 (close enough for ring material interaction):
+
+| Moon Zone | Ring Proximity | Hazard DM |
+|---|---|---|
+| Z0 (Roche) | Inside ring plane | +3 to hazard roll |
+| Z1 (Inner) | Adjacent to ring edge | +1 to hazard roll |
+| Z2–Z5 | Outside ring influence | +0 |
+
+This stacks with the existing Reactivity DM and atmosphere hazard bias. A habitable Dwarf moon in the Inner zone of a ringed Gas Giant faces falling debris — a real threat for surface or dome habitats.
+
+**Ring prominence scales the DM:**
+- Faint/Moderate rings: DM as listed above
+- Prominent/Brilliant rings: DM × 1.5 (round up)
+- Massive rings: DM × 2
+
+### 5b.7 Data Model Additions
+
+```typescript
+// PlanetaryBody additions:
+status?: 'planet' | 'moon' | 'rogue'   // NEW — distinguishes rogue moons/planets from active bodies
+moonZone?: number                        // 0–5, which moon zone this body occupies
+
+// Ring creation from Roche failure handled via existing ringProminence field
+```
+
+### 5b.8 Visual Impact
+
+With discrete zones, max moon orbit = 0.98 × 0.5 × hillRadius ≈ 1–5% of parent's AU. Moon orbits stay tightly bound to the parent at any zoom level — no more stellar zone overflow on the 2D map.
+
+---
+
 ## 6. Habitability Waterfall & Mainworld Selection (FR-043 — Locked)
 
 ### 6.1 The 10-Step Waterfall
@@ -602,14 +689,15 @@ Pre-computed inputs: mass, composition, density, gravity, radius, zone, parent i
 |---|---|---|---|
 | 1 | Type system — add optional fields to `Body`, `StarSystem` | `types/index.ts` | No |
 | 2 | Composition-density tables | `worldData.ts`, `physicalProperties.ts` | No |
-| 3 | Positioning system | NEW `positioning.ts`, `generator.ts`, `stellarData.ts` | Yes (behind `v2Positioning` flag) |
+| 3 | Positioning system (L1) | NEW `positioning.ts`, `generator.ts`, `stellarData.ts` | Yes (behind `v2Positioning` flag) |
+| 3b | Moon positioning (L2) + rings + Roche | NEW `moons.ts`, `positioning.ts`, `types/index.ts` | No (extends Phase 3) |
 | 4 | Habitability pipeline | NEW `habitabilityPipeline.ts`, `worldData.ts` | No |
 | 5 | Pipeline integration | `generator.ts` | Yes (flag-conditional) |
 | 6 | Life Assumptions settings | NEW `lifePresets.ts`, `Settings.tsx`, `optionsStorage.ts` | No |
 | 7 | UI updates | `SystemViewer.tsx`, `GeneratorDashboard.tsx`, `exportDocx.ts` | No |
 | 8 | Legacy migration | `db.ts` | No |
 
-**Build order:** 1 → 2 → 6 (parallel) → 3 → 4 → 5 → 7 → 8.
+**Build order:** 1 → 2 → 6 (parallel) → 3 → 3b → 4 → 5 → 7 → 8.
 
 ---
 
@@ -634,5 +722,9 @@ Pre-computed inputs: mass, composition, density, gravity, radius, zone, parent i
 | Mean disk count (G-class) | ~1.1 | ±0.3 |
 | Conservative zone placement | ~43.5% of bodies | ±3% |
 | Ring frequency (Gas Giants) | ~58% | ±5% |
+| Moon Z2 (Near) placement peak | ~41.7% of moons | ±5% |
+| Roche survival rate (base) | ~28% | ±5% |
+| Rogue moons per system | 0–1 (rare) | — |
+| Ring upgrade from Roche failure | ~2–5% of ringed parents gain a tier | ±2% |
 
 Run 10,000-system batch export. Adjust table values if empirical results diverge beyond tolerance.

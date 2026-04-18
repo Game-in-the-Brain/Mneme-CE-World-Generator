@@ -743,6 +743,10 @@ Update Sections 6.1 and 6.3 with the following changes:
 | Biosphere–temperature link | Not included | Temperature adjusts biosphere dice pool: Average adv+2, Freezing dis+3 (FR-043 proposed) | Add to biosphere section |
 | Subsurface ocean | Not included | Hydrous + Cold/Freezing + tidal heating → halve temp penalty on biosphere (FR-043 proposed) | Add sidebar |
 | Gravity ladder | Asymmetric (QA-023) | Symmetric −3 to 0 to −3 around 0.7–1.3G (FR-043 proposed) | Update §6.3 |
+| Moon positioning | Not specified (continuous AU) | 6 discrete zones (Z0 Roche → Z5 Hill Edge) within Hill sphere (FR-044 proposed) | Add §8.7 |
+| Roche ring creation | Not included | Moon fails Roche check → destroyed → creates/upgrades parent rings (FR-044 proposed) | Add to §8.7 |
+| Ring proximity hazard | Not included | Z0/Z1 moons of ringed parents get +3/+1 hazard DM, scaled by prominence (FR-044 proposed) | Add to habitability |
+| Rogue moons | Not included | All 6 moon zones full → `status: 'rogue'`, enter system dwarf pool (FR-044 proposed) | Add sidebar |
 
 ---
 
@@ -1094,6 +1098,63 @@ Replace §6 (Main World Generation) entirely with the Habitability Waterfall. Ad
 
 ---
 
+## 18. Moon Zone Positioning + Roche Ring Creation (FR-044 — Proposed)
+
+> **Status:** Proposed — not yet implemented. Design in consolidated spec `260417-03 MWG-REDESIGN-consolidated-v1.md` §5b.
+
+### Original Book Rules
+
+The book does not specify moon positioning mechanics. The current PWA uses a continuous 2D6→AU mapping within the Hill sphere, which can cluster moons and cause visual overflow on the 2D map.
+
+### Proposed Changes
+
+**1. Six discrete moon zones within the Hill sphere (2D6)**
+
+Analogous to stellar zones but scaled to the parent's stable region (50% of Hill radius):
+- Z0 Roche (2D6=2, 2.8%) — tidal danger zone, survival check required
+- Z1 Inner (3–4, 8.3%) — close moon (Io-like)
+- Z2 Near (5–7, 41.7%) — near moon (Europa-like), peak probability
+- Z3 Mid (8–9, 25%) — mid moon (Ganymede-like)
+- Z4 Outer (10–11, 16.7%) — outer moon (Callisto-like)
+- Z5 Hill Edge (12, 2.8%) — barely stable, capture risk
+
+One moon per zone. On conflict: 1D6 direction nudge (same pattern as Ice World placement). All 6 zones full → rogue moon.
+
+**2. Roche survival check + ring creation**
+
+Moons in Z0 must pass 2D6 + mass bonus ≥ 9. Parent mass bonus: ≥50 JM → +2, ≥10 JM → +1, else +0. Failure destroys the moon and creates or upgrades parent rings:
+- No rings → create Faint rings
+- Existing rings → upgrade one tier (Faint→Moderate→Prominent→Brilliant→Massive, capped)
+
+This creates a physical feedback loop: more moons → more Roche failures → more prominent ring systems.
+
+**3. Rogue moons**
+
+When all 6 zones are occupied, the moon gains `status: 'rogue'`, loses its parent, and enters the system-level dwarf pool. Rogue moons skip parent-dependent heating. Re-capture by another planet is deferred to post-v1.
+
+**4. Ring proximity hazard**
+
+Habitability candidates in Z0 or Z1 of a ringed parent receive a hazard DM from ring debris:
+- Z0 (inside ring plane): +3 to hazard roll
+- Z1 (adjacent to ring edge): +1 to hazard roll
+- Z2–Z5: +0
+
+Ring prominence scales the DM: Prominent/Brilliant rings → ×1.5 (round up), Massive rings → ×2. A habitable Dwarf moon orbiting close to a ringed Gas Giant faces falling debris — a real threat for surface or dome habitats.
+
+**5. `status` field for all bodies**
+
+New field `status?: 'planet' | 'moon' | 'rogue'` on PlanetaryBody. Distinguishes rogue moons/planets from active bodies across the system. Rogue bodies have `wasEjected: true` and `ejectionReason: 'rogue-moon'`.
+
+**6. Visual fix**
+
+Max moon orbit = 0.98 × 0.5 × hillRadius ≈ 1–5% of parent AU. Moon orbits stay tightly bound at any zoom level on the 2D map.
+
+### Recommendation for 2026 Book
+
+Add §8.7: Moon Placement. Include the 6-zone table with Jupiter archetype labels. Add Roche survival mechanic with ring creation sidebar. Add ring proximity hazard to the habitability calculation notes.
+
+---
+
 ## Implementation Notes for Developers
 
 ### Key Files
@@ -1172,6 +1233,6 @@ The current codebase has separate arrays (`dwarfPlanets`, `terrestrialWorlds`, `
 
 ---
 
-**Document Version:** 1.9 (2026-04-17 — §17 FR-043 Habitability Application & Mainworld Selection proposed (10-step waterfall, TL separated, temperature zone DMs, biosphere-temperature link, subsurface ocean override, competitive selection); summary table expanded with 7 habitability rows)  
+**Document Version:** 2.0 (2026-04-18 — §18 FR-044 Moon Zone Positioning proposed (6 discrete zones, Roche survival + ring creation, ring proximity hazard, rogue moons, status field); summary table +4 rows)  
 **Prepared for:** 2026 Mneme CE World Generator Book Update  
 **Author:** PWA Development Team

@@ -199,6 +199,38 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 
 **Full spec:** `260417-03 MWG-REDESIGN-consolidated-v1.md` (supersedes `260417-02`)
 
+| **FR-044** | 📋 Planned | Moon Zone Positioning + Roche Ring Creation + Ring Proximity Hazard — see below |
+
+### FR-044 — Moon Zone Positioning System (Phase D / Phase 3b)
+
+**Status:** 📋 Planned — design in consolidated spec §5b  
+**Scope:** Level 2 moon placement within parent Hill sphere using 6 discrete zones (Z0 Roche → Z5 Hill Edge). Replaces continuous 2D6→AU mapping.  
+**Depends on:** FR-042 (Phase 3 positioning must be complete — parents must be placed first)
+
+**6 Moon Zones (2D6):** Z0 Roche (2.8%), Z1 Inner (8.3%), Z2 Near (41.7% — Europa peak), Z3 Mid (25%), Z4 Outer (16.7%), Z5 Hill Edge (2.8%). One moon per zone; nudge on conflict (1D6 direction → try adjacent zones).
+
+**Sub-items:**
+- FR-044a: Moon zone table (2D6 → Z0–Z5) + position within zone (random in zone bounds)
+- FR-044b: Zone occupancy + nudge mechanic (same 1D6 direction pattern as Ice World/L1 placement)
+- FR-044c: Roche survival check (2D6 + parent mass bonus ≥ 9; failure → moon destroyed → ring creation/upgrade)
+- FR-044d: Ring creation from Roche failure (create Faint if no rings; upgrade one tier if rings exist; capped at Massive)
+- FR-044e: Rogue moons — `status: 'rogue'`, `parentId: undefined`, enter system dwarf pool. Re-capture deferred to post-v1.
+- FR-044f: Ring proximity hazard — moons in Z0/Z1 of ringed parents get +3/+1 to hazard roll (scaled by ring prominence: Prominent/Brilliant ×1.5, Massive ×2)
+- FR-044g: `status?: 'planet' | 'moon' | 'rogue'` field on PlanetaryBody
+- FR-044h: Visual fix — max moon orbit ≈ 0.49 × hillRadius, no more stellar zone overflow on 2D map
+
+**Implementation queue (Phase 3b):**
+
+| File | Change |
+|------|--------|
+| `src/lib/moons.ts` | NEW — `placeMoonInZone()`, `roll2D6ToMoonZone()`, Roche survival, rogue queue |
+| `src/lib/positioning.ts` | Integrate moon placement after L1 Phase C |
+| `src/lib/generator.ts` | Handle rogue moon queue after all L2 generation |
+| `src/types/index.ts` | Add `status?: 'planet' \| 'moon' \| 'rogue'`, `moonZone?: number` |
+| `src/lib/habitabilityPipeline.ts` | Ring proximity hazard DM in hazard step; rogue moons skip parent heating |
+
+**Full spec:** `260417-03 MWG-REDESIGN-consolidated-v1.md` §5b
+
 ### Key Files
 
 | File | Purpose |
