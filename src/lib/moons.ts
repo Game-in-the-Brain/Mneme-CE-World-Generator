@@ -5,11 +5,12 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { PlanetaryBody, Star, ExtraterrestrialLifeAssumptions } from '../types';
 import { rollKeep, roll2D6, roll3D6 } from './dice';
-import { rollComposition } from './worldData';
+import { rollComposition, getDwarfMass, getTerrestrialMass } from './worldData';
 import { recalculatePhysicalProperties } from './physicalProperties';
 import { runHabitabilityWaterfall } from './habitabilityPipeline';
 
 const JM_PER_EM = 317.8; // 1 Jupiter Mass ≈ 317.8 Earth Masses
+const SOLAR_MASS_IN_EM = 1047 * JM_PER_EM; // ≈ 332,946 Earth masses per solar mass
 
 // ---------------------
 // 1. Parent Mass Disadvantage (Child Count)
@@ -95,18 +96,19 @@ export function getMassCapRatio(
   return 0.02;
 }
 
-/** Roll mass for a child body, capping by parent mass. */
+/** Roll mass for a child body using REF-007 tables, capping by parent mass. */
 export function rollChildMass(
   childType: 'dwarf' | 'terrestrial',
   parentMassEM: number,
   parentType: PlanetaryBody['type']
 ): { finalMass: number; wasCapped: boolean; originalMass: number } {
-  // Use same base ranges as L1 generation
+  // Use REF-007 mass tables (2D6 lookup) instead of arbitrary random ranges
+  const roll = roll2D6().value;
   let originalMass: number;
   if (childType === 'dwarf') {
-    originalMass = 0.0001 + Math.random() * 0.001;
+    originalMass = getDwarfMass(roll);
   } else {
-    originalMass = 0.5 + Math.random() * 4;
+    originalMass = getTerrestrialMass(roll);
   }
 
   const capRatio = getMassCapRatio(parentType, childType);
@@ -143,12 +145,48 @@ export function getRingClassFromRoll(roll: number): 'faint' | 'visible' | 'showp
 // 6. Hill Sphere Positioning
 // ---------------------
 
-/** Compute Hill sphere radius in AU. */
+/** Compute Hill sphere radius in AU.
+ *  r_H = a * cbrt(m / (3M))
+ *  where a = parent orbital distance (AU)
+ *        m = parent mass (Earth masses)
+ *        M = star mass (Earth masses)
+ */
 function computeHillRadiusAU(parentAU: number, parentMassEM: number, starMassEM: number): number {
   return parentAU * Math.cbrt(parentMassEM / (3 * starMassEM));
 }
 
-/** Position children within parent's Hill sphere. Mutates children in place. */
+/** Compute Roche limit in AU for a child orbiting a parent.
+ *  d_R = R_parent * 2.44 * cbrt(rho_parent / rho_child)
+ *
+ * Falls back to a conservative 2× parent radius if densities are unknown.
+ */
+function computeRocheLimitAU(
+  parentRadiusKm: number | undefined,
+  parentDensityGcm3: number | undefined,
+  childDensityGcm3: number | undefined
+): number {
+  // 1 km = 6.68459e-9 AU
+  const KM_TO_AU = 6.68459e-9;
+
+  if (!parentRadiusKm || parentRadiusKm <= 0) {
+    return 0.001; // 0.001 AU ≈ 150,000 km fallback
+  }
+
+  const parentRadiusAU = parentRadiusKm * KM_TO_AU;
+
+  if (!parentDensityGcm3 || !childDensityGcm3 || parentDensityGcm3 <= 0 || childDensityGcm3 <= 0) {
+    // Conservative fallback: 2× parent radius (no density data)
+    return parentRadiusAU * 2;
+  }
+
+  const ratio = Math.cbrt(parentDensityGcm3 / childDensityGcm3);
+  return parentRadiusAU * 2.44 * ratio;
+}
+
+/** Position children within parent's Hill sphere. Mutates children in place.
+ *  distanceAU is preserved as the parent's star-centric distance.
+ *  moonOrbitAU is set to the orbital distance from the parent.
+ */
 export function positionChildrenInHillSphere(
   parent: PlanetaryBody,
   children: PlanetaryBody[],
@@ -157,40 +195,48 @@ export function positionChildrenInHillSphere(
   if (children.length === 0) return;
 
   const hillRadius = computeHillRadiusAU(parent.distanceAU, parent.mass, starMassEM);
-  const maxOrbit = hillRadius * 0.5;
-
-  // Safe Roche limit fallback: assume parent radius ~ parent.mass^(1/3) scaled
-  // Real roche limit requires densities; use a conservative fraction of maxOrbit
-  const rocheLimit = maxOrbit * 0.08; // ~8% of stable Hill sphere
+  const maxOrbit = hillRadius * 0.5; // stable region is ~0.5 × Hill radius
 
   // Sort by mass descending for placement priority
   const sorted = [...children].sort((a, b) => b.mass - a.mass);
   const placed: PlanetaryBody[] = [];
 
   for (const child of sorted) {
+    // Compute Roche limit using actual densities when available
+    const rocheLimit = computeRocheLimitAU(
+      parent.radiusKm,
+      parent.densityGcm3,
+      child.densityGcm3
+    );
+
+    // Ensure Roche limit doesn't exceed maxOrbit (shouldn't happen for realistic bodies)
+    const effectiveMin = Math.min(rocheLimit, maxOrbit * 0.5);
+    const effectiveMax = maxOrbit;
+
     let placedSuccessfully = false;
 
     for (let attempt = 0; attempt < 5; attempt++) {
       const roll2d6 = roll2D6().value;
-      // Map 2–12 to [rocheLimit, maxOrbit]
+      // Map 2–12 to [effectiveMin, effectiveMax] with 2D6 bell curve bias
       const t = (roll2d6 - 2) / 10;
-      const distanceFromParent = rocheLimit + t * (maxOrbit - rocheLimit);
+      const distanceFromParent = effectiveMin + t * (effectiveMax - effectiveMin);
 
       const orbitAU = Math.round(distanceFromParent * 100000) / 100000;
-      child.distanceAU = orbitAU;
-      child.moonOrbitAU = orbitAU;
 
-      // Check spacing against already-placed siblings (simple separation check)
+      // Check spacing against already-placed siblings using Hill-fraction separation
+      // Minimum separation = 0.15 × Hill radius (generous but prevents overlap)
+      const minSepAU = hillRadius * 0.15;
+
       let conflict = false;
       for (const other of placed) {
-        const minSep = Math.max(child.mass, other.mass) * 0.001; // simplistic separation
-        if (Math.abs(child.distanceAU - other.distanceAU) < minSep) {
+        if (Math.abs(orbitAU - (other.moonOrbitAU ?? 0)) < minSepAU) {
           conflict = true;
           break;
         }
       }
 
       if (!conflict) {
+        child.moonOrbitAU = orbitAU;
         placed.push(child);
         placedSuccessfully = true;
         break;
@@ -198,9 +244,8 @@ export function positionChildrenInHillSphere(
     }
 
     if (!placedSuccessfully) {
-      // Ejected — place at Hill edge as fallback (loggable but still present)
-      const orbitAU = Math.round(maxOrbit * 0.95 * 100000) / 100000;
-      child.distanceAU = orbitAU;
+      // Ejected — place at stable Hill edge as fallback
+      const orbitAU = Math.round(effectiveMax * 0.95 * 100000) / 100000;
       child.moonOrbitAU = orbitAU;
       child.wasEjected = true;
       child.ejectionReason = 'gravitational';
@@ -255,7 +300,7 @@ export function generateLevel2Children(
       type: childType,
       mass: massResult.finalMass,
       zone: parent.zone,
-      distanceAU: 0, // set during positioning
+      distanceAU: parent.distanceAU, // star-centric distance = parent's distance
       parentId: parent.id,
       level: 2,
       parentDistanceAU: parent.distanceAU,
@@ -294,7 +339,7 @@ export function generateLevel2Children(
       type: 'ring',
       mass: 0,
       zone: parent.zone,
-      distanceAU: 0,
+      distanceAU: parent.distanceAU, // star-centric distance = parent's distance
       parentId: parent.id,
       level: 2,
       ringClass,
@@ -303,7 +348,7 @@ export function generateLevel2Children(
   }
 
   // Step 7: Position all children within parent's Hill sphere
-  const starMassEM = primaryStar.mass * JM_PER_EM;
+  const starMassEM = primaryStar.mass * SOLAR_MASS_IN_EM;
   positionChildrenInHillSphere(parent, [...moons, ...rings], starMassEM);
 
   return { moons, rings };
