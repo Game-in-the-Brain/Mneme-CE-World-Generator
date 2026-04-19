@@ -32,6 +32,8 @@
     - 14.2 FR-041 Composition–Atmosphere–Biosphere Pipeline Redesign
     - 14.3 FR-042 Positioning System Redesign
     - 14.4 FR-043 Habitability Application & Mainworld Selection
+    - 14.5 FR-044 Moons & Parent-Child Limit
+    - 14.6 FR-045 Sector Generation Mode (3D Star Map Integration)
 15. [Reference Documents](#15-reference-documents)
 
 ---
@@ -2020,6 +2022,243 @@ mainworldSelectionLog: {
 
 ---
 
+### 14.6 FR-045 — Sector Generation Mode (3D Star Map Integration) *(📋 Planned)*
+
+**Status:** Planned — new cross-repo feature  
+**Companion specs:**
+- `3d-interstellar-map/frd.md` §FR-011 / FR-012 / FR-013 / FR-014 (consumer & host)
+- `2d-star-system-map/FRD.md` §8 Sector-Hosted Mode (consumer)
+
+**Depends on:** FR-041 (composition), FR-042 (positioning), FR-043 (habitability), FR-044 (moons). Batch generation pipeline (1 000-world harness) is the execution substrate.
+
+#### Motivation
+
+MWG currently generates **one system at a time**. The 3D Interstellar Map ships a catalogue of real stars (10/50/100 pc) as static JSON but has no planetary content. Users want to:
+
+1. Open a 3D sector (say, the 50 pc catalogue), and have MWG generate a complete world record for **every** star in that sector in a single pass.
+2. Set a **Sector Age** and **campaign goals** that steer every generated world consistently (so a 2300 CE "Frontier Expansion" sector feels different from a 3500 CE "Collapse" sector).
+3. Persist the sector. Clicking any star in the 3D map opens that star's full MWG record or its 2D system map.
+4. Treat the 3D map as the **host / container** — the sector lives there, MWG is the generator, the 2D map is the drill-down viewer.
+
+#### Scope
+
+A new generation mode — parallel to single-world and 1 000-world batch — that consumes the 3D map's star catalogue JSON and emits a `SectorFile`.
+
+#### Inputs
+
+1. **3D star catalogue** (`stars-10pc.json` / `stars-50pc.json` / `stars-100pc.json`, or an uploaded custom catalogue conforming to the same schema).
+   - Each entry: `{ id, name, x, y, z, spec, absMag }` (from 3D map FR-007).
+   - MWG reuses `spec` (spectral class) + `absMag` to derive stellar mass/luminosity rather than re-rolling a random star.
+2. **Sector Age** (new global setting — see §14.6 Data Model).
+3. **Sector Goals preset** (new settings panel — see §14.6 Goal Settings).
+4. **Existing presets** — Life Assumptions (FR-041), Economic Presets (§7.2), positioning + habitability settings all apply per-system.
+
+#### Outputs — `SectorFile`
+
+```typescript
+interface SectorFile {
+  schemaVersion: '1.0'
+  sectorId: string                    // uuid
+  sectorName: string                  // user-supplied, e.g. "Near Sol 50 pc — 2300 CE"
+  catalogueSource: string             // e.g. "stars-50pc.json" or uploaded filename
+  catalogueHash: string               // sha256 of the input catalogue (for integrity)
+
+  sectorAge: SectorAge                // see §14.6 Data Model
+  goals: SectorGoals                  // see §14.6 Goal Settings
+  lifeAssumptionsPresetId: string
+  economicPresetId: string
+
+  generatedAt: string                 // ISO 8601
+  generatorVersion: string            // MWG semver
+  rngSeed: string                     // master seed for reproducibility
+
+  systems: SectorSystemRecord[]       // one per input star
+}
+
+interface SectorSystemRecord {
+  starId: string                      // matches the 3D catalogue id
+  starPosition: { x: number; y: number; z: number }  // pc, copied from catalogue for convenience
+  catalogueName: string               // e.g. "Alpha Centauri A"
+  starSystem: StarSystem              // the full generated MWG StarSystem (types/index.ts)
+  generationLog: {
+    seed: string                      // per-system seed (derived from master + starId)
+    mainworldSelectionLog: MainworldSelectionLog     // from FR-043
+    ejectedBodies: number
+    consumedBodies: number
+  }
+}
+```
+
+Stars in the catalogue that MWG cannot honestly resolve (e.g. unresolved binaries, white dwarfs, catalogue gaps in `absMag`) are emitted with `starSystem = null` and a `skipReason` string. They remain visible in the 3D map as "ungenerated".
+
+#### Sector Age
+
+A new top-level setting on the Sector Generation panel.
+
+```typescript
+interface SectorAge {
+  calendarEra: 'CE' | 'HE' | 'custom'
+  year: number                        // e.g. 2300
+  label?: string                      // display override, e.g. "Imperial Year 1105"
+  yearsSinceColonisation?: number     // optional — derived if the preset implies it
+}
+```
+
+**Generation effects (applied per-system):**
+
+| Age bracket | Tech Level bias | Population bias | Starport-A probability | Ships-in-Area mix |
+|---|---|---|---|---|
+| Pre-industrial (< 1900 CE) | TL cap = 4 | Low | None | Sail-era only (N/A) |
+| Industrial (1900–2100) | TL cap = 8 | Medium | Rare | Mostly small craft |
+| Early interstellar (2100–2400) | TL 8–12 | Colonial, front-loaded to mainworld | Uncommon | Frontier skew |
+| Mature interstellar (2400–3000) | TL 10–14 | FR-040 distribution fully applied | Common | Mixed civilian + warship |
+| Fallen / Post-collapse (user flag) | TL random ±4 per system | Depopulation roll 2D6 → x0.01–x1.0 | Rare | Scavenger-heavy |
+
+Sector Age replaces the per-world era DM only when the "Override per-world TL" flag on Sector Goals is enabled. Otherwise Sector Age is an **upper cap** and the existing TL roll runs.
+
+#### Goal Settings
+
+A new settings panel (sibling to Life Assumptions). A "Sector Goals" preset is a bag of knobs that steer what kind of sector the generator emits.
+
+```typescript
+interface SectorGoals {
+  id: string
+  name: string                          // "Frontier Expansion", "Collapse", "Golden Age", "Survey Bureau"
+  description: string
+
+  // Aggregate shape
+  targetInhabitedFraction: number       // 0..1 — target fraction of systems with pop > 0
+  mainworldTlCap?: number               // hard cap across the sector
+  mainworldTlFloor?: number             // hard floor
+  overridePerWorldTl: boolean           // if true, sector sets TL; if false, sector only biases
+
+  // Civilisation shape
+  naval: 'none' | 'scattered' | 'dominant'
+  scout: 'none' | 'present' | 'active'
+  pirateProbability: number             // 0..1 — DM into §5 Starport Base table
+  redZoneProbability: number            // 0..1 — boosts REF-010 Red Zone triggers
+  amberZoneProbability: number
+
+  // Generation determinism
+  masterSeed?: string                   // if omitted, random; if set, sector is reproducible
+
+  // Guardrails
+  allowUngeneratable: boolean           // if false, skipReason systems are filled with a placeholder
+}
+```
+
+**Built-in presets (v1):**
+
+| Preset | Inhabited | TL cap/floor | Naval | Pirates | Red Zones |
+|---|---|---|---|---|---|
+| Frontier Expansion | 35% | 12 / 8 | scattered | 15% | 8% |
+| Golden Age | 70% | 15 / 11 | dominant | 2% | 2% |
+| Collapse / Dark Age | 45% | 10 / 4 | none | 35% | 20% |
+| Survey Bureau (Pristine) | 5% | 14 / 12 | scattered | 0% | 30% |
+| Mneme Default | — | — | present | 10% | 10% |
+
+`mneme_sector_goals_presets` localStorage key (custom), active id in `mneme_generator_options.activeSectorGoalsPresetId`.
+
+#### Generation Algorithm
+
+```
+input: catalogue[], sectorAge, goals, lifePreset, econPreset, masterSeed
+output: SectorFile
+
+1. Derive per-star seeds: seed[i] = hash(masterSeed || starId[i])
+2. Sector aggregate pre-pass:
+   - inhabitedCount = round(catalogue.length × goals.targetInhabitedFraction)
+   - Select which stars are inhabited (weighted by habitability prior: G/K/F > M > others)
+3. For each star in catalogue:
+   a. Use catalogue spec + absMag to build `primaryStar` (skip §5 random star roll)
+   b. Run FR-042 positioning → FR-041 composition → FR-043 habitability for all candidates
+   c. Apply Sector Age TL cap + Goals TL floor/cap
+   d. If this star was not marked inhabited in step 2, force population = 0 (empty system — main world
+      still selected for reference, but no inhabitants, starport X, no ships)
+   e. Assemble SectorSystemRecord; log per-system stats
+4. Assemble SectorFile; sign with catalogueHash + generatorVersion
+5. Offer "Download sector", "Open in 3D map" (cross-app handoff — see 3D FR-011)
+```
+
+#### UI
+
+- **New tab:** "Sector Generator" (between "Batch" and "Settings").
+- Catalogue chooser (10 pc / 50 pc / 100 pc / upload custom JSON).
+- Sector Age picker (era + year slider).
+- Goals preset selector + custom preset builder.
+- "Generate Sector" button → progress bar per system (generation is not instant — 50 pc catalogue is ~130 stars, 100 pc is ~13 000 and may require web-worker offload).
+- Result panel: summary table (inhabited, ejected bodies total, mainworld TL distribution, starport distribution).
+- Export:
+  - "Download .sector.json" (raw SectorFile)
+  - "Open in 3D Map" — constructs cross-app URL with the SectorFile (too large for URL — see §14.6 Handoff below).
+
+#### Cross-App Handoff (MWG → 3D map)
+
+`SectorFile` is far too large for URL-encoding (50 pc ≈ 1–3 MB, 100 pc ≈ 100 MB). Options:
+
+1. **Direct download + upload** (v1): MWG writes `.sector.json` to disk; user uploads it to 3D map.
+2. **Hosted handoff** (v1.1): MWG writes to `IndexedDB` keyed by `sectorId`; 3D map (same origin family) reads via a shared `BroadcastChannel('gi7b-sector-bus')` — both apps are under `game-in-the-brain.github.io` so shared origin is viable. 3D map persists to its own IndexedDB on receipt.
+3. **PostMessage** (fallback): MWG `window.open`s 3D map, then posts the SectorFile over `postMessage` with origin check.
+
+v1 **must** support option 1 (file download/upload) so sectors are portable without origin constraints. Option 2 is a v1.1 convenience.
+
+#### Data Model Additions
+
+```typescript
+// types/index.ts
+interface SectorAge { /* as above */ }
+interface SectorGoals { /* as above */ }
+interface SectorSystemRecord { /* as above */ }
+interface SectorFile { /* as above */ }
+
+// StarSystem additions (optional, populated only in sector mode):
+sectorId?: string
+sectorCoordinates?: { x: number; y: number; z: number }
+sectorAge?: SectorAge
+sectorGoalsId?: string
+```
+
+#### localStorage Keys
+
+| Key | Purpose |
+|---|---|
+| `mneme_sector_goals_presets` | Array of custom SectorGoals |
+| `mneme_sector_age_last` | Last-used SectorAge (convenience) |
+| `mneme_sector_generator_options` | Catalogue choice, active goals id, master seed |
+
+`SectorFile`s themselves are **not** stored in MWG localStorage — they can be megabytes and belong on disk or in the 3D map's IndexedDB.
+
+#### Affected Files
+
+| File | Change |
+|---|---|
+| `src/types/index.ts` | `SectorAge`, `SectorGoals`, `SectorFile`, `SectorSystemRecord` |
+| `src/lib/sectorGenerator.ts` | NEW — orchestrates per-star generation from a catalogue |
+| `src/lib/sectorGoalsPresets.ts` | NEW — built-in presets + storage helpers |
+| `src/lib/starFromCatalogue.ts` | NEW — derive `primaryStar` from spec + absMag instead of rolling |
+| `src/lib/generator.ts` | Accept optional `primaryStarOverride` and `sectorContext` parameters |
+| `src/components/SectorGenerator.tsx` | NEW — the new tab |
+| `src/components/Settings.tsx` | Sector Goals preset panel |
+| `src/lib/optionsStorage.ts` | Persist sector generator options |
+| `src/lib/sectorHandoff.ts` | NEW — BroadcastChannel + postMessage helpers (v1.1) |
+
+#### Acceptance Criteria
+
+- [ ] Loading `stars-50pc.json` and generating with default presets produces a `SectorFile` where every entry either has a `starSystem` or a populated `skipReason`.
+- [ ] The same `masterSeed` + same catalogue + same presets produces a byte-identical `SectorFile` (modulo `generatedAt`).
+- [ ] Sector Age "2300 CE — Early interstellar" caps mainworld TL at 12 across the sector.
+- [ ] Goals preset "Collapse" lowers the mean TL and raises pirate starport frequency versus "Golden Age" on the same catalogue + seed.
+- [ ] `.sector.json` can be downloaded, then uploaded to the 3D map, and the 3D map lights up every previously-generated star as clickable.
+- [ ] 100 pc catalogue generation runs on a web worker so the UI remains responsive; a progress bar updates at least every 50 systems.
+
+#### Open Questions
+
+- Binary/trinary handling: does MWG roll a companion when the catalogue already lists the system as multiple stars (e.g. α Cen A + B are separate catalogue entries)? **Proposed:** treat as separate entries unless their IDs are linked via a `companionGroupId` catalogue field (requires 3D map catalogue schema addition).
+- Sector re-generation with partial edits (user tweaks one system manually and then wants to regenerate only the rest): v2 feature. v1 is all-or-nothing.
+- Memory ceiling for 100 pc catalogue in the browser — may need streaming write to a File System Access API handle rather than in-memory SectorFile assembly.
+
+---
+
 ## 16. Reference Documents
 
 The following reference documents contain detailed tables and implementation notes:
@@ -2064,3 +2303,4 @@ The following reference documents contain detailed tables and implementation not
 | 2.4 | 2026-04-17 | §14.2 FR-041 Composition–Atmosphere–Biosphere Pipeline Redesign added — full spec with composition tables, abiotic atmosphere, 11-tier biochem, biosphere test/rating (B0–B6), atmosphere conversion, and Extraterrestrial Life Assumptions settings |
 | 2.5 | 2026-04-17 | §14.3 FR-042 Positioning System Redesign added — unified 3D6 roll, 4-phase placement, O1–O5 outer zones, reversed Hot Jupiter stability roll, disk-blocking, rogue worlds, Proto-Star/Brown Dwarf promotion |
 | 2.6 | 2026-04-17 | §14.4 FR-043 Habitability Application & Mainworld Selection added — 10-step waterfall, TL separated from Baseline, zone temperature DMs, biosphere-temperature link, subsurface ocean override, competitive selection with tiebreakers, revised gravity ladder |
+| 2.7 | 2026-04-19 | §14.6 FR-045 Sector Generation Mode added — consumes 3D star map catalogues, emits SectorFile with per-system MWG records; Sector Age + Sector Goals presets; cross-app handoff to 3D Interstellar Map (hosts sector) and 2D Star System Map (drill-down). Companion specs added to `3d-interstellar-map/frd.md` and `2d-star-system-map/FRD.md` |

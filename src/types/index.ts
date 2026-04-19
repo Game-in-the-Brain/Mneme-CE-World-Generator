@@ -259,6 +259,12 @@ export interface StarSystem {
   id: string;
   createdAt: number;
   name?: string;
+  /** 3D map coordinates (parsecs) */
+  x?: number;
+  y?: number;
+  z?: number;
+  /** Source star ID from 3D interstellar map */
+  sourceStarId?: string;
   
   primaryStar: Star;
   companionStars: Star[];

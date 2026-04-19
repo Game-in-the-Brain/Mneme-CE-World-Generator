@@ -11,6 +11,7 @@ import { SystemViewer } from './components/SystemViewer';
 import { Settings } from './components/Settings';
 import { Glossary } from './components/Glossary';
 import { Navigation, type Theme } from './components/Navigation';
+import { parseSpectralType } from './lib/spectralParser';
 import './App.css';
 
 function App() {
@@ -48,9 +49,10 @@ function App() {
     }
   }, [theme, desktopTheme]);
 
-  // Load saved systems on mount
+  // Load saved systems on mount + handle URL params from 3D map
   useEffect(() => {
     loadSavedSystems();
+    handleUrlParams();
   }, []);
 
   const loadSavedSystems = async () => {
@@ -65,6 +67,52 @@ function App() {
   const showNotification = (message: string) => {
     setNotification(message);
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  /**
+   * Handle URL parameters from 3D Interstellar Map.
+   * When user clicks "Open in MWG", the URL contains star data.
+   */
+  const handleUrlParams = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const starId = params.get('starId');
+    const name = params.get('name');
+    const spec = params.get('spec');
+
+    if (starId && spec) {
+      // Parse spectral type to get class/grade
+      const parsed = parseSpectralType(spec);
+      if (parsed) {
+        const options: GeneratorOptions = {
+          starClass: parsed.stellarClass,
+          starGrade: parsed.grade,
+          mainWorldType: 'random',
+          populated: true,
+        };
+        setIsGenerating(true);
+        try {
+          const system = generateStarSystem(options);
+          // Attach 3D map metadata
+          system.name = name || `${parsed.stellarClass}${parsed.grade} System`;
+          system.sourceStarId = starId;
+          system.x = parseFloat(params.get('x') || '0');
+          system.y = parseFloat(params.get('y') || '0');
+          system.z = parseFloat(params.get('z') || '0');
+          setCurrentSystem(system);
+          await saveSystem(system);
+          await loadSavedSystems();
+          setView('system');
+          showNotification(`Generated system for ${name || starId}`);
+          // Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (error) {
+          console.error('Error generating from URL params:', error);
+          showNotification('Error generating system from star data');
+        } finally {
+          setIsGenerating(false);
+        }
+      }
+    }
   };
 
   const handleGenerate = useCallback(async (options: GeneratorOptions) => {
@@ -165,8 +213,29 @@ function App() {
 
   const handleExportJSON = useCallback(() => {
     if (!currentSystem) return;
-    const json = exportToJSON(currentSystem);
-    downloadFile(json, `mneme-system-${currentSystem.id.slice(0, 8)}.json`, 'application/json');
+    // If system has 3D map coordinates, export in MnemeSystemExport format
+    if (currentSystem.sourceStarId !== undefined) {
+      const exportData = {
+        mnemeFormat: 'star-system-batch',
+        version: '1.0',
+        source: 'mwg',
+        exportedAt: new Date().toISOString(),
+        systems: [{
+          starId: currentSystem.sourceStarId,
+          name: currentSystem.name || currentSystem.sourceStarId,
+          x: currentSystem.x ?? 0,
+          y: currentSystem.y ?? 0,
+          z: currentSystem.z ?? 0,
+          spec: `${currentSystem.primaryStar.class}${currentSystem.primaryStar.grade}`,
+          absMag: 0,
+          mwgSystem: currentSystem,
+        }],
+      };
+      downloadFile(JSON.stringify(exportData, null, 2), `mneme-system-${currentSystem.id.slice(0, 8)}.json`, 'application/json');
+    } else {
+      const json = exportToJSON(currentSystem);
+      downloadFile(json, `mneme-system-${currentSystem.id.slice(0, 8)}.json`, 'application/json');
+    }
     showNotification('System exported as JSON');
   }, [currentSystem]);
 
@@ -187,6 +256,41 @@ function App() {
   const handleImport = useCallback(async (file: File) => {
     try {
       const text = await file.text();
+      const parsed = JSON.parse(text);
+
+      // Check for MnemeSystemExport format (from 3D map)
+      if (parsed.mnemeFormat === 'star-system-batch' && Array.isArray(parsed.systems)) {
+        const generated: StarSystem[] = [];
+        for (const entry of parsed.systems) {
+          const spec = entry.spec as string;
+          const parsedSpec = parseSpectralType(spec);
+          if (parsedSpec) {
+            const system = generateStarSystem({
+              starClass: parsedSpec.stellarClass,
+              starGrade: parsedSpec.grade,
+              mainWorldType: 'random',
+              populated: true,
+            });
+            system.name = entry.name || `${parsedSpec.stellarClass}${parsedSpec.grade} System`;
+            system.sourceStarId = String(entry.starId);
+            system.x = Number(entry.x ?? 0);
+            system.y = Number(entry.y ?? 0);
+            system.z = Number(entry.z ?? 0);
+            // If entry already has mwgSystem data, merge key fields (optional enrichment)
+            if (entry.mwgSystem && typeof entry.mwgSystem === 'object') {
+              // Keep our generated data but mark as enriched
+              (system as unknown as Record<string, unknown>).importedMwgData = true;
+            }
+            await saveSystem(system);
+            generated.push(system);
+          }
+        }
+        await loadSavedSystems();
+        showNotification(`Imported ${parsed.systems.length} stars, generated ${generated.length} systems`);
+        return;
+      }
+
+      // Standard MWG import
       const imported = await importSystemsFromJSON(text);
       await loadSavedSystems();
       showNotification(`Imported ${imported.length} systems`);

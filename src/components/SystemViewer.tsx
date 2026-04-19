@@ -192,6 +192,18 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
             <ExternalLink size={16} />
             Open 2D Map
           </a>
+          {system.sourceStarId && (
+            <a
+              href={`https://game-in-the-brain.github.io/3d-interstellar-map/?starId=${encodeURIComponent(system.sourceStarId)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary flex items-center gap-2"
+              title="View this star in the 3D Interstellar Map"
+            >
+              <ExternalLink size={16} />
+              View in 3D Map
+            </a>
+          )}
         </div>
       </div>
 
