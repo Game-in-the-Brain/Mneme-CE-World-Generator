@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType, TLProductivityPreset } from '../types';
-import { Sparkles, ChevronRight, Clock, Download } from 'lucide-react';
+import { Sparkles, ChevronRight, Clock, Download, FolderOpen } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
 import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
 import { BUILT_IN_PRESETS, CE_PRESET, getBoatYears, BOAT_PRICE_CR, displayTL } from '../lib/economicPresets';
@@ -8,6 +8,8 @@ import { ShipsPriceList } from './ShipsPriceList';
 
 // Import generator for batch export
 import { generateStarSystem } from '../lib/generator';
+import { getAllBatches, setActiveBatch } from '../lib/db';
+import type { StarSystemBatch } from '../types';
 
 interface GeneratorDashboardProps {
   onGenerate: (options: GeneratorOptions) => void;
@@ -68,6 +70,7 @@ export function GeneratorDashboard({
     }
   });
   const [showShipsPriceList, setShowShipsPriceList] = useState(false);
+  const [recentBatches, setRecentBatches] = useState<StarSystemBatch[]>([]);
   const [goalStarportMin, setGoalStarportMin] = useState<import('../types').StarportClass | ''>(defaults.goalStarportMin || '');
   const [goalMinPopulation, setGoalMinPopulation] = useState<string>(defaults.goalMinPopulation?.toString() || '');
   const [goalHabitable, setGoalHabitable] = useState<boolean>(defaults.goalHabitable || false);
@@ -76,6 +79,10 @@ export function GeneratorDashboard({
 
   const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
   const isKnownPreset = allPresets.some((p) => p.id === activePreset.id);
+
+  useEffect(() => {
+    getAllBatches().then(setRecentBatches).catch(console.error);
+  }, [recentSystems]); // refresh when systems change
 
   useEffect(() => {
     const current = loadGeneratorOptions();
@@ -480,6 +487,50 @@ export function GeneratorDashboard({
                 </div>
                 <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
                   <span className="text-sm">{new Date(system.createdAt).toLocaleDateString()}</span>
+                  <ChevronRight size={16} />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Batches */}
+      {recentBatches.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <FolderOpen size={20} style={{ color: 'var(--accent-red)' }} />
+              Recent Batches
+            </h2>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {recentBatches.length} batch{recentBatches.length !== 1 ? 'es' : ''}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {recentBatches.slice(0, 5).map((batch) => (
+              <button
+                key={batch.id}
+                onClick={() => {
+                  setActiveBatch(batch.id);
+                  // Dispatch a custom event so App.tsx can switch to systems view
+                  window.dispatchEvent(new CustomEvent('mwg:switchView', { detail: 'systems' }));
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-lg transition-colors text-left"
+                style={{ backgroundColor: 'var(--row-hover)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <FolderOpen size={18} style={{ color: 'var(--text-secondary)' }} />
+                  <div>
+                    <div className="font-medium">{batch.name}</div>
+                    <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      {batch.systemIds.length} systems · {batch.source}
+                      {batch.source === '3dmap-import' && ' · from 3D Map'}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                  <span className="text-sm">{new Date(batch.createdAt).toLocaleDateString()}</span>
                   <ChevronRight size={16} />
                 </div>
               </button>

@@ -4,16 +4,17 @@ import {
   getAllBatches, createBatch, deleteBatch, updateBatch,
   getSystemsInBatch, setActiveBatch, getActiveBatch,
 } from '../lib/db';
-import { Database, Plus, Trash2, Edit3, Upload, Download, FolderOpen } from 'lucide-react';
+import { Database, Plus, Trash2, Edit3, Upload, Download, FolderOpen, Map } from 'lucide-react';
 
 interface SystemsViewProps {
   systems: StarSystem[];
   onViewSystem: (system: StarSystem) => void;
   onDeleteSystem: (id: string) => void;
   onImport: (file: File) => void;
+  importProgress?: { current: number; total: number; message: string } | null;
 }
 
-export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport }: SystemsViewProps) {
+export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport, importProgress }: SystemsViewProps) {
   const [batches, setBatches] = useState<StarSystemBatch[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [batchSystems, setBatchSystems] = useState<StarSystem[]>([]);
@@ -118,8 +119,90 @@ export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport }:
 
   const selectedBatch = batches.find(b => b.id === selectedBatchId);
 
+  const handleExportTo3DMap = () => {
+    const batch = batches.find(b => b.id === selectedBatchId);
+    if (!batch || batchSystems.length === 0) return;
+
+    // Build minimal star objects compatible with 3D map .mneme-map import
+    const stars = batchSystems.map((sys) => ({
+      id: sys.sourceStarId || sys.id,
+      name: sys.name || `${sys.primaryStar.class}${sys.primaryStar.grade} System`,
+      x: sys.x ?? 0,
+      y: sys.y ?? 0,
+      z: sys.z ?? 0,
+      spec: `${sys.primaryStar.class}${sys.primaryStar.grade}`,
+      absMag: 0,
+      // GeneratedStar fields (optional for rendering, required for type cast in 3D map)
+      pass: 1,
+      parentId: null,
+      rolls: {
+        classRoll: 0,
+        gradeRoll: 0,
+        xyRoll: [11, 11] as [number, number],
+        zRoll: 11,
+        distanceRoll: 0,
+      },
+      distanceFromParent: 0,
+      hasMwgSystem: true,
+    }));
+
+    // Build mwgSystems map for enriched context in 3D map
+    const mwgSystems: Record<string, Record<string, unknown>> = {};
+    for (const sys of batchSystems) {
+      const key = sys.sourceStarId || sys.id;
+      mwgSystems[key] = sys as unknown as Record<string, unknown>;
+    }
+
+    const payload = {
+      mnemeFormat: 'starmap-v1',
+      name: batch.name,
+      version: '1.4.0',
+      exportedAt: new Date().toISOString(),
+      parameters: {
+        density: 'average',
+        starCountDice: 1,
+        distanceDice: 1,
+        distanceMultiplier: 1.0,
+        starCountMultiplier: 1.0,
+        maxPasses: 1,
+      },
+      tables: {
+        classTable: {} as Record<number, string>,
+        gradeTable: {} as Record<number, number>,
+      },
+      stars,
+      mwgSystems,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${batch.name.replace(/\s+/g, '_').toLowerCase()}.mneme-map`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto relative">
+      {/* Import Progress Overlay */}
+      {importProgress && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[var(--bg-card)] border border-white/10 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <div className="text-sm font-medium mb-3 text-center">{importProgress.message}</div>
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+              <div
+                className="h-full bg-[#e53935] rounded-full transition-all duration-200"
+                style={{ width: `${Math.round((importProgress.current / importProgress.total) * 100)}%` }}
+              />
+            </div>
+            <div className="text-xs text-[#9e9e9e] text-center">
+              {importProgress.current} / {importProgress.total} ({Math.round((importProgress.current / importProgress.total) * 100)}%)
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Database size={24} />
@@ -131,12 +214,12 @@ export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport }:
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[#e53935]/50 transition-colors text-sm"
           >
             <Upload size={16} />
-            Import .mneme-map
+            Import
           </button>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".mneme-map,.json"
+            accept=".mneme-map,.mneme-batch,.json"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -259,14 +342,25 @@ export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport }:
                     {selectedBatch.source === '3dmap-import' && ' · Imported from 3D Map'}
                   </p>
                 </div>
-                <button
-                  onClick={handleExportBatch}
-                  disabled={batchSystems.length === 0}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[#e53935]/50 transition-colors text-sm disabled:opacity-40"
-                >
-                  <Download size={16} />
-                  Export Batch
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExportTo3DMap}
+                    disabled={batchSystems.length === 0}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[#e53935]/50 transition-colors text-sm disabled:opacity-40"
+                    title="Export batch as .mneme-map for 3D Interstellar Map"
+                  >
+                    <Map size={16} />
+                    Export to 3D Map
+                  </button>
+                  <button
+                    onClick={handleExportBatch}
+                    disabled={batchSystems.length === 0}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[#e53935]/50 transition-colors text-sm disabled:opacity-40"
+                  >
+                    <Download size={16} />
+                    Export Batch
+                  </button>
+                </div>
               </div>
 
               <div className="grid gap-2">

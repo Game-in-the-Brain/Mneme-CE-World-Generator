@@ -22,6 +22,7 @@ function App() {
   const [savedSystems, setSavedSystems] = useState<StarSystem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number; message: string } | null>(null);
 
   // Theme state — persisted to localStorage (QA-005)
   const [theme, setTheme] = useState<Theme>(() => {
@@ -55,6 +56,16 @@ function App() {
   useEffect(() => {
     loadSavedSystems();
     handleUrlParams();
+
+    // Listen for view-switch requests from child components (e.g. Dashboard batch click)
+    const handleSwitchView = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail === 'systems' || detail === 'dashboard' || detail === 'settings' || detail === 'glossary') {
+        setView(detail as ViewMode);
+      }
+    };
+    window.addEventListener('mwg:switchView', handleSwitchView);
+    return () => window.removeEventListener('mwg:switchView', handleSwitchView);
   }, []);
 
   const loadSavedSystems = async () => {
@@ -70,6 +81,8 @@ function App() {
     setNotification(message);
     setTimeout(() => setNotification(null), 3000);
   };
+
+
 
   /**
    * Handle URL parameters from 3D Interstellar Map.
@@ -273,8 +286,10 @@ function App() {
         const batch = await createBatch(batchName, '3dmap-import');
         setActiveBatch(batch.id);
 
+        const total = parsed.stars.length;
         const generated: StarSystem[] = [];
-        for (const star of parsed.stars) {
+        for (let i = 0; i < total; i++) {
+          const star = parsed.stars[i];
           const spec = star.spec as string;
           const parsedSpec = parseSpectralType(spec);
           if (parsedSpec) {
@@ -293,16 +308,24 @@ function App() {
             await addSystemToBatch(system.id, batch.id);
             generated.push(system);
           }
+          // Yield to UI every 5 items for progress updates
+          if (i % 5 === 0 || i === total - 1) {
+            setImportProgress({ current: i + 1, total, message: `Importing ${batchName}…` });
+            await new Promise(r => setTimeout(r, 0));
+          }
         }
+        setImportProgress(null);
         await loadSavedSystems();
-        showNotification(`Imported ${parsed.stars.length} stars into "${batchName}" batch`);
+        showNotification(`Imported ${total} stars into "${batchName}" batch`);
         return;
       }
 
       // Check for MnemeSystemExport format (from 3D map single-system export)
       if (parsed.mnemeFormat === 'star-system-batch' && Array.isArray(parsed.systems)) {
+        const total = parsed.systems.length;
         const generated: StarSystem[] = [];
-        for (const entry of parsed.systems) {
+        for (let i = 0; i < total; i++) {
+          const entry = parsed.systems[i];
           const spec = entry.spec as string;
           const parsedSpec = parseSpectralType(spec);
           if (parsedSpec) {
@@ -317,17 +340,49 @@ function App() {
             system.x = Number(entry.x ?? 0);
             system.y = Number(entry.y ?? 0);
             system.z = Number(entry.z ?? 0);
-            // If entry already has mwgSystem data, merge key fields (optional enrichment)
             if (entry.mwgSystem && typeof entry.mwgSystem === 'object') {
-              // Keep our generated data but mark as enriched
               (system as unknown as Record<string, unknown>).importedMwgData = true;
             }
             await saveSystem(system);
             generated.push(system);
           }
+          if (i % 5 === 0 || i === total - 1) {
+            setImportProgress({ current: i + 1, total, message: 'Importing systems…' });
+            await new Promise(r => setTimeout(r, 0));
+          }
         }
+        setImportProgress(null);
         await loadSavedSystems();
-        showNotification(`Imported ${parsed.systems.length} stars, generated ${generated.length} systems`);
+        showNotification(`Imported ${total} stars, generated ${generated.length} systems`);
+        return;
+      }
+
+      // Check for .mneme-batch format (mwg-batch-v1) — MWG batch export
+      if (parsed.mnemeFormat === 'mwg-batch-v1' && parsed.batch && Array.isArray(parsed.systems)) {
+        const batchName = parsed.batch.name || file.name.replace(/\.mneme-batch$/, '').replace(/\.json$/, '') || 'Imported Batch';
+        const batch = await createBatch(batchName, parsed.batch.source || 'batch-import');
+        setActiveBatch(batch.id);
+
+        const total = parsed.systems.length;
+        for (let i = 0; i < total; i++) {
+          const rawSystem = parsed.systems[i] as StarSystem & { id?: string };
+          // Strip old id so Dexie assigns a new one
+          const { id: _oldId, ...systemData } = rawSystem;
+          const system: StarSystem = {
+            ...systemData,
+            id: crypto.randomUUID(),
+            createdAt: Date.now(),
+            batchId: batch.id,
+          };
+          await saveSystem(system);
+          if (i % 5 === 0 || i === total - 1) {
+            setImportProgress({ current: i + 1, total, message: `Importing ${batchName}…` });
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+        setImportProgress(null);
+        await loadSavedSystems();
+        showNotification(`Imported ${total} systems into "${batchName}" batch`);
         return;
       }
 
@@ -337,6 +392,7 @@ function App() {
       showNotification(`Imported ${imported.length} systems`);
     } catch (error) {
       console.error('Error importing:', error);
+      setImportProgress(null);
       showNotification('Error importing file');
     }
   }, []);
@@ -389,6 +445,7 @@ function App() {
             onViewSystem={handleViewSystem}
             onDeleteSystem={handleDeleteSystem}
             onImport={handleImport}
+            importProgress={importProgress}
           />
         )}
 
