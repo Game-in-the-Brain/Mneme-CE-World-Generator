@@ -11,6 +11,7 @@ import { SystemViewer } from './components/SystemViewer';
 
 import { Settings } from './components/Settings';
 import { Glossary } from './components/Glossary';
+import { SystemsView } from './components/SystemsView';
 import { Navigation, type Theme } from './components/Navigation';
 import { parseSpectralType } from './lib/spectralParser';
 import './App.css';
@@ -383,34 +384,12 @@ function App() {
         {view === 'glossary' && <Glossary />}
 
         {view === 'systems' && (
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold mb-4">Star Systems</h1>
-            <p className="text-[#9e9e9e] mb-6">
-              Batch management coming in FRD-047 M2. 
-              Currently showing all {savedSystems.length} saved systems.
-            </p>
-            <div className="grid gap-3">
-              {savedSystems.map(sys => (
-                <button
-                  key={sys.id}
-                  onClick={() => handleViewSystem(sys)}
-                  className="text-left p-4 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[#e53935]/50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">{sys.name || 'Unnamed System'}</span>
-                    <span className="text-sm text-[#9e9e9e]">
-                      {sys.primaryStar.class}{sys.primaryStar.grade} · {sys.inhabitants.population.toLocaleString()} pop
-                    </span>
-                  </div>
-                  {sys.sourceStarId && (
-                    <span className="text-xs text-[#e53935] mt-1 block">
-                      3D Map: {sys.sourceStarId}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SystemsView
+            systems={savedSystems}
+            onViewSystem={handleViewSystem}
+            onDeleteSystem={handleDeleteSystem}
+            onImport={handleImport}
+          />
         )}
 
         {view === 'settings' && (
