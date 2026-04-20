@@ -280,6 +280,47 @@ function App() {
       const text = await file.text();
       const parsed = JSON.parse(text);
 
+      // Check for plain star list (from 3D Interstellar Map plain export)
+      // Format: [{ id, name, x, y, z, spec, absMag }, ...]
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].spec) {
+        const batchName = file.name.replace(/\.json$/, '') || 'Imported Star List';
+        const batch = await createBatch(batchName, 'starlist-import');
+        setActiveBatch(batch.id);
+
+        const total = parsed.length;
+        const generated: StarSystem[] = [];
+        for (let i = 0; i < total; i++) {
+          const star = parsed[i];
+          const spec = star.spec as string;
+          const parsedSpec = parseSpectralType(spec);
+          if (parsedSpec) {
+            const system = generateStarSystem({
+              starClass: parsedSpec.stellarClass,
+              starGrade: parsedSpec.grade,
+              mainWorldType: 'random',
+              populated: true,
+            });
+            system.name = star.name || `${parsedSpec.stellarClass}${parsedSpec.grade} System`;
+            system.sourceStarId = String(star.id ?? `star-${i}`);
+            system.x = Number(star.x ?? 0);
+            system.y = Number(star.y ?? 0);
+            system.z = Number(star.z ?? 0);
+            await saveSystem(system);
+            await addSystemToBatch(system.id, batch.id);
+            generated.push(system);
+          }
+          // Yield to UI every 5 items for progress updates
+          if (i % 5 === 0 || i === total - 1) {
+            setImportProgress({ current: i + 1, total, message: `Importing ${batchName}…` });
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+        setImportProgress(null);
+        await loadSavedSystems();
+        showNotification(`Imported ${total} stars into "${batchName}" batch (${generated.length} generated)`);
+        return;
+      }
+
       // Check for .mneme-map format (starmap-v1) from 3D Interstellar Map
       if (parsed.mnemeFormat === 'starmap-v1' && Array.isArray(parsed.stars)) {
         const batchName = parsed.name || file.name.replace(/\.mneme-map$/, '').replace(/\.json$/, '') || 'Imported Sector';

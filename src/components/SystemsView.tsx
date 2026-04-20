@@ -400,7 +400,7 @@ export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport, i
                   <div className="text-sm text-[#9e9e9e] italic p-8 text-center border border-dashed border-white/10 rounded-lg">
                     No systems in this batch yet.
                     <br />
-                    Generate systems from the Dashboard or import a .mneme-map file.
+                    Generate systems from the Dashboard, import a .mneme-map / .mneme-batch file, or drop a plain star list JSON.
                   </div>
                 )}
               </div>
