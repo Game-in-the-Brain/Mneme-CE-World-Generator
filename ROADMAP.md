@@ -15,6 +15,31 @@
 
 ---
 
+## ✅ FRD-047 — Batch Management + Star Systems Tab *(In Progress v1.4.0)*
+
+**Status:** ✅ M1-M2 Complete | M3 In Progress
+
+**Implementation:** `src/components/SystemsView.tsx`, `src/lib/db.ts`, `src/types/index.ts`
+
+### Completed (M1-M2)
+- `StarSystemBatch` type + `batchId` on `StarSystem`
+- IndexedDB v2 schema with `batches` table
+- Legacy systems migration → "Legacy Systems" batch
+- Batch CRUD: create, rename, delete, list
+- Systems tab in navigation with batch selector
+- Active batch tracking via `localStorage`
+- Auto-join active batch on new system generation
+- Export batch to `.mneme-batch` JSON
+- Import `.mneme-map` from 3D map → create batch + generate worlds
+
+### Pending (M3)
+- Progress UI for batch generation ("Generating 3/20...")
+- Dashboard "Recent Batches" section
+- Export batch to 3D Map format (`.mneme-map`)
+- Import `.mneme-batch` files
+
+---
+
 ## 🟡 FR-031 — 2D Animated Planetary System Map
 
 **Status:** 🟡 In Progress — Phases 0–5 complete; Phase 6 pending

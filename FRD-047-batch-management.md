@@ -228,23 +228,33 @@ async function migrateToBatches() {
 
 ## 10. Acceptance Criteria
 
-- [ ] Systems view shows batches, not flat list
-- [ ] Can create, rename, delete batches
-- [ ] Can set active batch
-- [ ] New systems auto-join active batch
-- [ ] Can import 3D map as a batch
-- [ ] Batch generation shows progress
-- [ ] Can export batch as `.mneme-batch`
-- [ ] Can import `.mneme-batch` files
-- [ ] Legacy systems migrated to "Legacy Systems" batch
-- [ ] Dashboard shows recent batches
-- [ ] Can export batch to 3D Map format
-- [ ] Build passes zero TypeScript errors
+- [x] Systems view shows batches, not flat list
+- [x] Can create, rename, delete batches
+- [x] Can set active batch
+- [x] New systems auto-join active batch
+- [x] Can import 3D map as a batch
+- [ ] Batch generation shows progress *(M3)*
+- [x] Can export batch as `.mneme-batch`
+- [ ] Can import `.mneme-batch` files *(M3)*
+- [x] Legacy systems migrated to "Legacy Systems" batch
+- [ ] Dashboard shows recent batches *(M3)*
+- [ ] Can export batch to 3D Map format *(M3)*
+- [x] Build passes zero TypeScript errors
 
 ---
 
-## 11. Related FRDs
+## 11. Implementation Status
+
+| Milestone | Status | Commit |
+|---|---|---|
+| M1: Data Model + Migration | ✅ Complete | `3322ca71` |
+| M2: Systems View UI | ✅ Complete | `2d2eeeef` |
+| M3: Import/Export + 3D Map Flow | 📋 In Progress | — |
+
+---
+
+## 12. Related FRDs
 
 - FRD-044 (MWG Bidirectional Integration) — ✅ DONE
-- FRD-045 (3D Starmap Star Generation) — QUEUED
+- FRD-045 (3D Starmap Star Generation) — ✅ DONE
 - FRD-046 (2D Map Star Page Save) — QUEUED

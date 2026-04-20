@@ -60,6 +60,16 @@ The original tool was a Google Sheets spreadsheet with a Google Apps Script macr
 
 ## Recent Updates
 
+### Version 1.4.0 (2026-04-20)
+
+#### Batch Management & 3D Map Integration (FRD-047)
+- **Star Systems Tab** — New navigation tab replacing the flat saved-systems list with a batch-aware hierarchy
+- **Batches** — Create, rename, delete, and switch between sector/campaign batches
+- **Active Batch** — Newly generated systems automatically join the active batch
+- **Import `.mneme-map`** — Import a full 3D Interstellar Map sector; MWG creates a batch and generates worlds for every star
+- **Export `.mneme-batch`** — Download a batch with all its systems and metadata
+- **Legacy Migration** — Existing systems automatically moved to a "Legacy Systems" batch on first load
+
 ### Version 1.4.0 (2026-04-15)
 
 #### Major Engine Rewrite: Gravity & Density (QA-023)
@@ -270,9 +280,16 @@ Each body is displayed with its full physical stats: mass, radius, diameter, sur
 
 ## Settings & Data Management
 
-The **Settings** page provides full data control:
+The **Systems** page provides batch-aware data control:
 
-### Data Management
+### Batch Management
+- **Create Batch** — Organise systems into sectors or campaigns
+- **Rename / Delete** — Manage batches without losing contained systems
+- **Active Batch** — New generations automatically join the selected batch
+- **Import `.mneme-map`** — Import a 3D Interstellar Map sector as a batch
+- **Export `.mneme-batch`** — Download a batch with all systems and metadata
+
+### Data Management (Settings)
 - **Import JSON** — Load previously exported systems or share systems between devices
 - **Export All** — Download all saved systems as a single JSON file for backup
 - **Clear All** — Delete all saved systems (with confirmation)
@@ -303,6 +320,8 @@ Each saved system has a unique key in the format `YYMMDD-HHMMSS-[CLASS][GRADE]-[
 ### Export Formats
 
 **JSON** — full structured export of a single system, useful for backups and transfers between devices.
+
+**`.mneme-batch`** — export an entire batch (all systems + metadata) for sharing sectors between devices or backing up campaigns.
 
 **CSV (Wide-row format)** — the entire star system in a single row. Standard fields cover the star and main world, followed by open-ended prefixed columns for companion stars (`S1_`, `S2_`) and planetary bodies (`P01_`, `P02_`, `D01_`, etc.). Multiple systems form a flat-file database where each row is self-contained and identifiable by its system key. Compatible with Excel, Google Sheets, and any data tool.
 
