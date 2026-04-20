@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult } from '../types';
 import { exportToDocx } from '../lib/exportDocx';
-import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp, Copy, Check, ExternalLink } from 'lucide-react';
+import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp, Copy, Check, ExternalLink, Orbit } from 'lucide-react';
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
 import {
   CULTURE_TRAIT_DESCRIPTIONS,
@@ -27,7 +27,7 @@ interface SystemViewerProps {
   onGlossary?: () => void;
 }
 
-type TabId = 'overview' | 'star' | 'world' | 'inhabitants' | 'system';
+type TabId = 'overview' | 'star' | 'world' | 'inhabitants' | 'system' | 'orbit';
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'overview',    label: 'Overview',         icon: <Sparkles size={16} /> },
@@ -35,6 +35,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'world',       label: 'World',            icon: <Globe size={16} /> },
   { id: 'inhabitants', label: 'Inhabitants',      icon: <Users size={16} /> },
   { id: 'system',      label: 'Planetary System', icon: <Building size={16} /> },
+  { id: 'orbit',       label: 'Orbit',            icon: <Orbit size={16} /> },
 ];
 
 function generateSeed(length = 8): string {
@@ -54,6 +55,8 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   const worldRef = useRef<HTMLDivElement | null>(null);
   const inhabitantsRef = useRef<HTMLDivElement | null>(null);
   const systemRef = useRef<HTMLDivElement | null>(null);
+  const orbitRef = useRef<HTMLDivElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const sectionRefs: Record<TabId, React.RefObject<HTMLDivElement | null>> = {
     overview: overviewRef,
@@ -61,6 +64,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
     world: worldRef,
     inhabitants: inhabitantsRef,
     system: systemRef,
+    orbit: orbitRef,
   };
 
   function scrollTo(id: TabId) {
@@ -267,6 +271,52 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           Planetary System
         </h2>
         <PlanetarySystemTab system={system} annotations={annotations} onAnnotation={handleAnnotation} />
+      </section>
+
+      {/* eslint-disable-next-line react-hooks/refs */}
+      <section ref={sectionRefs.orbit} id="orbit" className="scroll-mt-20">
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Orbit style={{ color: 'var(--accent-red)' }} size={20} />
+          Orbital Map
+        </h2>
+        <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border-color)', height: '500px' }}>
+          <iframe
+            ref={iframeRef}
+            src={`https://game-in-the-brain.github.io/2d-star-system-map/?embed=1&starId=${encodeURIComponent(system.id)}`}
+            title="2D Star System Map"
+            className="w-full h-full border-0"
+            sandbox="allow-scripts allow-same-origin"
+            onLoad={() => {
+              const payload = {
+                starSystem: system,
+                starfieldSeed: generateSeed(),
+                epoch: { year: 2300, month: 1, day: 1 },
+              };
+              iframeRef.current?.contentWindow?.postMessage(
+                { type: 'mneme-load-system', payload },
+                '*'
+              );
+            }}
+          />
+        </div>
+        <div className="flex gap-2 mt-3">
+          <a
+            href={`https://game-in-the-brain.github.io/2d-star-system-map/?starId=${encodeURIComponent(system.id)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[var(--accent-red)]/50 transition-colors text-sm"
+          >
+            <ExternalLink size={14} />
+            Open in Full 2D Map
+          </a>
+          <button
+            onClick={handleCopyFor2DMap}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[var(--accent-red)]/50 transition-colors text-sm"
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? 'Copied!' : 'Copy for 2D Map'}
+          </button>
+        </div>
       </section>
 
       {onGlossary && (
