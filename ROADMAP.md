@@ -17,7 +17,7 @@
 
 ## ✅ FRD-047 — Batch Management + Star Systems Tab *(In Progress v1.4.0)*
 
-**Status:** ✅ M1-M2 Complete | M3 In Progress
+**Status:** ✅ M1-M3 Complete | v1.4.0 Ready
 
 **Implementation:** `src/components/SystemsView.tsx`, `src/lib/db.ts`, `src/types/index.ts`
 
@@ -32,11 +32,11 @@
 - Export batch to `.mneme-batch` JSON
 - Import `.mneme-map` from 3D map → create batch + generate worlds
 
-### Pending (M3)
-- Progress UI for batch generation ("Generating 3/20...")
-- Dashboard "Recent Batches" section
-- Export batch to 3D Map format (`.mneme-map`)
-- Import `.mneme-batch` files
+### Completed (M3)
+- ✅ Progress UI for batch generation — floating overlay with progress bar + percentage
+- ✅ Dashboard "Recent Batches" section — click to navigate to Systems view
+- ✅ Export batch to 3D Map format (`.mneme-map`) with `mwgSystems` enrichment
+- ✅ Import `.mneme-batch` files — restores batch + systems with new IDs
 
 ---
 

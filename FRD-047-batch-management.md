@@ -233,12 +233,12 @@ async function migrateToBatches() {
 - [x] Can set active batch
 - [x] New systems auto-join active batch
 - [x] Can import 3D map as a batch
-- [ ] Batch generation shows progress *(M3)*
+- [x] Batch generation shows progress
 - [x] Can export batch as `.mneme-batch`
-- [ ] Can import `.mneme-batch` files *(M3)*
+- [x] Can import `.mneme-batch` files
 - [x] Legacy systems migrated to "Legacy Systems" batch
-- [ ] Dashboard shows recent batches *(M3)*
-- [ ] Can export batch to 3D Map format *(M3)*
+- [x] Dashboard shows recent batches
+- [x] Can export batch to 3D Map format
 - [x] Build passes zero TypeScript errors
 
 ---
@@ -249,7 +249,7 @@ async function migrateToBatches() {
 |---|---|---|
 | M1: Data Model + Migration | ✅ Complete | `3322ca71` |
 | M2: Systems View UI | ✅ Complete | `2d2eeeef` |
-| M3: Import/Export + 3D Map Flow | 📋 In Progress | — |
+| M3: Import/Export + 3D Map Flow | ✅ Complete | `65756dea` |
 
 ---
 
