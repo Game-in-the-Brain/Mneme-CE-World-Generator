@@ -307,6 +307,29 @@ export interface StarSystem {
   // FR-044: Level 2 children (moons and rings)
   moons?: PlanetaryBody[];
   rings?: PlanetaryBody[];
+
+  // FRD-047: Batch management
+  batchId?: string;
+  batchOrder?: number;
+}
+
+// =====================
+// Batch Management (FRD-047)
+// =====================
+
+export interface StarSystemBatch {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  /** Source: 'manual', '3dmap-import', 'generated' */
+  source: string;
+  /** If imported from 3D map, store the original map metadata */
+  sourceMapId?: string;
+  /** Systems in this batch */
+  systemIds: string[];
+  /** Batch-level notes */
+  notes?: string;
 }
 
 // =====================
@@ -329,7 +352,7 @@ export interface RollResult {
 // UI Types
 // =====================
 
-export type ViewMode = 'dashboard' | 'system' | 'settings' | 'glossary';
+export type ViewMode = 'dashboard' | 'system' | 'settings' | 'glossary' | 'systems';
 
 export interface GeneratorState {
   currentSystem: StarSystem | null;

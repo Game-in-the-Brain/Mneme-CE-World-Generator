@@ -1,5 +1,5 @@
 import type { ViewMode } from '../types';
-import { Home, Settings, Sun, Moon, Smartphone, BookOpen } from 'lucide-react';
+import { Home, Settings, Sun, Moon, Smartphone, BookOpen, Database } from 'lucide-react';
 import { APP_VERSION } from '../lib/version';
 
 export type Theme = 'dark' | 'day' | 'phone';
@@ -20,6 +20,7 @@ const THEME_ICON: Record<Theme, React.ReactNode> = {
 export function Navigation({ currentView, onViewChange, theme, onThemeChange }: NavigationProps) {
   const navItems: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Generator', icon: <Home size={20} /> },
+    { id: 'systems',   label: 'Systems',   icon: <Database size={20} /> },
     { id: 'glossary',  label: 'Glossary',  icon: <BookOpen size={20} /> },
     { id: 'settings',  label: 'Settings',  icon: <Settings size={20} /> },
   ];

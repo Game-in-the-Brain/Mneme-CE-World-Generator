@@ -3,7 +3,8 @@ import type { StarSystem, ViewMode, GeneratorOptions } from './types';
 import { generateStarSystem } from './lib/generator';
 import {
   saveSystem, getAllSystems, deleteSystem, clearAllSystems,
-  exportToJSON, exportAllToJSON, exportToCSV, downloadFile, importSystemsFromJSON
+  exportToJSON, exportAllToJSON, exportToCSV, downloadFile, importSystemsFromJSON,
+  createBatch, getActiveBatch, setActiveBatch, addSystemToBatch,
 } from './lib/db';
 import { GeneratorDashboard } from './components/GeneratorDashboard';
 import { SystemViewer } from './components/SystemViewer';
@@ -168,6 +169,13 @@ function App() {
 
       setCurrentSystem(system);
       await saveSystem(system);
+
+      // FRD-047: Auto-join active batch (or create "Uncategorized" if none)
+      const activeBatch = await getActiveBatch();
+      if (activeBatch) {
+        await addSystemToBatch(system.id, activeBatch.id);
+      }
+
       await loadSavedSystems();
       setView('system');
 
@@ -258,7 +266,39 @@ function App() {
       const text = await file.text();
       const parsed = JSON.parse(text);
 
-      // Check for MnemeSystemExport format (from 3D map)
+      // Check for .mneme-map format (starmap-v1) from 3D Interstellar Map
+      if (parsed.mnemeFormat === 'starmap-v1' && Array.isArray(parsed.stars)) {
+        const batchName = parsed.name || file.name.replace(/\.mneme-map$/, '').replace(/\.json$/, '') || 'Imported Sector';
+        const batch = await createBatch(batchName, '3dmap-import');
+        setActiveBatch(batch.id);
+
+        const generated: StarSystem[] = [];
+        for (const star of parsed.stars) {
+          const spec = star.spec as string;
+          const parsedSpec = parseSpectralType(spec);
+          if (parsedSpec) {
+            const system = generateStarSystem({
+              starClass: parsedSpec.stellarClass,
+              starGrade: parsedSpec.grade,
+              mainWorldType: 'random',
+              populated: true,
+            });
+            system.name = star.name || `${parsedSpec.stellarClass}${parsedSpec.grade} System`;
+            system.sourceStarId = String(star.id);
+            system.x = Number(star.x ?? 0);
+            system.y = Number(star.y ?? 0);
+            system.z = Number(star.z ?? 0);
+            await saveSystem(system);
+            await addSystemToBatch(system.id, batch.id);
+            generated.push(system);
+          }
+        }
+        await loadSavedSystems();
+        showNotification(`Imported ${parsed.stars.length} stars into "${batchName}" batch`);
+        return;
+      }
+
+      // Check for MnemeSystemExport format (from 3D map single-system export)
       if (parsed.mnemeFormat === 'star-system-batch' && Array.isArray(parsed.systems)) {
         const generated: StarSystem[] = [];
         for (const entry of parsed.systems) {
@@ -341,6 +381,37 @@ function App() {
         )}
 
         {view === 'glossary' && <Glossary />}
+
+        {view === 'systems' && (
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-2xl font-bold mb-4">Star Systems</h1>
+            <p className="text-[#9e9e9e] mb-6">
+              Batch management coming in FRD-047 M2. 
+              Currently showing all {savedSystems.length} saved systems.
+            </p>
+            <div className="grid gap-3">
+              {savedSystems.map(sys => (
+                <button
+                  key={sys.id}
+                  onClick={() => handleViewSystem(sys)}
+                  className="text-left p-4 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[#e53935]/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{sys.name || 'Unnamed System'}</span>
+                    <span className="text-sm text-[#9e9e9e]">
+                      {sys.primaryStar.class}{sys.primaryStar.grade} · {sys.inhabitants.population.toLocaleString()} pop
+                    </span>
+                  </div>
+                  {sys.sourceStarId && (
+                    <span className="text-xs text-[#e53935] mt-1 block">
+                      3D Map: {sys.sourceStarId}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {view === 'settings' && (
           <Settings 

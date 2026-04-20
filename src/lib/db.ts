@@ -1,13 +1,40 @@
 import Dexie, { type Table } from 'dexie';
-import type { StarSystem } from '../types';
+import type { StarSystem, StarSystemBatch } from '../types';
 
 export class MnemeDatabase extends Dexie {
   starSystems!: Table<StarSystem>;
+  batches!: Table<StarSystemBatch>;
 
   constructor() {
     super('MnemeWorldGenerator');
+
+    // Version 1 — original schema
     this.version(1).stores({
       starSystems: '++id, createdAt, name, [primaryStar.class]'
+    });
+
+    // Version 2 — FRD-047: batch management + legacy migration
+    this.version(2).stores({
+      starSystems: '++id, createdAt, name, [primaryStar.class], batchId',
+      batches: '++id, createdAt, name, source'
+    }).upgrade(async (tx) => {
+      // Migrate existing systems without batchId into a "Legacy Systems" batch
+      const legacyBatchId = crypto.randomUUID();
+      const allSystems = await tx.table('starSystems').toArray() as StarSystem[];
+      const systemIds = allSystems.map(s => s.id);
+
+      await tx.table('batches').add({
+        id: legacyBatchId,
+        name: 'Legacy Systems',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        source: 'manual',
+        systemIds,
+      } as StarSystemBatch);
+
+      await tx.table('starSystems').toCollection().modify((system: StarSystem) => {
+        system.batchId = legacyBatchId;
+      });
     });
   }
 }
@@ -68,6 +95,105 @@ export async function clearAllSystems(): Promise<void> {
   } catch (error) {
     console.error('❌ Error clearing systems:', error);
     throw error;
+  }
+}
+
+// =====================
+// Batch Management (FRD-047)
+// =====================
+
+export async function createBatch(
+  name: string,
+  source: string = 'manual',
+  notes?: string
+): Promise<StarSystemBatch> {
+  const batch: StarSystemBatch = {
+    id: crypto.randomUUID(),
+    name,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    source,
+    systemIds: [],
+    notes,
+  };
+  await db.batches.add(batch);
+  console.log('✅ Batch created:', batch.id, batch.name);
+  return batch;
+}
+
+export async function getBatch(id: string): Promise<StarSystemBatch | undefined> {
+  return db.batches.get(id);
+}
+
+export async function getAllBatches(): Promise<StarSystemBatch[]> {
+  return db.batches.orderBy('createdAt').reverse().toArray();
+}
+
+export async function updateBatch(
+  id: string,
+  updates: Partial<Pick<StarSystemBatch, 'name' | 'notes' | 'systemIds'>>
+): Promise<void> {
+  await db.batches.update(id, { ...updates, updatedAt: Date.now() });
+}
+
+export async function deleteBatch(id: string, deleteContainedSystems: boolean = false): Promise<void> {
+  const batch = await getBatch(id);
+  if (!batch) return;
+
+  if (deleteContainedSystems && batch.systemIds.length > 0) {
+    await db.starSystems.bulkDelete(batch.systemIds);
+  } else {
+    // Clear batchId from systems that were in this batch
+    await db.starSystems.where('batchId').equals(id).modify((system: StarSystem) => {
+      delete system.batchId;
+      delete system.batchOrder;
+    });
+  }
+
+  await db.batches.delete(id);
+  console.log('🗑️ Batch deleted:', id);
+}
+
+export async function addSystemToBatch(systemId: string, batchId: string): Promise<void> {
+  const batch = await getBatch(batchId);
+  if (!batch) throw new Error(`Batch ${batchId} not found`);
+
+  await db.starSystems.update(systemId, { batchId });
+
+  if (!batch.systemIds.includes(systemId)) {
+    batch.systemIds.push(systemId);
+    await db.batches.update(batchId, { systemIds: batch.systemIds, updatedAt: Date.now() });
+  }
+}
+
+export async function removeSystemFromBatch(systemId: string, batchId: string): Promise<void> {
+  const batch = await getBatch(batchId);
+  if (!batch) return;
+
+  await db.starSystems.update(systemId, { batchId: undefined });
+
+  const idx = batch.systemIds.indexOf(systemId);
+  if (idx !== -1) {
+    batch.systemIds.splice(idx, 1);
+    await db.batches.update(batchId, { systemIds: batch.systemIds, updatedAt: Date.now() });
+  }
+}
+
+export async function getSystemsInBatch(batchId: string): Promise<StarSystem[]> {
+  return db.starSystems.where('batchId').equals(batchId).toArray();
+}
+
+export async function getActiveBatch(): Promise<StarSystemBatch | undefined> {
+  const id = localStorage.getItem('mneme_active_batch_id');
+  if (!id) return undefined;
+  return getBatch(id);
+}
+
+export function setActiveBatch(batchId: string | null): void {
+  if (batchId) {
+    localStorage.setItem('mneme_active_batch_id', batchId);
+  } else {
+    localStorage.removeItem('mneme_active_batch_id');
   }
 }
 
