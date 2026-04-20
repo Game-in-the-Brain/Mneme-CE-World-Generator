@@ -4,7 +4,7 @@ import {
   getAllBatches, createBatch, deleteBatch, updateBatch,
   getSystemsInBatch, setActiveBatch, getActiveBatch,
 } from '../lib/db';
-import { Database, Plus, Trash2, Edit3, Upload, Download, FolderOpen, Map } from 'lucide-react';
+import { Database, Plus, Trash2, Edit3, Upload, Download, FolderOpen, Map, Orbit } from 'lucide-react';
 
 interface SystemsViewProps {
   systems: StarSystem[];
@@ -387,6 +387,35 @@ export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport, i
                         </div>
                       </button>
                     </div>
+                    <a
+                      href={`https://game-in-the-brain.github.io/2d-star-system-map/?starId=${encodeURIComponent(sys.id)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-lg hover:bg-white/10 text-[#9e9e9e]"
+                      title="View orbit"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // Push to localStorage for 2D map to pick up
+                        const payload = {
+                          starSystem: sys,
+                          starfieldSeed: sys.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8) || 'SEED0000',
+                          epoch: { year: 2300, month: 1, day: 1 },
+                        };
+                        const savedPage = {
+                          starId: sys.id,
+                          starName: sys.name || `${sys.primaryStar.class}${sys.primaryStar.grade}`,
+                          savedAt: new Date().toISOString(),
+                          payload,
+                          mwgSystem: sys,
+                          gmNotes: '',
+                          version: '1.0',
+                        };
+                        localStorage.setItem(`mneme-2dmap-${sys.id}`, JSON.stringify(savedPage));
+                        window.open(`https://game-in-the-brain.github.io/2d-star-system-map/?starId=${encodeURIComponent(sys.id)}`, '_blank');
+                      }}
+                    >
+                      <Orbit size={14} />
+                    </a>
                     <button
                       onClick={() => onDeleteSystem(sys.id)}
                       className="p-2 rounded-lg hover:bg-white/10 text-[#9e9e9e]"

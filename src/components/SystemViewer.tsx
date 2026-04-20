@@ -279,7 +279,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Orbit style={{ color: 'var(--accent-red)' }} size={20} />
           Orbital Map
         </h2>
-        <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border-color)', height: '500px' }}>
+        <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border-color)', height: 'min(70vh, 600px)' }}>
           <iframe
             ref={iframeRef}
             src={`https://game-in-the-brain.github.io/2d-star-system-map/?embed=1&starId=${encodeURIComponent(system.id)}`}
