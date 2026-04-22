@@ -315,84 +315,101 @@ export function placeBodiesV2(
       continue;
     }
 
-    // Gas Giants → check Hot Jupiter trigger in inner zones
+    // Gas Giants → check Hot Jupiter trigger in inner zones, with Hill sphere conflict retry
     if (body.type === 'gas') {
-      const targetZone = rollUnifiedZone();
-      const originalAU = rollPositionInZone(targetZone, v2, zones);
+      let gasPlaced = false;
 
-      // Check if inner zones are saturated (all 4 have at least one body)
-      const innerFilled = innerZones.filter(z => placed.some(b => b.zone === z)).length;
-      const isInner = innerZones.includes(targetZone);
+      for (let attempt = 0; attempt < 5 && !gasPlaced; attempt++) {
+        const targetZone = rollUnifiedZone();
+        const originalAU = rollPositionInZone(targetZone, v2, zones);
 
-      if (isInner && innerFilled >= 4) {
-        const stability = hotJupiterStabilityRoll();
-        if (!stability.stable) {
-          // ========== Hot Jupiter Event fires ==========
-          // Final zone: natural 3 (all 1s) → Infernal; else → Hot
-          const finalZone: ZoneId = stability.sum === 3 ? 'Infernal' : 'Hot';
-          const finalAU = rollPositionInZone(finalZone, v2, zones);
+        // Check if inner zones are saturated (all 4 have at least one body)
+        const innerFilled = innerZones.filter(z => placed.some(b => b.zone === z)).length;
+        const isInner = innerZones.includes(targetZone);
 
-          // Determine consumed bodies: those with AU between final and original
-          const [nearAU, farAU] = finalAU < originalAU
-            ? [finalAU, originalAU]
-            : [originalAU, finalAU];
+        if (isInner && innerFilled >= 4) {
+          const stability = hotJupiterStabilityRoll();
+          if (!stability.stable) {
+            // ========== Hot Jupiter Event fires ==========
+            // Final zone: natural 3 (all 1s) → Infernal; else → Hot
+            const finalZone: ZoneId = stability.sum === 3 ? 'Infernal' : 'Hot';
+            const finalAU = rollPositionInZone(finalZone, v2, zones);
 
-          const consumedBodies = placed.filter(b =>
-            b.id !== body.id &&
-            b.distanceAU > nearAU &&
-            b.distanceAU < farAU
-          );
+            // Determine consumed bodies: those with AU between final and original
+            const [nearAU, farAU] = finalAU < originalAU
+              ? [finalAU, originalAU]
+              : [originalAU, finalAU];
 
-          // Remove consumed from placed and transfer to consumed array
-          for (const c of consumedBodies) {
-            consumed.push(c);
-            const idx = placed.indexOf(c);
-            if (idx >= 0) placed.splice(idx, 1);
+            const consumedBodies = placed.filter(b =>
+              b.id !== body.id &&
+              b.distanceAU > nearAU &&
+              b.distanceAU < farAU
+            );
+
+            // Remove consumed from placed and transfer to consumed array
+            for (const c of consumedBodies) {
+              consumed.push(c);
+              const idx = placed.indexOf(c);
+              if (idx >= 0) placed.splice(idx, 1);
+            }
+
+            // Absorb consumed mass and recalculate density proportionally
+            const absorbedMass = consumedBodies.reduce((s, b) => s + b.mass, 0);
+            const absorbedDensity = consumedBodies.length > 0
+              ? consumedBodies.reduce((s, b) => s + (b.densityGcm3 ?? 3), 0) / consumedBodies.length
+              : (body.densityGcm3 ?? 1.3);
+
+            body.mass += absorbedMass;
+            const massRatio = absorbedMass / body.mass;
+            body.densityGcm3 = ((body.densityGcm3 ?? 1.3) * (1 - massRatio)) + (absorbedDensity * massRatio);
+
+            // Class upgrade check (20 JM = Proto-Star, 50 JM = Brown Dwarf)
+            const massJM = body.mass / 317.8;
+            if (massJM >= 50) {
+              body.type = 'star' as typeof body.type; // Promoted to Level 0 companion
+              // Brown Dwarf relocation to outer orbit deferred to caller
+            } else if (massJM >= 20) {
+              // Proto-Star trait — would be added to traits array if we had one
+            }
+
+            // Shepherded bodies: those inside (closer than) the final position
+            const shepherdedBodies = placed.filter(b =>
+              b.id !== body.id && b.distanceAU < finalAU
+            );
+
+            for (const sb of shepherdedBodies) {
+              const retention = rollShepherdingRetention(primaryStar.class) / 100;
+              sb.distanceAU = Math.round(sb.distanceAU * retention * 100) / 100;
+              sb.wasShepherded = true;
+              // Update zone label based on new AU
+              if (sb.distanceAU < zones.hot.min) sb.zone = 'Infernal' as unknown as typeof sb.zone;
+              else if (sb.distanceAU < zones.conservative.min) sb.zone = 'Hot' as unknown as typeof sb.zone;
+              else if (sb.distanceAU < zones.cold.min) sb.zone = 'Conservative' as unknown as typeof sb.zone;
+              else if (sb.distanceAU < zones.outer.min) sb.zone = 'Cold' as unknown as typeof sb.zone;
+              else sb.zone = 'Outer' as unknown as typeof sb.zone;
+            }
+
+            markPlaced(body, finalZone, finalAU);
+            gasPlaced = true;
+            break;
           }
+        }
 
-          // Absorb consumed mass and recalculate density proportionally
-          const absorbedMass = consumedBodies.reduce((s, b) => s + b.mass, 0);
-          const absorbedDensity = consumedBodies.length > 0
-            ? consumedBodies.reduce((s, b) => s + (b.densityGcm3 ?? 3), 0) / consumedBodies.length
-            : (body.densityGcm3 ?? 1.3);
-
-          body.mass += absorbedMass;
-          const massRatio = absorbedMass / body.mass;
-          body.densityGcm3 = ((body.densityGcm3 ?? 1.3) * (1 - massRatio)) + (absorbedDensity * massRatio);
-
-          // Class upgrade check (20 JM = Proto-Star, 50 JM = Brown Dwarf)
-          const massJM = body.mass / 317.8;
-          if (massJM >= 50) {
-            body.type = 'star' as typeof body.type; // Promoted to Level 0 companion
-            // Brown Dwarf relocation to outer orbit deferred to caller
-          } else if (massJM >= 20) {
-            // Proto-Star trait — would be added to traits array if we had one
-          }
-
-          // Shepherded bodies: those inside (closer than) the final position
-          const shepherdedBodies = placed.filter(b =>
-            b.id !== body.id && b.distanceAU < finalAU
-          );
-
-          for (const sb of shepherdedBodies) {
-            const retention = rollShepherdingRetention(primaryStar.class) / 100;
-            sb.distanceAU = Math.round(sb.distanceAU * retention * 100) / 100;
-            sb.wasShepherded = true;
-            // Update zone label based on new AU
-            if (sb.distanceAU < zones.hot.min) sb.zone = 'Infernal' as unknown as typeof sb.zone;
-            else if (sb.distanceAU < zones.conservative.min) sb.zone = 'Hot' as unknown as typeof sb.zone;
-            else if (sb.distanceAU < zones.cold.min) sb.zone = 'Conservative' as unknown as typeof sb.zone;
-            else if (sb.distanceAU < zones.outer.min) sb.zone = 'Cold' as unknown as typeof sb.zone;
-            else sb.zone = 'Outer' as unknown as typeof sb.zone;
-          }
-
-          markPlaced(body, finalZone, finalAU);
-          continue;
+        // Normal placement: enforce Hill sphere separation
+        body.distanceAU = Math.round(originalAU * 100) / 100;
+        if (!hasConflict(body, placed, starMassEM)) {
+          markPlaced(body, targetZone, originalAU);
+          gasPlaced = true;
+        } else {
+          body.positionRerollCount = (body.positionRerollCount ?? 0) + 1;
         }
       }
 
-      // Stable or non-saturated: place normally at original position
-      markPlaced(body, targetZone, originalAU);
+      if (!gasPlaced) {
+        body.wasEjected = true;
+        body.ejectionReason = 'saturation';
+        ejected.push(body);
+      }
       continue;
     }
 

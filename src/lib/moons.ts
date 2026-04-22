@@ -212,6 +212,8 @@ export function positionChildrenInHillSphere(
     // Ensure Roche limit doesn't exceed maxOrbit (shouldn't happen for realistic bodies)
     const effectiveMin = Math.min(rocheLimit, maxOrbit * 0.5);
     const effectiveMax = maxOrbit;
+    // Minimum separation between siblings = 0.15 × Hill radius
+    const minSepAU = hillRadius * 0.15;
 
     let placedSuccessfully = false;
 
@@ -222,10 +224,6 @@ export function positionChildrenInHillSphere(
       const distanceFromParent = effectiveMin + t * (effectiveMax - effectiveMin);
 
       const orbitAU = Math.round(distanceFromParent * 100000) / 100000;
-
-      // Check spacing against already-placed siblings using Hill-fraction separation
-      // Minimum separation = 0.15 × Hill radius (generous but prevents overlap)
-      const minSepAU = hillRadius * 0.15;
 
       let conflict = false;
       for (const other of placed) {
@@ -244,9 +242,18 @@ export function positionChildrenInHillSphere(
     }
 
     if (!placedSuccessfully) {
-      // Ejected — place at stable Hill edge as fallback
-      const orbitAU = Math.round(effectiveMax * 0.95 * 100000) / 100000;
-      child.moonOrbitAU = orbitAU;
+      // Sweep from outer edge inward to find the first gap not occupied by a sibling
+      let sweepAU = effectiveMax * 0.95;
+      let foundOrbit: number | undefined;
+      while (sweepAU >= effectiveMin) {
+        const o = Math.round(sweepAU * 100000) / 100000;
+        if (!placed.some(other => Math.abs(o - (other.moonOrbitAU ?? 0)) < minSepAU)) {
+          foundOrbit = o;
+          break;
+        }
+        sweepAU -= minSepAU;
+      }
+      child.moonOrbitAU = foundOrbit ?? Math.round(effectiveMin * 100000) / 100000;
       child.wasEjected = true;
       child.ejectionReason = 'gravitational';
       placed.push(child);
