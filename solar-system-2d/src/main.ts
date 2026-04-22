@@ -288,6 +288,10 @@ function main() {
       Date.UTC(urlPayload.epoch.year, urlPayload.epoch.month - 1, urlPayload.epoch.day)
     );
     state.bodies = buildSceneGraph(urlPayload.starSystem);
+  } else {
+    // Auto-generate a demo system so the map isn't empty on first open
+    const payload = generateRandomSystem();
+    loadSystemIntoState(state, payload);
   }
 
   resizeCanvas(state);
