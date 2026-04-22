@@ -1,5 +1,4 @@
-import type { StarSystem } from '../../src/types/index';
-import type { MapPayload } from './types';
+import type { StarSystem, MapPayload } from './types';
 
 const CLASSES = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
 const CLASS_MASS: Record<string, [number, number]> = {
@@ -165,7 +164,7 @@ export function generateRandomSystem(): MapPayload {
   }
 
   const system: StarSystem = {
-    id: Math.random().toString(36).slice(2, 10),
+    key: Math.random().toString(36).slice(2, 10),
     primaryStar: { class: star.class, grade: star.grade, mass: star.mass },
     companionStars: companions,
     circumstellarDisks: disks,
@@ -174,13 +173,6 @@ export function generateRandomSystem(): MapPayload {
     iceWorlds: ices,
     gasWorlds: gases,
     mainWorld,
-    zones: {
-      infernal: { min: 0, max: sqrtL * 0.4 },
-      hot: { min: sqrtL * 0.4, max: sqrtL * 0.8 },
-      conservative: { min: sqrtL * 0.8, max: sqrtL * 1.2 },
-      cold: { min: sqrtL * 1.2, max: sqrtL * 4.85 },
-      outer: { min: sqrtL * 4.85, max: null },
-    },
   };
 
   return {

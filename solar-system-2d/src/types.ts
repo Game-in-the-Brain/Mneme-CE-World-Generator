@@ -3,11 +3,76 @@
  * These mirror the MWG StarSystem shape where needed.
  */
 
-import type { ZoneBoundaries } from '../../src/types/index';
-export type { ZoneBoundaries } from '../../src/types/index';
+export interface ZoneBoundaries {
+  infernal: { min: number; max: number };
+  hot: { min: number; max: number };
+  conservative: { min: number; max: number };
+  cold: { min: number; max: number };
+  outer: { min: number; max: number | null };
+}
+
+// Minimal StarSystem shape needed by the 2D map (mirrors MWG)
+export interface StarSystem {
+  key?: string;
+  primaryStar: {
+    class: string;
+    grade: number;
+    mass: number;
+  };
+  companionStars?: Array<{
+    class: string;
+    grade: number;
+    mass: number;
+    orbitDistance: number;
+  }>;
+  circumstellarDisks?: Array<{
+    id?: string;
+    distanceAU: number;
+    mass: number;
+  }>;
+  dwarfPlanets?: Array<{
+    id?: string;
+    distanceAU: number;
+    mass: number;
+  }>;
+  terrestrialWorlds?: Array<{
+    id?: string;
+    distanceAU: number;
+    mass: number;
+  }>;
+  iceWorlds?: Array<{
+    id?: string;
+    distanceAU: number;
+    mass: number;
+  }>;
+  gasWorlds?: Array<{
+    id?: string;
+    distanceAU: number;
+    mass: number;
+    gasClass: number;
+  }>;
+  moons?: Array<{
+    id?: string;
+    distanceAU: number;
+    mass: number;
+    moonOrbitAU: number;
+    parentId: string;
+    type?: string;
+  }>;
+  rings?: Array<{
+    id?: string;
+    parentId: string;
+  }>;
+  mainWorld?: {
+    type: string;
+    distanceAU: number;
+    massEM: number;
+  } | null;
+  zones?: ZoneBoundaries;
+}
 
 export interface MapPayload {
-  starSystem: import('../../src/types/index').StarSystem;
+  starSystem: StarSystem;
   starfieldSeed: string;
   epoch: {
     year: number;
@@ -56,7 +121,6 @@ export interface SceneBody {
   isMainWorld: boolean;
   orbitDelta?: number; // visual nudge if needed
   diskPoints?: DiskPoint[];
-
   // Moon / child fields
   parentId?: string;
   moonOrbitAU?: number;
@@ -84,4 +148,58 @@ export interface AppState {
   width: number;
   height: number;
   zones?: ZoneBoundaries;
+  /** GM notes for this system (FRD-046) */
+  gmNotes?: string;
+  /** Travel planner state (FRD-048) */
+  travelPlanner?: TravelPlannerState;
+}
+
+// FRD-046: Saved star page format
+export interface SavedStarPage {
+  starId: string;
+  starName: string;
+  savedAt: string;
+  payload: MapPayload;
+  mwgSystem?: StarSystem;
+  gmNotes: string;
+  version: string;
+}
+
+// FRD-048: Travel Planner
+export interface TravelPlan {
+  originId: string;
+  destinationId: string;
+  departureDayOffset: number;
+  deltaVBudgetKms: number;
+  escapeOriginKms: number;
+  captureDestKms: number;
+  excessDeltaVKms: number;
+  optimisticArrivalDays: number;
+  pessimisticArrivalDays: number;
+  synodicPeriodDays: number;
+  nextWindowDayOffset: number;
+  isPossible: boolean;
+  minDistanceAU: number;
+  maxDistanceAU: number;
+  failureReason: string | null;
+}
+
+// FRD-049: Travel Timeline
+export interface TravelTimelineState {
+  travelDayOffset: number;
+  isPlaying: boolean;
+  isLooping: boolean;
+  playbackSpeed: number; // days per second (multiplied by state.speed)
+  pinnedDepartureDayOffset: number | null; // null = use plan's departure
+}
+
+export interface TravelPlannerState {
+  originId: string | null;
+  destinationId: string | null;
+  deltaVBudget: number;
+  useSimDate: boolean;
+  customDepartureDayOffset: number;
+  lastPlan: TravelPlan | null;
+  isActive: boolean;
+  timeline: TravelTimelineState;
 }

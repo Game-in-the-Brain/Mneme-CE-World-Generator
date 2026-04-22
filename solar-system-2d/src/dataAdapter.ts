@@ -1,5 +1,4 @@
-import type { SceneBody, BodyType, DiskPoint } from './types';
-import type { StarSystem } from '../../src/types/index';
+import type { SceneBody, BodyType, DiskPoint, StarSystem } from './types';
 import { calculatePeriodDays, calculateMoonPeriodDays, calculateOrbitalVelocityKms, calculateMoonOrbitalVelocityKms, hashToFloat } from './orbitMath';
 import { mulberry32 } from './starfield';
 
@@ -49,7 +48,7 @@ function massToRadiusPx(mass: number, type: BodyType): number {
  */
 export function buildSceneGraph(system: StarSystem): SceneBody[] {
   const bodies: SceneBody[] = [];
-  const baseHash = system.id || JSON.stringify(system.primaryStar);
+  const baseHash = system.key || JSON.stringify(system.primaryStar);
   const starMass = system.primaryStar.mass;
 
   // Map from original body ID → scene body ID (for parent lookup)
@@ -243,7 +242,7 @@ export function buildSceneGraph(system: StarSystem): SceneBody[] {
 
   // Moons (L2 children)
   system.moons?.forEach((moon, idx) => {
-    const parentSceneId = moon.parentId ? idMap.get(moon.parentId) : undefined;
+    const parentSceneId = idMap.get(moon.parentId);
     if (!parentSceneId) return; // Skip orphaned moons
 
     const parentBody = bodies.find(b => b.id === parentSceneId);
