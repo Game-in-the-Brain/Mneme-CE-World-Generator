@@ -311,12 +311,8 @@ function main() {
 
   // FRD-053 Phase 2: Embed mode chrome hiding
   if (isEmbed) {
-    const controls = document.getElementById('controls');
-    const expandBtn = document.getElementById('btn-expand-panel');
     const watermark = document.getElementById('version-watermark');
     const loading = document.getElementById('loading');
-    if (controls) controls.style.display = 'none';
-    if (expandBtn) expandBtn.style.display = 'none';
     if (watermark) watermark.style.display = 'none';
     if (loading) loading.style.display = 'none';
 

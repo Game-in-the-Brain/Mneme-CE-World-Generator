@@ -142,8 +142,8 @@ export function findBodyAtScreenPos(
 
     const dist = Math.hypot(screenPos.x - screenX, screenPos.y - screenY);
 
-    // Hit radius = exact visual size, scaling with zoom
-    const hitR = Math.max(body.radiusPx * camera.zoom, 2);
+    // Hit radius = fixed screen-space radius (renderer draws bodies at fixed pixel size)
+    const hitR = Math.max(body.radiusPx, 8);
     if (dist < hitR && dist < nearestDist) {
       nearest = body;
       nearestDist = dist;
@@ -319,16 +319,20 @@ export function initTravelPlanner(state: AppState): void {
     updatePanel();
   }
 
-  // Track active tab by polling class list (editor.ts handles the actual switching)
-  function checkActive() {
-    const tabBtn = document.querySelector('.tab-btn[data-tab="travel"]');
-    const wasActive = tp.isActive;
-    tp.isActive = tabBtn?.classList.contains('active') ?? false;
-    if (tp.isActive && !wasActive) {
+  // Track active tab via event listener on the travel tab button
+  const travelTabBtn = document.querySelector('.tab-btn[data-tab="travel"]');
+  if (travelTabBtn) {
+    travelTabBtn.addEventListener('click', () => {
+      tp.isActive = true;
       updatePanel();
-    }
+    });
   }
-  setInterval(checkActive, 200);
+  // Also listen for clicks on other tabs to deactivate
+  document.querySelectorAll('.tab-btn:not([data-tab="travel"])').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      tp.isActive = false;
+    });
+  });
 
   // Inputs
   if (deltaVInput) {
