@@ -65,6 +65,35 @@ export function calculatePhysicalProperties(massEM: number, bodyType: BodyType):
 }
 
 /**
+ * Calculate Hill Sphere radius in AU for a body orbiting a star.
+ *
+ * Formula: r_H = a * ∛(m / (3 * M))
+ * Where:
+ *   a = orbital distance (AU)
+ *   m = body mass (Earth masses)
+ *   M = star mass (Solar masses)
+ *
+ * Returns 0 for stars, rings, and bodies with no meaningful Hill sphere.
+ *
+ * @param massEM — body mass in Earth Masses
+ * @param starMassSolar — star mass in Solar masses
+ * @param distanceAU — orbital distance in AU
+ * @param bodyType — type of body (stars and rings return 0)
+ */
+export function hillSphereAU(
+  massEM: number,
+  starMassSolar: number,
+  distanceAU: number,
+  bodyType: BodyType
+): number {
+  if (bodyType === 'star' || bodyType === 'ring' || distanceAU <= 0 || starMassSolar <= 0) return 0;
+  const SOLAR_TO_EM = 332946; // 1 solar mass in Earth masses
+  const massRatio = massEM / (3 * starMassSolar * SOLAR_TO_EM);
+  if (massRatio <= 0) return 0;
+  return distanceAU * Math.cbrt(massRatio);
+}
+
+/**
  * Recalculate physical properties from mass and a specific density (v2 composition).
  */
 export function recalculatePhysicalProperties(massEM: number, densityGcm3: number): PhysicalProperties {

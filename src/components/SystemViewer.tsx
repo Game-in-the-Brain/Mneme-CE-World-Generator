@@ -16,6 +16,7 @@ import {
 import { displayTL, displayTLDescriptor } from '../lib/economicPresets';
 import { generateShipsInTheArea } from '../lib/shipsInArea';
 import { STAR_COLOR_NAMES } from '../lib/stellarData';
+import { hillSphereAU } from '../lib/physicalProperties';
 import type { ShipInArea } from '../types';
 import { ShipsPriceList } from './ShipsPriceList';
 
@@ -1316,6 +1317,7 @@ function PlanetarySystemTab({
           parentChildren={parentChildren}
           annotations={annotations}
           onAnnotation={onAnnotation}
+          starMassSolar={system.primaryStar.mass}
         />
       </div>
     </div>
@@ -1328,11 +1330,13 @@ function ParentBodyList({
   parentChildren,
   annotations,
   onAnnotation,
+  starMassSolar,
 }: {
   bodies: (PlanetaryBody & { typeLabel: string; isMainWorld: boolean; atmosphere?: string; temperature?: string; habitability?: number })[];
   parentChildren: Map<string, PlanetaryBody[]>;
   annotations: BodyAnnotations;
   onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
+  starMassSolar: number;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -1363,6 +1367,7 @@ function ParentBodyList({
               hasChildren={hasChildren}
               isCollapsed={isCollapsed}
               onToggleCollapse={hasChildren ? () => toggle(body.id) : undefined}
+              starMassSolar={starMassSolar}
             />
             {hasChildren && !isCollapsed && (
               <div className="ml-4 md:ml-6 border-l-2 pl-3 md:pl-4 space-y-1 mt-1" style={{ borderColor: 'var(--border-color)' }}>
@@ -1375,6 +1380,7 @@ function ParentBodyList({
                     onAnnotation={onAnnotation}
                     isMainWorld={false}
                     indentLevel={1}
+                    starMassSolar={starMassSolar}
                   />
                 ))}
               </div>
@@ -1404,6 +1410,7 @@ function getChildTypeLabel(child: PlanetaryBody): string {
 function BodyRow({
   body, index, annotations, onAnnotation, isMainWorld,
   indentLevel = 0, hasChildren, isCollapsed, onToggleCollapse,
+  starMassSolar,
 }: {
   body: PlanetaryBody & { typeLabel: string; atmosphere?: string; temperature?: string; habitability?: number };
   index: number;
@@ -1414,6 +1421,7 @@ function BodyRow({
   hasChildren?: boolean;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  starMassSolar: number;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasPhysics = body.radiusKm != null;
@@ -1535,14 +1543,19 @@ function BodyRow({
             />
           </div>
 
-          {/* Physical properties (QA-009) */}
+          {/* Physical properties (QA-009) + Hill Sphere */}
           {hasPhysics && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-xs">
               {body.densityGcm3 != null && <PhysProp label="Density" value={`${body.densityGcm3} g/cm³`} />}
               <PhysProp label="Radius"          value={`${formatNumber(body.radiusKm!)} km`} />
               <PhysProp label="Diameter"        value={`${formatNumber(body.diameterKm!)} km`} />
               <PhysProp label="Surface Gravity" value={`${body.surfaceGravityG} G`} />
               <PhysProp label="Escape Velocity" value={`${formatNumber(body.escapeVelocityMs!)} m/s`} />
+              {(() => {
+                const hs = hillSphereAU(body.mass, starMassSolar, body.distanceAU, body.type);
+                if (hs <= 0) return null;
+                return <PhysProp label="Hill Sphere" value={`${hs.toExponential(3)} AU`} />;
+              })()}
             </div>
           )}
           {/* Environment details — main world (v1) or any body with v2 atmosphere data */}
