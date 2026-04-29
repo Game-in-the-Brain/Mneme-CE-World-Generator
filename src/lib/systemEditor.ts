@@ -247,6 +247,74 @@ export interface BodyDiceLocks {
  * Re-roll a body's unlocked fields.
  * Locked fields preserve their current values.
  */
+/**
+ * Reposition a body to the next inner or outer zone.
+ * Returns updated system and optional warning/error.
+ */
+export function repositionBody(
+  system: StarSystem,
+  bodyId: string,
+  direction: 'in' | 'out',
+): { system: StarSystem; warning?: string; error?: string } {
+  const updated: StarSystem = { ...system };
+
+  // Find body in all arrays
+  let body: PlanetaryBody | undefined;
+  let arrayKey: keyof Pick<StarSystem, 'circumstellarDisks' | 'dwarfPlanets' | 'terrestrialWorlds' | 'iceWorlds' | 'gasWorlds'> | undefined;
+
+  for (const key of ['circumstellarDisks', 'dwarfPlanets', 'terrestrialWorlds', 'iceWorlds', 'gasWorlds'] as const) {
+    const found = updated[key].find(b => b.id === bodyId);
+    if (found) {
+      body = found;
+      arrayKey = key;
+      break;
+    }
+  }
+
+  if (!body || !arrayKey) {
+    return { system: updated, error: 'Body not found' };
+  }
+
+  const currentIndex = ZONE_ORDER.indexOf(body.zone);
+  if (currentIndex < 0) {
+    return { system: updated, error: 'Invalid zone' };
+  }
+
+  const targetIndex = direction === 'in' ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= ZONE_ORDER.length) {
+    return { system: updated, error: `Cannot move ${direction === 'in' ? 'inward' : 'outward'} — already at ${direction === 'in' ? 'innermost' : 'outermost'} zone` };
+  }
+
+  const targetZone = ZONE_ORDER[targetIndex];
+
+  // Check zone capacity (exclude the body itself from count)
+  const bodiesInTarget = getAllL1Bodies(updated).filter(b => b.id !== bodyId && b.zone === targetZone).length;
+  if (bodiesInTarget >= MAX_BODIES_PER_ZONE) {
+    return { system: updated, error: `${targetZone} zone is full (max ${MAX_BODIES_PER_ZONE} bodies)` };
+  }
+
+  body.zone = targetZone;
+  body.distanceAU = Math.round(getZoneMidpoint(updated, targetZone) * 100) / 100;
+
+  const warning = checkHSR(body);
+
+  // Re-evaluate mainworld if body is a candidate type
+  if (body.type === 'dwarf' || body.type === 'terrestrial') {
+    const allL1 = getAllL1Bodies(updated);
+    const candidates = allL1.filter(b => b.baselineHabitability !== undefined);
+    if (candidates.length > 0) {
+      const result = selectMainworld(allL1);
+      if (result.mainworldId) {
+        allL1.forEach(b => { b.wasSelectedAsMainworld = false; });
+        const winner = allL1.find(b => b.id === result.mainworldId);
+        if (winner) winner.wasSelectedAsMainworld = true;
+      }
+    }
+  }
+
+  return { system: updated, warning };
+}
+
 export function rerollBody(
   system: StarSystem,
   bodyId: string,

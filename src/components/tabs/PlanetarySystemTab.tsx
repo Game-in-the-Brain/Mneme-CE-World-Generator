@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Trash2, Plus, Lock, Unlock, Dices } from 'lucide-react';
-import { addBodyToSystem, deleteBodiesFromSystem, rerollBody } from '../../lib/systemEditor';
+import { ChevronDown, ChevronUp, Trash2, Plus, Lock, Unlock, Dices, ArrowUp, ArrowDown } from 'lucide-react';
+import { addBodyToSystem, deleteBodiesFromSystem, rerollBody, repositionBody } from '../../lib/systemEditor';
 import { formatNumber, formatValue } from '../../lib/format';
 import { hillSphereAU } from '../../lib/physicalProperties';
 import type { StarSystem, PlanetaryBody, BodyAnnotations, GasWorldClass } from '../../types';
@@ -119,6 +119,15 @@ export function PlanetarySystemTab({
     onEditBodies(updated);
   }
 
+  function handleReposition(bodyId: string, direction: 'in' | 'out') {
+    if (!onEditBodies) return;
+    const { system: updated, warning, error } = repositionBody(system, bodyId, direction);
+    onEditBodies(updated);
+    if (error) setHsrWarning(error);
+    else if (warning) setHsrWarning(warning);
+    else setHsrWarning(null);
+  }
+
   function handleToggleDelete(bodyId: string) {
     setPendingDeleteIds(prev => {
       const next = new Set(prev);
@@ -233,6 +242,7 @@ export function PlanetarySystemTab({
           bodyLocks={bodyLocks}
           onToggleLock={toggleLock}
           onReroll={handleReroll}
+          onReposition={handleReposition}
         />
       </div>
 
@@ -312,6 +322,7 @@ function ParentBodyList({
   bodyLocks,
   onToggleLock,
   onReroll,
+  onReposition,
 }: {
   bodies: (PlanetaryBody & { typeLabel: string; isMainWorld: boolean; atmosphere?: string; temperature?: string; habitability?: number })[];
   parentChildren: Map<string, PlanetaryBody[]>;
@@ -324,6 +335,7 @@ function ParentBodyList({
   bodyLocks?: Record<string, { worldType?: boolean; zone?: boolean; mass?: boolean }>;
   onToggleLock?: (id: string, field: 'worldType' | 'zone' | 'mass') => void;
   onReroll?: (id: string) => void;
+  onReposition?: (id: string, direction: 'in' | 'out') => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -361,6 +373,7 @@ function ParentBodyList({
               bodyLocks={bodyLocks}
               onToggleLock={onToggleLock}
               onReroll={onReroll}
+              onReposition={onReposition}
             />
             {hasChildren && !isCollapsed && (
               <div className="ml-4 md:ml-6 border-l-2 pl-3 md:pl-4 space-y-1 mt-1" style={{ borderColor: 'var(--border-color)' }}>
@@ -416,6 +429,7 @@ function BodyRow({
   bodyLocks,
   onToggleLock,
   onReroll,
+  onReposition,
 }: {
   body: PlanetaryBody & { typeLabel: string; atmosphere?: string; temperature?: string; habitability?: number };
   index: number;
@@ -433,6 +447,7 @@ function BodyRow({
   bodyLocks?: Record<string, { worldType?: boolean; zone?: boolean; mass?: boolean }>;
   onToggleLock?: (id: string, field: 'worldType' | 'zone' | 'mass') => void;
   onReroll?: (id: string) => void;
+  onReposition?: (id: string, direction: 'in' | 'out') => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasPhysics = body.radiusKm != null;
@@ -514,6 +529,26 @@ function BodyRow({
           )}
           {!isRing && (
             <span className={`text-xs zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
+          )}
+          {isEditing && onReposition && !isRing && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onReposition(body.id, 'in'); }}
+                className="shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+                title="Move inward"
+              >
+                <ArrowUp size={10} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onReposition(body.id, 'out'); }}
+                className="shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+                title="Move outward"
+              >
+                <ArrowDown size={10} />
+              </button>
+            </>
           )}
           {isEditing && onToggleLock && !isRing && (
             <button
