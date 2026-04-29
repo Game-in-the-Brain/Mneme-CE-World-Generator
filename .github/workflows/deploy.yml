@@ -29,10 +29,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Install Tailwind CSS native binding
-        run: npm install @tailwindcss/oxide-linux-x64-gnu --no-save --legacy-peer-deps
+        run: npm install --legacy-peer-deps
 
       - name: Build
         run: npm run build
