@@ -8,6 +8,8 @@ import { ShipsPriceList } from './ShipsPriceList';
 import { OverviewTab } from './tabs/OverviewTab';
 import { StarTab } from './tabs/StarTab';
 import { updatePrimaryStar } from '../lib/systemEditor';
+import { useSystemEditMode } from '../hooks/useSystemEditMode';
+import { generateSeed, getEconomicModelLabel } from '../lib/systemViewerUtils';
 import { WorldTab } from './tabs/WorldTab';
 import { InhabitantsTab } from './tabs/InhabitantsTab';
 import { PlanetarySystemTab } from './tabs/PlanetarySystemTab';
@@ -31,15 +33,6 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: 'system',      label: 'Planetary System', icon: <Building size={16} /> },
   { id: 'orbit',       label: 'Orbit',            icon: <Orbit size={16} /> },
 ];
-
-function generateSeed(length = 8): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
 
 // QA-010: Single-page anchor tabs — each section is always rendered;
 // tab buttons scroll to the corresponding section.
@@ -100,60 +93,17 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   const [copied, setCopied] = useState(false);
   const [rawUdpMode, setRawUdpMode] = useState(false);
 
-  // FRD-069: Edit mode state
-  const [isEditing, setIsEditing] = useState(false);
-  const [originalSystem, setOriginalSystem] = useState<StarSystem | null>(null);
-  const [pendingSystem, setPendingSystem] = useState<StarSystem>(system);
-
-  // Sync pendingSystem when external system changes (if not editing)
-  useEffect(() => {
-    if (!isEditing) {
-      setPendingSystem(system);
-    }
-  }, [system, isEditing]);
-
-  const displaySystem = isEditing ? pendingSystem : system;
-
-  function enterEditMode() {
-    setOriginalSystem(JSON.parse(JSON.stringify(system)));
-    setPendingSystem(JSON.parse(JSON.stringify(system)));
-    setIsEditing(true);
-  }
-
-  function discardEdits() {
-    if (originalSystem) {
-      setPendingSystem(originalSystem);
-    }
-    setIsEditing(false);
-    setOriginalSystem(null);
-  }
-
-  async function saveEdits() {
-    if (!onUpdateSystem) return;
-    const saved: StarSystem = {
-      ...pendingSystem,
-      editedAt: Date.now(),
-    };
-    await onUpdateSystem(saved);
-    setIsEditing(false);
-    setOriginalSystem(null);
-  }
-
-  async function saveAsNew() {
-    if (!onUpdateSystem) return;
-    const newName = window.prompt('Save as new system name:', `${pendingSystem.name || 'Unnamed'} (edited)`);
-    if (newName === null) return;
-    const copied: StarSystem = {
-      ...JSON.parse(JSON.stringify(pendingSystem)),
-      id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      createdAt: Date.now(),
-      name: newName,
-      editedAt: undefined,
-    };
-    await onUpdateSystem(copied);
-    setIsEditing(false);
-    setOriginalSystem(null);
-  }
+  const {
+    isEditing,
+    originalSystem,
+    pendingSystem,
+    displaySystem,
+    enterEditMode,
+    discardEdits,
+    saveEdits,
+    saveAsNew,
+    setPendingSystem,
+  } = useSystemEditMode(system, onUpdateSystem);
 
   const handleCopyFor2DMap = useCallback(async () => {
     const payload = {
@@ -407,7 +357,6 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
             if (!originalSystem) return;
             const { system: updated, warnings } = updatePrimaryStar(displaySystem, stellarClass, grade);
             setPendingSystem(updated);
-            // Show warnings if any
             if (warnings.length > 0) {
               console.warn('[StarEdit] Warnings:', warnings);
             }
@@ -543,13 +492,4 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   );
 }
 
-function getEconomicModelLabel(system: StarSystem): string {
-  if (system.economicPresetLabel) return system.economicPresetLabel;
-  const preset = system.economicPreset;
-  if (!preset) return 'Legacy / Unknown';
-  if (preset.label) return preset.label;
-  if (preset.name) return preset.name;
-  if (preset.id === 'mneme') return 'Mneme';
-  if (preset.id === 'ce') return 'CE / Traveller';
-  return preset.id;
-}
+

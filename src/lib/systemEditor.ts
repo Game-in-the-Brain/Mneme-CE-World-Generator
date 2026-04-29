@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { StarSystem, PlanetaryBody, BodyType, GasWorldClass, Zone, StellarClass, StellarGrade } from '../types';
-import { generateBody } from './generator';
+import { generateBody } from './generatorSystem';
 import { selectMainworld, runHabitabilityWaterfall } from './habitabilityPipeline';
 import {
   getStellarMass,
