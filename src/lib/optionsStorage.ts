@@ -21,6 +21,7 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   allowMegaStructures: false,
   rawUdpMode: false,
   includeNames: false,
+  nameDescriptorMode: 'descriptive',
 };
 
 function isValidPreset(value: unknown): value is TLProductivityPreset {
@@ -140,6 +141,12 @@ export function loadGeneratorOptions(): GeneratorOptions {
   const includeNames =
     typeof stored.includeNames === 'boolean' ? stored.includeNames : DEFAULT_GENERATOR_OPTIONS.includeNames;
 
+  const VALID_DESCRIPTOR_MODES = new Set<string>(['clean', 'descriptive', 'verbose']);
+  const nameDescriptorMode =
+    stored.nameDescriptorMode && VALID_DESCRIPTOR_MODES.has(stored.nameDescriptorMode)
+      ? stored.nameDescriptorMode
+      : DEFAULT_GENERATOR_OPTIONS.nameDescriptorMode;
+
   return {
     starClass,
     starGrade,
@@ -159,6 +166,7 @@ export function loadGeneratorOptions(): GeneratorOptions {
     growthModel,
     rawUdpMode,
     includeNames,
+    nameDescriptorMode,
   };
 }
 

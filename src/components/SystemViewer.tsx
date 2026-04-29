@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import type { StarSystem, BodyAnnotations, ShipsInAreaResult } from '../types';
 import { generatePlaceNames, getLcOptions } from '../lib/placeNameGen';
+import { loadGeneratorOptions } from '../lib/optionsStorage';
 import { exportToDocx } from '../lib/exportDocx';
 import { buildRawUdpProfile } from '../lib/rawUdp';
 import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Sparkles, Copy, Check, ExternalLink, Orbit } from 'lucide-react';
@@ -60,6 +61,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
 
   // Body annotations — persisted per system (localStorage)
   const [annotations, setAnnotations] = useState<BodyAnnotations>({});
+  const [pendingAnnotations, setPendingAnnotations] = useState<BodyAnnotations>({});
   const [shipsResult, setShipsResult] = useState<ShipsInAreaResult | null>(null);
   const [showShipsPriceList, setShowShipsPriceList] = useState(false);
 
@@ -67,23 +69,41 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
     const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
     if (stored) {
       try { setAnnotations(JSON.parse(stored) as BodyAnnotations); } catch { setAnnotations({}); }
+    } else if (system.placeNames?.bodyNames) {
+      // Auto-populate from generated place names if no user edits exist
+      const prefilled: BodyAnnotations = {};
+      for (const [bodyId, name] of Object.entries(system.placeNames.bodyNames)) {
+        prefilled[bodyId] = { name, notes: '' };
+      }
+      localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(prefilled));
+      setAnnotations(prefilled);
     } else {
       setAnnotations({});
     }
-  }, [system.id]);
+  }, [system.id, system.placeNames]);
+
+  // In edit mode, stage annotation changes in pendingAnnotations instead of saving immediately
+  const displayAnnotations = isEditing ? pendingAnnotations : annotations;
 
   const handleAnnotation = useCallback(
     (id: string, field: 'name' | 'notes', value: string) => {
-      setAnnotations(prev => {
-        const next = {
+      if (isEditing) {
+        setPendingAnnotations(prev => ({
           ...prev,
           [id]: { ...(prev[id] ?? { name: '', notes: '' }), [field]: value },
-        };
-        localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(next));
-        return next;
-      });
+        }));
+      } else {
+        setAnnotations(prev => {
+          const next = {
+            ...prev,
+            [id]: { ...(prev[id] ?? { name: '', notes: '' }), [field]: value },
+          };
+          localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(next));
+          return next;
+        });
+      }
     },
-    [system.id],
+    [system.id, isEditing],
   );
 
   const handleExportDocx = useCallback(async () => {
@@ -99,11 +119,35 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
     pendingSystem,
     displaySystem,
     enterEditMode,
-    discardEdits,
-    saveEdits,
-    saveAsNew,
+    discardEdits: baseDiscardEdits,
+    saveEdits: baseSaveEdits,
+    saveAsNew: baseSaveAsNew,
     setPendingSystem,
   } = useSystemEditMode(system, onUpdateSystem);
+
+  // Wrap save/discard to include annotation staging
+  const saveEdits = useCallback(async () => {
+    await baseSaveEdits();
+    if (Object.keys(pendingAnnotations).length > 0) {
+      localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(pendingAnnotations));
+      setAnnotations(pendingAnnotations);
+      setPendingAnnotations({});
+    }
+  }, [baseSaveEdits, pendingAnnotations, system.id]);
+
+  const saveAsNew = useCallback(async () => {
+    await baseSaveAsNew();
+    if (Object.keys(pendingAnnotations).length > 0) {
+      localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(pendingAnnotations));
+      setAnnotations(pendingAnnotations);
+      setPendingAnnotations({});
+    }
+  }, [baseSaveAsNew, pendingAnnotations, system.id]);
+
+  const discardEdits = useCallback(() => {
+    baseDiscardEdits();
+    setPendingAnnotations({});
+  }, [baseDiscardEdits]);
 
   const handleCopyFor2DMap = useCallback(async () => {
     const payload = {
@@ -135,7 +179,8 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
 
   const handleGenerateNames = useCallback(() => {
     if (!onUpdateSystem) return;
-    const names = generatePlaceNames(system, baseLc, driftLc);
+    const descriptorMode = loadGeneratorOptions().nameDescriptorMode;
+    const names = generatePlaceNames(system, baseLc, driftLc, descriptorMode);
     const updatedSystem: StarSystem = {
       ...system,
       placeNames: names,
@@ -169,17 +214,20 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <div className="flex items-center gap-2 mb-1">
             <input
               type="text"
-              value={system.name || ''}
+              value={displaySystem.name || ''}
               onChange={(e) => {
-                if (!onUpdateSystem) return;
-                onUpdateSystem({ ...system, name: e.target.value });
+                if (isEditing) {
+                  setPendingSystem(prev => ({ ...prev, name: e.target.value }));
+                } else if (onUpdateSystem) {
+                  onUpdateSystem({ ...system, name: e.target.value });
+                }
               }}
-              placeholder={getSystemCode(system)}
+              placeholder={getSystemCode(displaySystem)}
               className="text-sm bg-transparent border-b border-transparent hover:border-[var(--border-color)] focus:border-[var(--accent-red)] outline-none px-1 py-0.5 transition-colors"
               style={{ color: 'var(--text-primary)', minWidth: '8rem' }}
             />
             <span className="text-xs text-[var(--text-secondary)]">
-              {system.name ? 'System name' : `Code: ${getSystemCode(system)}`}
+              {displaySystem.name ? 'System name' : `Code: ${getSystemCode(displaySystem)}`}
             </span>
           </div>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -409,7 +457,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         </h2>
         <PlanetarySystemTab
           system={displaySystem}
-          annotations={annotations}
+          annotations={displayAnnotations}
           onAnnotation={handleAnnotation}
           isEditing={isEditing}
           onEditBodies={(updatedSystem) => {

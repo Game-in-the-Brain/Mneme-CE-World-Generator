@@ -233,6 +233,8 @@ export interface GeneratorOptions {
   rawUdpMode?: boolean;
   /** FRD-063: auto-generate place names when generating a system */
   includeNames?: boolean;
+  /** FRD-063a: name descriptor style — clean (none), descriptive (max 1), verbose (0–2) */
+  nameDescriptorMode?: 'clean' | 'descriptive' | 'verbose';
 }
 
 export interface ExtraterrestrialLifeAssumptions {

@@ -78,6 +78,9 @@ export function GeneratorDashboard({
   const [allowShipsAtXPort, setAllowShipsAtXPort] = useState<boolean>(defaults.allowShipsAtXPort ?? true);
   const [rawUdpMode, setRawUdpMode] = useState<boolean>(defaults.rawUdpMode ?? false);
   const [includeNames, setIncludeNames] = useState<boolean>(defaults.includeNames ?? false);
+  const [nameDescriptorMode, setNameDescriptorMode] = useState<'clean' | 'descriptive' | 'verbose'>(
+    defaults.nameDescriptorMode ?? 'descriptive'
+  );
   const [goalModeOpen, setGoalModeOpen] = useState(true);
 
   const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
@@ -102,8 +105,9 @@ export function GeneratorDashboard({
       allowShipsAtXPort: allowShipsAtXPort || undefined,
       rawUdpMode,
       includeNames,
+      nameDescriptorMode,
     });
-  }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, allowShipsAtXPort, rawUdpMode, includeNames]);
+  }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode]);
 
   function handlePresetChange(id: string) {
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
@@ -130,6 +134,7 @@ export function GeneratorDashboard({
       allowShipsAtXPort: allowShipsAtXPort || undefined,
       rawUdpMode,
       includeNames,
+      nameDescriptorMode,
     });
   }
 
@@ -311,6 +316,27 @@ export function GeneratorDashboard({
                       Generate place names
                     </label>
                   </div>
+                  {includeNames && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                        Style:
+                      </label>
+                      <select
+                        value={nameDescriptorMode}
+                        onChange={(e) => setNameDescriptorMode(e.target.value as 'clean' | 'descriptive' | 'verbose')}
+                        className="rounded px-2 py-1 text-xs border"
+                        style={{
+                          backgroundColor: 'var(--bg-primary)',
+                          borderColor: 'var(--border-color)',
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        <option value="clean">Clean — no descriptors</option>
+                        <option value="descriptive">Descriptive — max 1 descriptor</option>
+                        <option value="verbose">Verbose — 0–2 descriptors</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
                 {populated && (
                   <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>

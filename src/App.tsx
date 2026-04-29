@@ -190,8 +190,22 @@ function App() {
       }
 
       if (options.includeNames) {
-        system = { ...system, placeNames: generatePlaceNames(system, 'random', 'random') };
+        system = {
+          ...system,
+          placeNames: generatePlaceNames(system, 'random', 'random', options.nameDescriptorMode),
+        };
         if (!system.name) system.name = system.placeNames!.systemName;
+        // Pre-fill body name annotations so bodies don't appear blank
+        const annKey = `mneme_annotations_${system.id}`;
+        const storedAnn = localStorage.getItem(annKey);
+        const existing = storedAnn ? JSON.parse(storedAnn) as Record<string, { name: string; notes: string }> : {};
+        const merged = { ...existing };
+        for (const [bodyId, name] of Object.entries(system.placeNames!.bodyNames)) {
+          if (!merged[bodyId]?.name) {
+            merged[bodyId] = { name, notes: merged[bodyId]?.notes ?? '' };
+          }
+        }
+        localStorage.setItem(annKey, JSON.stringify(merged));
       }
 
       setCurrentSystem(system);

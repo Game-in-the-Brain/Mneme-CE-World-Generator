@@ -22,6 +22,7 @@ export function generatePlaceNames(
   system: StarSystem,
   baseLc: string,
   driftLc: string,
+  descriptorMode?: 'clean' | 'descriptive' | 'verbose',
 ): PlaceNames {
   const allLcs = loadLcIndex();
   const allIds = allLcs.map(e => e.lc_id);
@@ -38,11 +39,19 @@ export function generatePlaceNames(
   const driftLevel = distanceToDriftLevel(distance);
 
   const seed = hashSeed(system.id);
+
+  // FRD-063a: descriptor mode controls how many adjectives are prepended
+  const descriptors = descriptorMode === 'clean'
+    ? undefined
+    : descriptorMode === 'descriptive'
+      ? { maxDescriptors: 1 }
+      : {}; // verbose — library default (0–2)
+
   const gen = new PlaceGen({
     forceBaseLc: resolvedBase,
     forceDriftLc: resolvedDrift,
     seed,
-    descriptors: {},
+    descriptors,
   });
 
   const systemResult = gen.generateStarSystemName();
