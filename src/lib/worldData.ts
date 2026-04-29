@@ -283,7 +283,7 @@ export function calculateTotalHabitability(
     tlModifier;
   
   // Debug logging in development
-  if (import.meta.env.DEV) {
+  if (typeof import.meta.env !== 'undefined' && import.meta.env.DEV) {
     console.log('Habitability breakdown:', {
       gravity: gravityHabitability,
       atmosphere: atmosphereHabitability,

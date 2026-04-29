@@ -868,7 +868,7 @@ function verifySpacing(
   }
 
   // Log violations in dev mode
-  if (import.meta.env.DEV && violations.length > 0) {
+  if (typeof import.meta.env !== 'undefined' && import.meta.env.DEV && violations.length > 0) {
     console.warn(`[QA-006] ${violationCount} Hill sphere spacing violations:`);
     violations.forEach(v => console.warn('  ' + v));
   }
@@ -947,7 +947,7 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries, useV2
     v2Ejected = v2Result.ejectedBodies;
     v2Consumed = v2Result.consumedBodies;
 
-    if (import.meta.env.DEV) {
+    if (typeof import.meta.env !== 'undefined' && import.meta.env.DEV) {
       console.log('[Planetary System V2] Generated:', {
         total: allBodies.length,
         disks: allBodies.filter(b => b.type === 'disk').length,
@@ -975,7 +975,7 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries, useV2
     // Verify spacing and log violations
     const spacingCheck = verifySpacing(allBodies, starMass);
 
-    if (import.meta.env.DEV) {
+    if (typeof import.meta.env !== 'undefined' && import.meta.env.DEV) {
       console.log('[Planetary System] Generated:', {
         total: allBodies.length,
         disks: allBodies.filter(b => b.type === 'disk').length,

@@ -30,8 +30,10 @@ interface Args {
   count: number;
   v2MultiStar: boolean;
   v2Positioning: boolean;
-  report: 'multi-star' | 'habitability' | 'summary' | 'all';
+  report: 'multi-star' | 'habitability' | 'summary' | 'g4-terrestrial' | 'all';
   details?: string;
+  starClass?: string;
+  mainWorldType?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -45,6 +47,8 @@ function parseArgs(argv: string[]): Args {
     else if (flag === '--no-v2positioning') a.v2Positioning = false;
     else if (flag === '--report') a.report = argv[++i] as Args['report'];
     else if (flag === '--details') a.details = argv[++i];
+    else if (flag === '--starclass') a.starClass = argv[++i];
+    else if (flag === '--mainworldtype') a.mainWorldType = argv[++i];
   }
   return a;
 }
@@ -274,6 +278,68 @@ function reportHabitability(stats: HabitabilityStats): void {
   }
 }
 
+interface G4TerrestrialStats {
+  systems: number;
+  mainworldZoneCounts: Record<string, number>;
+  fallbackTriggered: number;
+  fallbackNoCandidates: number;
+  fallbackLowScore: number;
+  tiebreakerApplied: number;
+  baselineScores: number[];
+  conservativeShare: number;
+}
+
+function collectG4Terrestrial(sys: StarSystem, out: G4TerrestrialStats): void {
+  out.systems++;
+  const zone = sys.mainWorld?.zone ?? 'Unknown';
+  out.mainworldZoneCounts[zone] = (out.mainworldZoneCounts[zone] ?? 0) + 1;
+
+  const log = sys.mainworldSelectionLog;
+  if (log) {
+    if (log.fallbackTriggered) out.fallbackTriggered++;
+    if (log.fallbackReason?.includes('No habitability candidates')) out.fallbackNoCandidates++;
+    if (log.fallbackReason?.includes('All candidates scored ≤ 0')) out.fallbackLowScore++;
+    if (log.tiebreakerApplied) out.tiebreakerApplied++;
+  }
+
+  // Baseline habitability of mainworld
+  const mwBody = [
+    ...sys.dwarfPlanets,
+    ...sys.terrestrialWorlds,
+    ...(sys.moons ?? []),
+  ].find(b => b.wasSelectedAsMainworld);
+  if (mwBody?.baselineHabitability !== undefined) {
+    out.baselineScores.push(mwBody.baselineHabitability);
+  }
+}
+
+function reportG4Terrestrial(stats: G4TerrestrialStats): void {
+  console.log('\n=== QA-068: G4 Terrestrial Batch Analysis ===');
+  console.log(`Systems generated: ${stats.systems}`);
+
+  const total = stats.systems;
+  console.log('\nMainworld zone distribution:');
+  for (const z of Object.keys(stats.mainworldZoneCounts).sort()) {
+    console.log(`  ${z}: ${stats.mainworldZoneCounts[z]} (${pct(stats.mainworldZoneCounts[z], total)})`);
+  }
+
+  const conservative = stats.mainworldZoneCounts['Conservative'] ?? 0;
+  const conservativeShare = conservative / total;
+  console.log(`\n  Conservative mainworld share: ${pct(conservative, total)} (target ≥ 40%) ${conservativeShare >= 0.4 ? '✅ PASS' : '❌ FAIL'}`);
+
+  const fallbackRate = stats.fallbackTriggered / total;
+  console.log(`\nMVT/GVT fallback rate: ${pct(stats.fallbackTriggered, total)} (target < 10%) ${fallbackRate < 0.1 ? '✅ PASS' : '❌ FAIL'}`);
+  if (stats.fallbackNoCandidates > 0) console.log(`  — No candidates: ${stats.fallbackNoCandidates}`);
+  if (stats.fallbackLowScore > 0) console.log(`  — All candidates ≤ 0: ${stats.fallbackLowScore}`);
+  console.log(`  — Tiebreakers applied: ${stats.tiebreakerApplied}`);
+
+  if (stats.baselineScores.length > 0) {
+    console.log(`\nMainworld baseline habitability (n=${stats.baselineScores.length}):`);
+    console.log(`  mean=${fmt(mean(stats.baselineScores))}  median=${fmt(median(stats.baselineScores))}  stdev=${fmt(stdev(stats.baselineScores))}`);
+    console.log(`  min=${fmt(Math.min(...stats.baselineScores))}  max=${fmt(Math.max(...stats.baselineScores))}`);
+  }
+}
+
 function reportSummary(systems: StarSystem[]): void {
   console.log('\n=== Summary Report ===');
   console.log(`Systems generated: ${systems.length}`);
@@ -303,10 +369,11 @@ function reportSummary(systems: StarSystem[]): void {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  console.log(`Batch Runner — count=${args.count}, v2MultiStar=${args.v2MultiStar}, v2Positioning=${args.v2Positioning}, report=${args.report}`);
+  console.log(`Batch Runner — count=${args.count}, v2MultiStar=${args.v2MultiStar}, v2Positioning=${args.v2Positioning}, report=${args.report}, starClass=${args.starClass ?? 'random'}, mainWorldType=${args.mainWorldType ?? 'random'}`);
 
   const ms = { systemsWithCompanions: 0, totalCompanions: 0, separationsByPrimaryClass: {}, eccentricities: [], sTypeCapsAU: [], heliopauseAUValues: [], cycleViolations_sTypeIntoHeliopause: 0, cycleViolations_aOuterTooSmall: 0 } as MultiStarStats;
   const hb = { systems: 0, mainworldZoneCounts: {}, hazardCounts: {}, infernalToxicPlus: 0, infernalCount: 0, hzWithBiosphereB2Plus: 0, hzCount: 0, baselineScores: [], zoneHazardDMByZone: {}, hzBiosphereBonusFires: 0, hzBiosphereBonusEligible: 0 } as HabitabilityStats;
+  const g4 = { systems: 0, mainworldZoneCounts: {}, fallbackTriggered: 0, fallbackNoCandidates: 0, fallbackLowScore: 0, tiebreakerApplied: 0, baselineScores: [], conservativeShare: 0 } as G4TerrestrialStats;
   const systems: StarSystem[] = [];
 
   let detailHandle: { write(line: string): void; close(): void } | null = null;
@@ -319,15 +386,20 @@ async function main(): Promise<void> {
     };
   }
 
+  const genOpts: Parameters<typeof generateStarSystem>[0] = {
+    v2MultiStar: args.v2MultiStar,
+    v2Positioning: args.v2Positioning,
+  };
+  if (args.starClass) genOpts.starClass = args.starClass as any;
+  if (args.mainWorldType) genOpts.mainWorldType = args.mainWorldType as any;
+
   const start = Date.now();
   for (let i = 0; i < args.count; i++) {
-    const sys = generateStarSystem({
-      v2MultiStar: args.v2MultiStar,
-      v2Positioning: args.v2Positioning,
-    });
+    const sys = generateStarSystem(genOpts);
     systems.push(sys);
     collectMultiStar(sys, ms);
     collectHabitability(sys, hb);
+    collectG4Terrestrial(sys, g4);
     if (detailHandle) detailHandle.write(JSON.stringify(emitDetail(sys)));
   }
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
@@ -340,6 +412,7 @@ async function main(): Promise<void> {
   if (args.report === 'summary' || args.report === 'all') reportSummary(systems);
   if (args.report === 'habitability' || args.report === 'all') reportHabitability(hb);
   if (args.report === 'multi-star' || args.report === 'all') reportMultiStar(ms, systems.length);
+  if (args.report === 'g4-terrestrial' || args.report === 'all') reportG4Terrestrial(g4);
 }
 
 main().catch((err) => {
