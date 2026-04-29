@@ -35,11 +35,11 @@ import {
 // ---------------------
 
 function lookupTemperatureV2(roll: number): { type: TemperatureType; habMod: number } {
-  if (roll <= 3) return { type: 'Freezing', habMod: -5 };
-  if (roll <= 5) return { type: 'Cold', habMod: -2 };
-  if (roll <= 9) return { type: 'Average', habMod: 0 };
-  if (roll <= 11) return { type: 'Hot', habMod: -2 };
-  return { type: 'Inferno', habMod: -5 };
+  if (roll <= 3) return { type: 'Freezing', habMod: -3 };
+  if (roll <= 5) return { type: 'Cold', habMod: 0 };
+  if (roll <= 9) return { type: 'Average', habMod: 1 };
+  if (roll <= 11) return { type: 'Hot', habMod: 0 };
+  return { type: 'Inferno', habMod: -3 };
 }
 
 // ---------------------

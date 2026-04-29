@@ -1214,22 +1214,22 @@ export interface AtmoCompEntry {
 }
 
 export const ATMOSPHERE_COMPOSITION: Record<number, AtmoCompEntry> = {
-  3:  { name: 'H-He',            tempDM: -2, hazardBias: {},                       habMod: 0 },
-  4:  { name: 'Methane-Ammonia', tempDM: -1, hazardBias: { toxic: 1 },             habMod: -1 },
-  5:  { name: 'Methane-Ammonia', tempDM: -1, hazardBias: { toxic: 1 },             habMod: -1 },
-  6:  { name: 'Nitrogen-Inert',  tempDM: 0,  hazardBias: {},                       habMod: 0 },
-  7:  { name: 'Nitrogen-Inert',  tempDM: 0,  hazardBias: {},                       habMod: 0 },
-  8:  { name: 'Nitrogen-Inert',  tempDM: 0,  hazardBias: {},                       habMod: 0 },
-  9:  { name: 'Carbon-Dioxide',  tempDM: 1,  hazardBias: {},                       habMod: -1 },
-  10: { name: 'Carbon-Dioxide',  tempDM: 1,  hazardBias: {},                       habMod: -1 },
-  11: { name: 'Carbon-Dioxide',  tempDM: 1,  hazardBias: {},                       habMod: -1 },
-  12: { name: 'Carbon-Dioxide',  tempDM: 1,  hazardBias: {},                       habMod: -1 },
-  13: { name: 'Water-Steam',     tempDM: 2,  hazardBias: { corrosive: 1 },         habMod: -2 },
-  14: { name: 'Water-Steam',     tempDM: 2,  hazardBias: { corrosive: 1 },         habMod: -2 },
-  15: { name: 'Water-Steam',     tempDM: 2,  hazardBias: { corrosive: 1 },         habMod: -2 },
-  16: { name: 'Sulfuric',        tempDM: 2,  hazardBias: { corrosive: 2, toxic: 1 }, habMod: -3 },
-  17: { name: 'Sulfuric',        tempDM: 2,  hazardBias: { corrosive: 2, toxic: 1 }, habMod: -3 },
-  18: { name: 'Exotic',          tempDM: 0,  hazardBias: { toxic: 1 },             habMod: -3 },
+  3:  { name: 'H-He',            tempDM: -2, hazardBias: {},                       habMod: 1 },
+  4:  { name: 'Methane-Ammonia', tempDM: -1, hazardBias: { toxic: 1 },             habMod: 0 },
+  5:  { name: 'Methane-Ammonia', tempDM: -1, hazardBias: { toxic: 1 },             habMod: 0 },
+  6:  { name: 'Nitrogen-Inert',  tempDM: 0,  hazardBias: {},                       habMod: 1 },
+  7:  { name: 'Nitrogen-Inert',  tempDM: 0,  hazardBias: {},                       habMod: 1 },
+  8:  { name: 'Nitrogen-Inert',  tempDM: 0,  hazardBias: {},                       habMod: 1 },
+  9:  { name: 'Carbon-Dioxide',  tempDM: 1,  hazardBias: {},                       habMod: 0 },
+  10: { name: 'Carbon-Dioxide',  tempDM: 1,  hazardBias: {},                       habMod: 0 },
+  11: { name: 'Carbon-Dioxide',  tempDM: 1,  hazardBias: {},                       habMod: 0 },
+  12: { name: 'Carbon-Dioxide',  tempDM: 1,  hazardBias: {},                       habMod: 0 },
+  13: { name: 'Water-Steam',     tempDM: 2,  hazardBias: { corrosive: 1 },         habMod: -1 },
+  14: { name: 'Water-Steam',     tempDM: 2,  hazardBias: { corrosive: 1 },         habMod: -1 },
+  15: { name: 'Water-Steam',     tempDM: 2,  hazardBias: { corrosive: 1 },         habMod: -1 },
+  16: { name: 'Sulfuric',        tempDM: 2,  hazardBias: { corrosive: 2, toxic: 1 }, habMod: -2 },
+  17: { name: 'Sulfuric',        tempDM: 2,  hazardBias: { corrosive: 2, toxic: 1 }, habMod: -2 },
+  18: { name: 'Exotic',          tempDM: 0,  hazardBias: { toxic: 1 },             habMod: -2 },
 };
 
 // ---------------------
@@ -1237,17 +1237,17 @@ export const ATMOSPHERE_COMPOSITION: Record<number, AtmoCompEntry> = {
 // ---------------------
 
 export const ATMOSPHERE_DENSITY_TABLE: Record<number, { density: AtmoDensity; habMod: number }> = {
-  2:  { density: 'Trace',     habMod: -3 },
-  3:  { density: 'Trace',     habMod: -3 },
-  4:  { density: 'Thin',      habMod: -1 },
-  5:  { density: 'Thin',      habMod: -1 },
-  6:  { density: 'Average',   habMod: 0 },
-  7:  { density: 'Average',   habMod: 0 },
-  8:  { density: 'Average',   habMod: 0 },
-  9:  { density: 'Average',   habMod: 0 },
-  10: { density: 'Dense',     habMod: -1 },
-  11: { density: 'Dense',     habMod: -1 },
-  12: { density: 'Crushing',  habMod: -3 },
+  2:  { density: 'Trace',     habMod: -2 },
+  3:  { density: 'Trace',     habMod: -2 },
+  4:  { density: 'Thin',      habMod: 0 },
+  5:  { density: 'Thin',      habMod: 0 },
+  6:  { density: 'Average',   habMod: 1 },
+  7:  { density: 'Average',   habMod: 1 },
+  8:  { density: 'Average',   habMod: 1 },
+  9:  { density: 'Average',   habMod: 1 },
+  10: { density: 'Dense',     habMod: 0 },
+  11: { density: 'Dense',     habMod: 0 },
+  12: { density: 'Crushing',  habMod: -2 },
 };
 
 export function getAtmosphereDensityModifiers(
@@ -1425,17 +1425,17 @@ export const DENSITY_GREENHOUSE_DM: Record<AtmoDensity, number> = {
 // ---------------------
 
 export const HAZARD_TABLE_V2: Record<number, { hazard: import('../types').HazardType; habMod: number }> = {
-  2:  { hazard: 'None',       habMod: 0 },
-  3:  { hazard: 'None',       habMod: 0 },
-  4:  { hazard: 'Polluted',   habMod: -1 },
-  5:  { hazard: 'Polluted',   habMod: -1 },
-  6:  { hazard: 'Polluted',   habMod: -1 },
-  7:  { hazard: 'Corrosive',  habMod: -2 },
-  8:  { hazard: 'Corrosive',  habMod: -2 },
-  9:  { hazard: 'Biohazard',  habMod: -2 },
-  10: { hazard: 'Toxic',      habMod: -3 },
-  11: { hazard: 'Radioactive',habMod: -4 },
-  12: { hazard: 'Radioactive',habMod: -4 },
+  2:  { hazard: 'None',       habMod: 1 },
+  3:  { hazard: 'None',       habMod: 1 },
+  4:  { hazard: 'Polluted',   habMod: 0 },
+  5:  { hazard: 'Polluted',   habMod: 0 },
+  6:  { hazard: 'Polluted',   habMod: 0 },
+  7:  { hazard: 'Corrosive',  habMod: -1 },
+  8:  { hazard: 'Corrosive',  habMod: -1 },
+  9:  { hazard: 'Biohazard',  habMod: -1 },
+  10: { hazard: 'Toxic',      habMod: -2 },
+  11: { hazard: 'Radioactive',habMod: -3 },
+  12: { hazard: 'Radioactive',habMod: -3 },
 };
 
 // ---------------------
@@ -1443,17 +1443,17 @@ export const HAZARD_TABLE_V2: Record<number, { hazard: import('../types').Hazard
 // ---------------------
 
 export const HAZARD_INTENSITY_V2: Record<number, { intensity: HazardIntensity; habMod: number }> = {
-  2:  { intensity: 'Trace',    habMod: 0 },
-  3:  { intensity: 'Trace',    habMod: 0 },
-  4:  { intensity: 'Light',    habMod: 0 },
-  5:  { intensity: 'Light',    habMod: 0 },
-  6:  { intensity: 'Light',    habMod: 0 },
-  7:  { intensity: 'Moderate', habMod: -1 },
-  8:  { intensity: 'Moderate', habMod: -1 },
-  9:  { intensity: 'Moderate', habMod: -1 },
-  10: { intensity: 'Heavy',    habMod: -2 },
-  11: { intensity: 'Heavy',    habMod: -2 },
-  12: { intensity: 'Extreme',  habMod: -3 },
+  2:  { intensity: 'Trace',    habMod: 1 },
+  3:  { intensity: 'Trace',    habMod: 1 },
+  4:  { intensity: 'Light',    habMod: 1 },
+  5:  { intensity: 'Light',    habMod: 1 },
+  6:  { intensity: 'Light',    habMod: 1 },
+  7:  { intensity: 'Moderate', habMod: 0 },
+  8:  { intensity: 'Moderate', habMod: 0 },
+  9:  { intensity: 'Moderate', habMod: 0 },
+  10: { intensity: 'Heavy',    habMod: -1 },
+  11: { intensity: 'Heavy',    habMod: -1 },
+  12: { intensity: 'Extreme',  habMod: -2 },
 };
 
 // ---------------------
@@ -1461,13 +1461,13 @@ export const HAZARD_INTENSITY_V2: Record<number, { intensity: HazardIntensity; h
 // ---------------------
 
 export function getGravityHabMod(gravity: number): number {
-  if (gravity < 0.1) return -3;
-  if (gravity < 0.3) return -2;
-  if (gravity < 0.7) return -1;
+  if (gravity < 0.1) return -2;
+  if (gravity < 0.3) return -1;
+  if (gravity < 0.7) return 0;
   if (gravity < 1.3) return 0;
-  if (gravity < 1.7) return -1;
-  if (gravity < 2.5) return -2;
-  return -3;
+  if (gravity < 1.7) return 0;
+  if (gravity < 2.5) return -1;
+  return -2;
 }
 
 // ---------------------
