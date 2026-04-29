@@ -1,14 +1,41 @@
 import { formatNumber, formatLuminosity } from '../../lib/format';
 import { STAR_COLOR_NAMES } from '../../lib/stellarData';
-import type { StarSystem, Star, StellarClass } from '../../types';
+import type { StarSystem, Star, StellarClass, StellarGrade } from '../../types';
 import { DataRow } from './tabHelpers';
 
-export function StarTab({ system }: { system: StarSystem }) {
+export function StarTab({
+  system,
+  isEditing,
+  originalSystem,
+  onEditPrimaryStar,
+}: {
+  system: StarSystem;
+  isEditing?: boolean;
+  originalSystem?: StarSystem | null;
+  onEditPrimaryStar?: (stellarClass: StellarClass, grade: StellarGrade) => void;
+}) {
+  const starChanged = originalSystem && (
+    system.primaryStar.class !== originalSystem.primaryStar.class ||
+    system.primaryStar.grade !== originalSystem.primaryStar.grade
+  );
+
   return (
     <div className="space-y-6">
       <div className="card">
-        <h3 className="text-lg font-semibold mb-4">Primary Star</h3>
-        <StarDetails star={system.primaryStar} isPrimary />
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          Primary Star
+          {starChanged && (
+            <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent-amber, #f59e0b)', color: '#000' }}>
+              Changed
+            </span>
+          )}
+        </h3>
+        <StarDetails
+          star={system.primaryStar}
+          isPrimary
+          isEditing={isEditing}
+          onEdit={onEditPrimaryStar}
+        />
       </div>
 
       {system.companionStars.length > 0 && (
@@ -36,8 +63,20 @@ export function StarTab({ system }: { system: StarSystem }) {
   );
 }
 
-function StarDetails({ star }: { star: Star; isPrimary?: boolean }) {
+function StarDetails({
+  star,
+  isEditing,
+  onEdit,
+}: {
+  star: Star;
+  isPrimary?: boolean;
+  isEditing?: boolean;
+  onEdit?: (stellarClass: StellarClass, grade: StellarGrade) => void;
+}) {
   const colorName = STAR_COLOR_NAMES[star.class];
+  const SPECTRAL_CLASSES: StellarClass[] = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
+  const GRADES: StellarGrade[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
   return (
     <div className="grid md:grid-cols-3 gap-4">
       {/* QA-031: Big colour circle with name and hex */}
@@ -58,9 +97,39 @@ function StarDetails({ star }: { star: Star; isPrimary?: boolean }) {
         <DataRow label="Temperature" value={`${formatNumber(Math.round(star.class === 'O' ? 50000 : star.class === 'B' ? 25000 : star.class === 'A' ? 10000 : star.class === 'F' ? 7000 : star.class === 'G' ? 5800 : star.class === 'K' ? 4500 : 3000))} K`} />
       </div>
       <div className="space-y-2">
-        <DataRow label="Class"  value={star.class} />
-        <DataRow label="Grade"  value={star.grade.toString()} />
-        <DataRow label="Spectral" value={`${star.class}${star.grade}`} />
+        {isEditing && onEdit ? (
+          <>
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Class</span>
+              <select
+                value={star.class}
+                onChange={(e) => onEdit(e.target.value as StellarClass, star.grade)}
+                className="text-xs rounded px-2 py-1"
+                style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+              >
+                {SPECTRAL_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Grade</span>
+              <select
+                value={star.grade}
+                onChange={(e) => onEdit(star.class, parseInt(e.target.value, 10) as StellarGrade)}
+                className="text-xs rounded px-2 py-1"
+                style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+              >
+                {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <DataRow label="Spectral" value={`${star.class}${star.grade}`} />
+          </>
+        ) : (
+          <>
+            <DataRow label="Class"  value={star.class} />
+            <DataRow label="Grade"  value={star.grade.toString()} />
+            <DataRow label="Spectral" value={`${star.class}${star.grade}`} />
+          </>
+        )}
       </div>
     </div>
   );

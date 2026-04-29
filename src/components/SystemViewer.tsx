@@ -7,6 +7,7 @@ import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Spark
 import { ShipsPriceList } from './ShipsPriceList';
 import { OverviewTab } from './tabs/OverviewTab';
 import { StarTab } from './tabs/StarTab';
+import { updatePrimaryStar } from '../lib/systemEditor';
 import { WorldTab } from './tabs/WorldTab';
 import { InhabitantsTab } from './tabs/InhabitantsTab';
 import { PlanetarySystemTab } from './tabs/PlanetarySystemTab';
@@ -398,7 +399,20 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Sun style={{ color: 'var(--accent-red)' }} size={20} />
           Star
         </h2>
-        <StarTab system={displaySystem} />
+        <StarTab
+          system={displaySystem}
+          isEditing={isEditing}
+          originalSystem={originalSystem}
+          onEditPrimaryStar={(stellarClass, grade) => {
+            if (!originalSystem) return;
+            const { system: updated, warnings } = updatePrimaryStar(displaySystem, stellarClass, grade);
+            setPendingSystem(updated);
+            // Show warnings if any
+            if (warnings.length > 0) {
+              console.warn('[StarEdit] Warnings:', warnings);
+            }
+          }}
+        />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}

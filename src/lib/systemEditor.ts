@@ -1,7 +1,16 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { StarSystem, PlanetaryBody, BodyType, GasWorldClass, Zone } from '../types';
+import type { StarSystem, PlanetaryBody, BodyType, GasWorldClass, Zone, StellarClass, StellarGrade } from '../types';
 import { generateBody } from './generator';
-import { selectMainworld } from './habitabilityPipeline';
+import { selectMainworld, runHabitabilityWaterfall } from './habitabilityPipeline';
+import {
+  getStellarMass,
+  getStellarLuminosity,
+  STAR_COLORS,
+  calculateZoneBoundaries,
+  calculateV2Zones,
+  getZoneForDistance,
+} from './stellarData';
+import { MNEME_DEFAULT_LIFE_PRESET } from './lifePresets';
 
 const MAX_BODIES_PER_ZONE = 3;
 
@@ -366,4 +375,83 @@ export function rerollBody(
   updated[arrayKey] = updated[arrayKey].map(b => b.id === bodyId ? newBody : b);
 
   return updated;
+}
+
+/**
+ * Update the primary star's class and grade, recalculating all derived properties.
+ * Reassigns body zones based on current distances and new zone boundaries.
+ * Re-runs habitability waterfall and re-selects mainworld.
+ */
+export function updatePrimaryStar(
+  system: StarSystem,
+  stellarClass: StellarClass,
+  grade: StellarGrade,
+): { system: StarSystem; warnings: string[] } {
+  const updated: StarSystem = { ...system };
+  const warnings: string[] = [];
+
+  // Update star properties
+  updated.primaryStar = {
+    ...updated.primaryStar,
+    class: stellarClass,
+    grade,
+    mass: getStellarMass(stellarClass, grade),
+    luminosity: getStellarLuminosity(stellarClass, grade),
+    color: STAR_COLORS[stellarClass],
+  };
+
+  // Recalculate zone boundaries
+  updated.zones = calculateZoneBoundaries(updated.primaryStar.luminosity);
+
+  // Recalculate V2 zones
+  const v2Zones = calculateV2Zones(updated.primaryStar.luminosity);
+  updated.heliopauseAU = v2Zones.heliopauseAU;
+  updated.frostLineAU = v2Zones.frostLineAU;
+  updated.outerSystemZones = v2Zones.outerSystemZones;
+
+  // Reassign zones for all L1 bodies based on current distances
+  const allL1 = getAllL1Bodies(updated);
+  const zoneCounts: Record<Zone, number> = { Infernal: 0, Hot: 0, Conservative: 0, Cold: 0, Outer: 0 };
+
+  for (const body of allL1) {
+    const newZone = getZoneForDistance(body.distanceAU, updated.zones);
+    if (body.zone !== newZone) {
+      warnings.push(`${body.type} moved from ${body.zone} to ${newZone}`);
+      body.zone = newZone;
+    }
+    zoneCounts[newZone]++;
+  }
+
+  // Check zone capacity
+  for (const [zone, count] of Object.entries(zoneCounts)) {
+    if (count > MAX_BODIES_PER_ZONE) {
+      warnings.push(`${zone} zone exceeds capacity (${count}/${MAX_BODIES_PER_ZONE})`);
+    }
+  }
+
+  // Re-run habitability waterfall for all dwarf/terrestrial bodies
+  for (const body of allL1) {
+    if (body.type === 'dwarf' || body.type === 'terrestrial') {
+      const parent = body.parentId
+        ? allL1.find(b => b.id === body.parentId)
+        : undefined;
+      runHabitabilityWaterfall(body, MNEME_DEFAULT_LIFE_PRESET, parent);
+    }
+  }
+
+  // Re-evaluate mainworld
+  const candidates = allL1.filter(b => b.baselineHabitability !== undefined);
+  if (candidates.length > 0) {
+    const result = selectMainworld(allL1);
+    if (result.mainworldId) {
+      allL1.forEach(b => { b.wasSelectedAsMainworld = false; });
+      const winner = allL1.find(b => b.id === result.mainworldId);
+      if (winner) winner.wasSelectedAsMainworld = true;
+    }
+  }
+
+  // Clear raw UDP profile so it recomputes on demand
+  updated.rawUdpProfile = undefined;
+
+  return { system: updated, warnings };
 }
