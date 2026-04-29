@@ -13,9 +13,8 @@ import {
   SOURCE_OF_POWER_DESCRIPTIONS,
   SOURCE_OF_POWER_DESCRIPTIONS_LOW_POP,
   TL_TABLE,
-  calculateStarport,
-  getGdpPerDayForWorld,
 } from '../lib/worldData';
+import { recalculateStarportFromDials } from '../lib/economicsEngine';
 import type {
   Inhabitants,
   StarSystem,
@@ -290,7 +289,8 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                 value={inhabitants.wealth}
                 onChange={(e) => {
                   const w = e.target.value as WealthLevel;
-                  onEditInhabitants({ ...inhabitants, wealth: w });
+                  const updated = recalculateStarportFromDials({ ...inhabitants, wealth: w }, system.economicPreset);
+                  onEditInhabitants(updated);
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
                 style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
@@ -308,7 +308,8 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                 value={inhabitants.development}
                 onChange={(e) => {
                   const d = e.target.value as DevelopmentLevel;
-                  onEditInhabitants({ ...inhabitants, development: d });
+                  const updated = recalculateStarportFromDials({ ...inhabitants, development: d }, system.economicPreset);
+                  onEditInhabitants(updated);
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
                 style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
@@ -329,7 +330,8 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                 value={inhabitants.techLevel}
                 onChange={(e) => {
                   const tl = Math.max(0, Math.min(18, Number(e.target.value)));
-                  onEditInhabitants({ ...inhabitants, techLevel: tl });
+                  const updated = recalculateStarportFromDials({ ...inhabitants, techLevel: tl }, system.economicPreset);
+                  onEditInhabitants(updated);
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
                 style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
@@ -345,7 +347,8 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                 value={inhabitants.population}
                 onChange={(e) => {
                   const pop = Math.max(0, Number(e.target.value));
-                  onEditInhabitants({ ...inhabitants, population: pop });
+                  const updated = recalculateStarportFromDials({ ...inhabitants, population: pop }, system.economicPreset);
+                  onEditInhabitants(updated);
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
                 style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
@@ -389,40 +392,10 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
             </div>
           </div>
 
-          {/* Recalculate Starport */}
+          {/* Starport auto-recalculates on dial change via recalculateStarportFromDials */}
           <div className="pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
-            <button
-              onClick={() => {
-                const preset = system.economicPreset;
-                if (!preset) return;
-                const gdp = getGdpPerDayForWorld(inhabitants.techLevel, inhabitants.development, inhabitants.wealth, preset);
-                const weeklyRoll = inhabitants.starport.weeklyRoll ?? 10;
-                const recalc = calculateStarport(inhabitants.population, inhabitants.techLevel, inhabitants.wealth, inhabitants.development, weeklyRoll, gdp);
-                onEditInhabitants({
-                  ...inhabitants,
-                  starport: {
-                    ...inhabitants.starport,
-                    class: recalc.class,
-                    pss: recalc.pss,
-                    rawClass: recalc.rawClass,
-                    tlCap: recalc.tlCap,
-                    annualTrade: recalc.annualTrade,
-                    weeklyBase: recalc.weeklyBase,
-                    weeklyActivity: recalc.weeklyActivity,
-                  },
-                });
-              }}
-              className="text-xs px-3 py-1.5 rounded border transition-colors"
-              style={{
-                backgroundColor: 'var(--bg-primary)',
-                borderColor: 'var(--border-color)',
-                color: 'var(--text-primary)',
-              }}
-            >
-              Recalculate Starport & Trade
-            </button>
-            <span className="text-xs ml-2" style={{ color: 'var(--text-secondary)' }}>
-              Uses current Wealth × Development × TL × Population
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Starport and trade values update automatically when dials change.
             </span>
           </div>
         </div>
