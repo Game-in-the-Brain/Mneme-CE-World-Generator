@@ -76,14 +76,21 @@ function getTemperatureDiceAdjust(temp: TemperatureType): number {
 // ---------------------
 
 /** Lower = more desirable for habitation. Conservative is ideal. */
-function getZonePreferenceRank(zone: Zone): number {
+function getZonePreferenceRank(zone: Zone | ZoneId): number {
   switch (zone) {
     case 'Conservative': return 0;
     case 'Hot': return 1;
+    case 'Cool': return 2;
     case 'Cold': return 2;
     case 'Infernal': return 3;
+    case 'FrostLine': return 4;
     case 'Outer': return 4;
-    default: return 5;
+    case 'O1': return 5;
+    case 'O2': return 6;
+    case 'O3': return 7;
+    case 'O4': return 8;
+    case 'O5': return 9;
+    default: return 99;
   }
 }
 

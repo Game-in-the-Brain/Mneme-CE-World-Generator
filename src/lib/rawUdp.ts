@@ -4,6 +4,7 @@ import type {
   AtmosphereType,
   TemperatureType,
   Zone,
+  ZoneId,
   PowerStructure,
   PowerSource,
   DevelopmentLevel,
@@ -61,7 +62,7 @@ export function mapAtmosphereToUwp(atmo: AtmosphereType): number {
 export function mapHydrographicsToUwp(
   atmo: AtmosphereType,
   temp: TemperatureType,
-  zone: Zone
+  zone: Zone | ZoneId
 ): number {
   if (atmo === 'Trace') return 0;
 
@@ -70,8 +71,15 @@ export function mapHydrographicsToUwp(
     case 'Infernal': base = 0; break;
     case 'Hot': base = 2; break;
     case 'Conservative': base = 6; break;
+    case 'Cool': base = 4; break;
     case 'Cold': base = 4; break;
+    case 'FrostLine': base = 2; break;
     case 'Outer': base = 1; break;
+    case 'O1': base = 1; break;
+    case 'O2': base = 0; break;
+    case 'O3': base = 0; break;
+    case 'O4': base = 0; break;
+    case 'O5': base = 0; break;
     default: base = 0;
   }
 
