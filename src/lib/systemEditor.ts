@@ -236,3 +236,66 @@ export function deleteBodiesFromSystem(
 
   return { system: updated, mainworldDeleted };
 }
+
+export interface BodyDiceLocks {
+  worldType?: boolean;
+  zone?: boolean;
+  mass?: boolean;
+}
+
+/**
+ * Re-roll a body's unlocked fields.
+ * Locked fields preserve their current values.
+ */
+export function rerollBody(
+  system: StarSystem,
+  bodyId: string,
+  locks: BodyDiceLocks,
+): StarSystem {
+  const updated: StarSystem = { ...system };
+
+  // Find body in all arrays
+  let oldBody: PlanetaryBody | undefined;
+  let arrayKey: keyof Pick<StarSystem, 'circumstellarDisks' | 'dwarfPlanets' | 'terrestrialWorlds' | 'iceWorlds' | 'gasWorlds'> | undefined;
+
+  for (const key of ['circumstellarDisks', 'dwarfPlanets', 'terrestrialWorlds', 'iceWorlds', 'gasWorlds'] as const) {
+    const found = updated[key].find(b => b.id === bodyId);
+    if (found) {
+      oldBody = found;
+      arrayKey = key;
+      break;
+    }
+  }
+
+  if (!oldBody || !arrayKey) return updated;
+
+  // Generate fresh body
+  const newBody = generateBody(oldBody.type, updated.primaryStar, updated.zones);
+  newBody.id = oldBody.id;
+
+  // Apply locks
+  if (locks.worldType) {
+    newBody.type = oldBody.type;
+  }
+  if (locks.zone) {
+    newBody.zone = oldBody.zone;
+    newBody.distanceAU = oldBody.distanceAU;
+  }
+  if (locks.mass) {
+    newBody.mass = oldBody.mass;
+    newBody.densityGcm3 = oldBody.densityGcm3;
+    newBody.radiusKm = oldBody.radiusKm;
+    newBody.diameterKm = oldBody.diameterKm;
+    newBody.surfaceGravityG = oldBody.surfaceGravityG;
+    newBody.escapeVelocityMs = oldBody.escapeVelocityMs;
+  }
+
+  // Copy annotation-related fields
+  if (oldBody.parentId) newBody.parentId = oldBody.parentId;
+  if (oldBody.moonOrbitAU) newBody.moonOrbitAU = oldBody.moonOrbitAU;
+
+  // Replace in array
+  updated[arrayKey] = updated[arrayKey].map(b => b.id === bodyId ? newBody : b);
+
+  return updated;
+}

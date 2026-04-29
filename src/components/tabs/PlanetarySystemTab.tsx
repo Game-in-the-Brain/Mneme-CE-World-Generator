@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Trash2, Plus } from 'lucide-react';
-import { addBodyToSystem, deleteBodiesFromSystem } from '../../lib/systemEditor';
+import { ChevronDown, ChevronUp, Trash2, Plus, Lock, Unlock, Dices } from 'lucide-react';
+import { addBodyToSystem, deleteBodiesFromSystem, rerollBody } from '../../lib/systemEditor';
 import { formatNumber, formatValue } from '../../lib/format';
 import { hillSphereAU } from '../../lib/physicalProperties';
 import type { StarSystem, PlanetaryBody, BodyAnnotations, GasWorldClass } from '../../types';
@@ -94,6 +94,30 @@ export function PlanetarySystemTab({
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [hsrWarning, setHsrWarning] = useState<string | null>(null);
+
+  // FRD-069b: per-body dice locks
+  const [bodyLocks, setBodyLocks] = useState<Record<string, { worldType?: boolean; zone?: boolean; mass?: boolean }>>({});
+
+  function getLock(bodyId: string, field: 'worldType' | 'zone' | 'mass'): boolean {
+    return bodyLocks[bodyId]?.[field] ?? false;
+  }
+
+  function toggleLock(bodyId: string, field: 'worldType' | 'zone' | 'mass') {
+    setBodyLocks(prev => ({
+      ...prev,
+      [bodyId]: {
+        ...prev[bodyId],
+        [field]: !getLock(bodyId, field),
+      },
+    }));
+  }
+
+  function handleReroll(bodyId: string) {
+    if (!onEditBodies) return;
+    const locks = bodyLocks[bodyId] ?? {};
+    const updated = rerollBody(system, bodyId, locks);
+    onEditBodies(updated);
+  }
 
   function handleToggleDelete(bodyId: string) {
     setPendingDeleteIds(prev => {
@@ -206,6 +230,9 @@ export function PlanetarySystemTab({
           isEditing={isEditing}
           pendingDeleteIds={pendingDeleteIds}
           onToggleDelete={handleToggleDelete}
+          bodyLocks={bodyLocks}
+          onToggleLock={toggleLock}
+          onReroll={handleReroll}
         />
       </div>
 
@@ -282,6 +309,9 @@ function ParentBodyList({
   isEditing,
   pendingDeleteIds,
   onToggleDelete,
+  bodyLocks,
+  onToggleLock,
+  onReroll,
 }: {
   bodies: (PlanetaryBody & { typeLabel: string; isMainWorld: boolean; atmosphere?: string; temperature?: string; habitability?: number })[];
   parentChildren: Map<string, PlanetaryBody[]>;
@@ -291,6 +321,9 @@ function ParentBodyList({
   isEditing?: boolean;
   pendingDeleteIds?: Set<string>;
   onToggleDelete?: (id: string) => void;
+  bodyLocks?: Record<string, { worldType?: boolean; zone?: boolean; mass?: boolean }>;
+  onToggleLock?: (id: string, field: 'worldType' | 'zone' | 'mass') => void;
+  onReroll?: (id: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -325,6 +358,9 @@ function ParentBodyList({
               isEditing={isEditing}
               isPendingDelete={pendingDeleteIds?.has(body.id) ?? false}
               onToggleDelete={onToggleDelete}
+              bodyLocks={bodyLocks}
+              onToggleLock={onToggleLock}
+              onReroll={onReroll}
             />
             {hasChildren && !isCollapsed && (
               <div className="ml-4 md:ml-6 border-l-2 pl-3 md:pl-4 space-y-1 mt-1" style={{ borderColor: 'var(--border-color)' }}>
@@ -341,6 +377,9 @@ function ParentBodyList({
                     isEditing={isEditing}
                     isPendingDelete={pendingDeleteIds?.has(child.id) ?? false}
                     onToggleDelete={onToggleDelete}
+                    bodyLocks={bodyLocks}
+                    onToggleLock={onToggleLock}
+                    onReroll={onReroll}
                   />
                 ))}
               </div>
@@ -374,6 +413,9 @@ function BodyRow({
   isEditing,
   isPendingDelete,
   onToggleDelete,
+  bodyLocks,
+  onToggleLock,
+  onReroll,
 }: {
   body: PlanetaryBody & { typeLabel: string; atmosphere?: string; temperature?: string; habitability?: number };
   index: number;
@@ -388,6 +430,9 @@ function BodyRow({
   isEditing?: boolean;
   isPendingDelete?: boolean;
   onToggleDelete?: (id: string) => void;
+  bodyLocks?: Record<string, { worldType?: boolean; zone?: boolean; mass?: boolean }>;
+  onToggleLock?: (id: string, field: 'worldType' | 'zone' | 'mass') => void;
+  onReroll?: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasPhysics = body.radiusKm != null;
@@ -416,6 +461,16 @@ function BodyRow({
             </button>
           )}
           <span className="font-medium shrink-0 text-xs">{body.typeLabel}</span>
+          {isEditing && onToggleLock && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleLock(body.id, 'worldType'); }}
+              className="shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors"
+              style={{ color: bodyLocks?.[body.id]?.worldType ? 'var(--accent-amber, #f59e0b)' : 'var(--text-secondary)' }}
+              title={bodyLocks?.[body.id]?.worldType ? 'World type locked' : 'World type unlocked'}
+            >
+              {bodyLocks?.[body.id]?.worldType ? <Lock size={10} /> : <Unlock size={10} />}
+            </button>
+          )}
           {body.gasClass && (
             <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: 'var(--border-color)' }}>
               {body.gasClass}
@@ -460,6 +515,16 @@ function BodyRow({
           {!isRing && (
             <span className={`text-xs zone-${body.zone.toLowerCase().replace(' ', '-')}`}>{body.zone}</span>
           )}
+          {isEditing && onToggleLock && !isRing && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleLock(body.id, 'zone'); }}
+              className="shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors"
+              style={{ color: bodyLocks?.[body.id]?.zone ? 'var(--accent-amber, #f59e0b)' : 'var(--text-secondary)' }}
+              title={bodyLocks?.[body.id]?.zone ? 'Zone locked' : 'Zone unlocked'}
+            >
+              {bodyLocks?.[body.id]?.zone ? <Lock size={10} /> : <Unlock size={10} />}
+            </button>
+          )}
           {!isRing && (
             <span className="text-xs">
               {indentLevel > 0 && (body as PlanetaryBody).moonOrbitAU != null
@@ -468,6 +533,16 @@ function BodyRow({
             </span>
           )}
           {!isMainWorld && !isRing && <span className="text-xs">{formatValue(body.mass, 'M⊕')}</span>}
+          {isEditing && onToggleLock && !isMainWorld && !isRing && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleLock(body.id, 'mass'); }}
+              className="shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors"
+              style={{ color: bodyLocks?.[body.id]?.mass ? 'var(--accent-amber, #f59e0b)' : 'var(--text-secondary)' }}
+              title={bodyLocks?.[body.id]?.mass ? 'Mass locked' : 'Mass unlocked'}
+            >
+              {bodyLocks?.[body.id]?.mass ? <Lock size={10} /> : <Unlock size={10} />}
+            </button>
+          )}
           {/* Habitability badge — main world uses v1 habitability; v2 bodies use baselineHabitability */}
           {!isRing && (() => {
             const v2Body = body as PlanetaryBody;
@@ -492,6 +567,16 @@ function BodyRow({
               title={isPendingDelete ? 'Undo delete' : 'Mark for deletion'}
             >
               <Trash2 size={14} />
+            </button>
+          )}
+          {isEditing && onReroll && !isPendingDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onReroll(body.id); }}
+              className="shrink-0 p-1 rounded hover:bg-white/10 transition-colors"
+              style={{ color: 'var(--accent-cyan, #06b6d4)' }}
+              title="Re-roll unlocked fields"
+            >
+              <Dices size={14} />
             </button>
           )}
         </div>
