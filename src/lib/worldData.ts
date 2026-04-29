@@ -500,6 +500,10 @@ function minClass(a: StarportClass, b: StarportClass): StarportClass {
   return ORDER_TO_CLASS[Math.min(CLASS_ORDER[a], CLASS_ORDER[b])];
 }
 
+function maxClass(a: StarportClass, b: StarportClass): StarportClass {
+  return ORDER_TO_CLASS[Math.max(CLASS_ORDER[a], CLASS_ORDER[b])];
+}
+
 /**
  * Calculate starport class and throughput.
  * Step 1 — GDP × trade fraction → Annual Port Trade → PSS → raw class
@@ -514,6 +518,7 @@ export function calculateStarport(
   dev: DevelopmentLevel,
   weeklyRoll: number,
   gdpPerDayOverride: number,
+  floorClass?: StarportClass,
 ): {
   class: StarportClass;
   pss: number;
@@ -530,7 +535,12 @@ export function calculateStarport(
   const pss       = Math.floor(Math.log10(Math.max(1, annualTrade)) * 100) / 100 - 6;
   const rawClass  = pssToClass(pss);
   const tlCap     = getTLCapClass(tl);
-  const finalClass = minClass(rawClass, tlCap);
+  let finalClass = minClass(rawClass, tlCap);
+
+  // R4 / QA-070 / QA-076: starport floor by world function
+  if (floorClass) {
+    finalClass = maxClass(finalClass, floorClass);
+  }
 
   const weeklyBaseRaw  = annualTrade / 52;
 
@@ -754,6 +764,46 @@ export const CULTURE_TRAIT_DESCRIPTIONS: Record<string, string> = {
   'Scheming':     'Political and social life is a labyrinth of alliances, betrayals, and counter-moves. Everyone has an agenda; nothing is said directly. Information is currency. Naïveté is fatal.',
 };
 
+/** R3 / QA-073: Low-population terminology variants for populations < 1,000,000 */
+export const CULTURE_TRAIT_DESCRIPTIONS_LOW_POP: Record<string, string> = {
+  'Anarchist':    'The community operates without centralised authority. Power is distributed among local families or strong individuals. Disputes are settled by consensus, reputation, or force — formal leadership is absent or minimal.',
+  'Bureaucratic': 'Governed by elaborate formal procedures and hierarchies. Progress is slow and record-heavy. Outsiders find the system impenetrable without local contacts or expert knowledge.',
+  'Caste system': 'Social class is fixed at birth and rarely changes. Occupation, marriage, and rights are tied to caste membership. Intermingling between castes is discouraged or forbidden.',
+  'Collectivist': 'The group takes precedence over the individual. Resources and achievements are shared communally. Individual ambition is viewed with suspicion; loyalty to the collective is the highest virtue.',
+  'Competitive':  'Driven by rivalry — economic, political, or social. Individuals or families constantly vie for status and resources. Innovation is high but cooperation is low; betrayal is common in dealings.',
+  'Cosmopolitan': 'Open, diverse, and outward-looking. Outsiders are welcomed; multiple languages and customs coexist. Trade and cultural exchange are celebrated; insularity is considered backward.',
+  'Deceptive':    'Dissembling is culturally accepted or even admired. Agreements are honoured only when convenient. Visitors should assume they are being misled; direct dealing is considered naïve.',
+  'Degenerate':   'Social structures are in visible decay. Corruption, excess, and breakdown of shared norms are widespread. The leadership indulges itself while the rest suffer.',
+  'Devoted':      'Organised around a powerful faith, ideology, or cause. Members sacrifice personal interests readily. Outsiders who do not share the devotion may be viewed as threats or potential converts.',
+  'Egalitarian':  'Social equality is a core value. Titles, inherited wealth, and privilege are viewed with suspicion. Everyone is expected to contribute and receive fair reward.',
+  'Elitist':      'Stratified by talent, birth, or achievement — and those at the top are unapologetic about it. Access to power is tightly controlled by a privileged few.',
+  'Fatalistic':   'Outcomes are believed to be predetermined — by fate, the stars, or divine will. There is little sense of personal agency. Tragedy is accepted with resignation; risk is taken boldly.',
+  'Fearful':      'Chronic fear shapes daily life — of authority, outsiders, or each other. Informants are common. Public behaviour is guarded. Creativity and dissent are suppressed by the constant threat of consequences.',
+  'Generous':     'Hospitality and giving are core values. Wealth is measured by how much is given away. Visitors can expect food, shelter, and help; refusing a gift is a serious insult.',
+  'Gregarious':   'Outgoing and social. Business is conducted over meals and celebrations. Silence and reserve are read as hostility. Networking is essential to getting anything done.',
+  'Heroic':       'Celebrates bold action, personal courage, and decisive leadership. Self-sacrifice for a worthy cause is the highest honour. Caution and compromise are viewed as cowardice.',
+  'Honest':       'Directness and truthfulness are paramount virtues. Lying — even polite social lies — is deeply shameful. Negotiations are blunt; what you see is what you get.',
+  'Honorable':    'A strict code of personal conduct governs all interactions. Promises made are kept regardless of cost. Insults demand satisfaction. Reputation is everything.',
+  'Hospitable':   'Welcoming strangers is a near-sacred duty. Travellers receive food, shelter, and protection as guests. In return, guests must behave with respect; violating hospitality is unforgivable.',
+  'Hostile':      'Outsiders are viewed with deep suspicion or open aggression. Trade and diplomacy are grudging. Violence is a common first response to perceived threats.',
+  'Idealistic':   'Driven by a vision of a better future — political, spiritual, or philosophical. Pragmatism is subordinated to principle. Grand projects are launched with enthusiasm; results rarely match the vision.',
+  'Indifferent':  'Largely apathetic to politics, religion, and outside events. People focus on day-to-day comfort. The community is stable but difficult to mobilise for collective action, good or ill.',
+  'Individualist':'Personal freedom and self-determination are paramount. Community obligations are minimal; everyone makes their own way. Privacy is jealously guarded; mutual aid is transactional.',
+  'Intolerant':   'Conformity is enforced in belief, appearance, or behaviour. Minorities or those who deviate from norms face discrimination. The dominant group defines what is acceptable.',
+  'Isolationist': 'Prefers minimal contact with outsiders. Off-world trade and immigration are restricted. Self-sufficiency is a point of pride. Outsiders are rarely made welcome.',
+  'Legalistic':   'Governed by an intricate body of custom applied rigorously. Agreements are everything. Disputes are common and consume years. An advocate is essential for any significant dealings.',
+  'Libertarian':  'Personal freedom is the supreme value. Leadership is minimal by design; taxation and regulation are resisted. The individual is sovereign. The resulting community is dynamic, unequal, and occasionally chaotic.',
+  'Militarist':   'Military virtues — discipline, strength, sacrifice — dominate culture. A significant fraction of the population serves or has served. Relations with outsiders are assertive; conflict is always a near possibility.',
+  'Pacifist':     'Violence is culturally abhorrent. Conflict is resolved through mediation or passive resistance. Defensive forces are minimal. The community may be vulnerable but its internal cohesion is usually high.',
+  'Paranoid':     'Lives in fear of hidden enemies — foreign agents, conspirators, or unseen forces. Surveillance is normalised. Strangers are automatically suspect. Accusations of betrayal are common and dangerous.',
+  'Piety':        'Religious observance permeates every aspect of daily life. Festivals, prayers, and ritual duties structure the calendar. Offending religious sensibilities — even unknowingly — has serious consequences.',
+  'Progressive':  'Embraces change, experimentation, and modernisation. Traditional structures are questioned or dismantled. Innovation is celebrated; rapid social change creates opportunity and instability in equal measure.',
+  'Proud':        'Has a strong sense of its own greatness — historical, cultural, or racial. Perceived slights against communal honour are taken very seriously. Admitting weakness is almost impossible.',
+  'Rustic':       'Values simplicity, self-reliance, and closeness to the land. Urban sophistication is viewed with suspicion. Hard work, practical skills, and community ties are the true measures of a person.',
+  'Ruthless':     'Winning is everything. Compassion and sentiment are luxuries. Competitors are destroyed, not merely defeated. Visitors are advised not to show weakness.',
+  'Scheming':     'Political and social life is a labyrinth of alliances, betrayals, and counter-moves. Everyone has an agenda; nothing is said directly. Information is currency. Naïveté is fatal.',
+};
+
 // =====================
 // Inhabitants Descriptions
 // =====================
@@ -778,6 +828,22 @@ export const POWER_STRUCTURE_DESCRIPTIONS: Record<PowerStructure, { description:
   'Confederation': { description: 'A loose alliance of member-states that retain sovereignty. The central body has limited powers — primarily defence and trade arbitration. Member interests frequently conflict with collective decisions.' },
   'Federation':    { description: 'Member-states have delegated significant powers to a central government. Strong federal institutions co-exist with retained regional identity and local law. The most stable structure for diverse worlds.' },
   'Unitary State': { description: 'A single centralised government rules directly. Regions are administrative divisions, not political entities. Policy is imposed from the top; efficient but can be brittle under stress.' },
+};
+
+/** R3: Low-population terminology variants for populations < 1,000,000 */
+export const POWER_STRUCTURE_DESCRIPTIONS_LOW_POP: Record<PowerStructure, { description: string }> = {
+  'Anarchy':       { description: 'No recognised central authority exists. Power is held by local strong individuals, family heads, or small councils. Rules vary by settlement; travel between areas can be unpredictable.' },
+  'Confederation': { description: 'A loose alliance of groups — settlements, clans, or organisations — that retain autonomy. The central body has limited powers, primarily defence and trade arbitration. Group interests frequently conflict with collective decisions.' },
+  'Federation':    { description: 'Member groups have delegated significant powers to a central council. Strong communal institutions co-exist with retained local identity and custom. The most stable structure for diverse small communities.' },
+  'Unitary State': { description: 'A single centralised leadership rules directly. Local areas are administrative divisions, not political entities. Policy is imposed from the top; efficient but can be brittle under stress.' },
+};
+
+/** R3: Low-population display labels for power structure (< 1,000,000) */
+export const POWER_STRUCTURE_LABELS_LOW_POP: Record<PowerStructure, string> = {
+  'Anarchy': 'Fragmented',
+  'Confederation': 'Alliance',
+  'Federation': 'Coalition',
+  'Unitary State': 'Enclave',
 };
 
 export const DEVELOPMENT_DESCRIPTIONS: Record<DevelopmentLevel, { hdi: string; description: string }> = {
@@ -805,6 +871,24 @@ export const SOURCE_OF_POWER_DESCRIPTIONS: Record<PowerSource, { description: st
   'Kratocracy':  { description: 'Power belongs to the strongest. Might makes right — leadership changes through contest, coup, or demonstrated dominance. Can be dynamic but is inherently unstable.' },
   'Democracy':   { description: 'Power is derived from popular will through elections, referenda, or direct participation. Legitimacy requires ongoing consent of the governed. Prone to short-termism but resilient to abuse.' },
   'Meritocracy': { description: 'Power is awarded to those who demonstrate competence through examination, achievement, or proven track record. Efficient and innovative, but risks creating a self-perpetuating technocratic elite.' },
+};
+
+/** R3: Low-population terminology variants for populations < 1,000,000 */
+export const SOURCE_OF_POWER_DESCRIPTIONS_LOW_POP: Record<PowerSource, { description: string }> = {
+  'Aristocracy': { description: 'Power is held by hereditary family heads or elders. Bloodlines and seniority determine access to governance. Reform is slow; the system perpetuates itself across generations.' },
+  'Ideocracy':   { description: 'Power is legitimised by adherence to an ideology, religion, or doctrine. True believers lead the community; deviation from orthodoxy is a political as well as moral offence.' },
+  'Kratocracy':  { description: 'Power belongs to the strongest. Might makes right — leadership changes through contest, coup, or demonstrated dominance. Can be dynamic but is inherently unstable.' },
+  'Democracy':   { description: 'Power is derived from popular will through assemblies, votes, or direct participation. Legitimacy requires ongoing consent of the governed. Prone to short-termism but resilient to abuse.' },
+  'Meritocracy': { description: 'Power is awarded to those who demonstrate competence through achievement or proven track record. Efficient and innovative, but risks creating a self-perpetuating elite.' },
+};
+
+/** R3: Low-population display labels for source of power (< 1,000,000) */
+export const SOURCE_OF_POWER_LABELS_LOW_POP: Record<PowerSource, string> = {
+  'Aristocracy': 'Elders',
+  'Ideocracy': 'Doctrine',
+  'Kratocracy': 'Dominant',
+  'Democracy': 'Assembly',
+  'Meritocracy': 'Proven',
 };
 
 // =====================
@@ -1302,6 +1386,26 @@ export const ZONE_TEMPERATURE_DM: Record<ZoneId, number> = {
   'O3': -6,
   'O4': -7,
   'O5': -8,
+};
+
+// ---------------------
+// 4.2b Zone Radiation Hazard DM (260427-01 Option 1)
+// ---------------------
+// Stacks with Reactivity DM and atmosphere hazard bias on the step-4 hazard roll.
+// Inner zones carry a stellar-radiation cost; outer zones do not.
+// Justification + alternative magnitudes documented in 260427-01.
+
+export const ZONE_HAZARD_DM: Record<ZoneId, number> = {
+  'Infernal': 2,
+  'Hot': 1,
+  'Conservative': 0,
+  'Cool': 0,
+  'FrostLine': 0,
+  'O1': 0,
+  'O2': 0,
+  'O3': 0,
+  'O4': 0,
+  'O5': 0,
 };
 
 // ---------------------

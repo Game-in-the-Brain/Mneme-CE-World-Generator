@@ -158,6 +158,10 @@ export function roll2D3(): RollResult {
   return rollKeep(2, 3, 2, 'highest', 0);
 }
 
+export function roll3D3(): RollResult {
+  return rollKeep(3, 3, 3, 'highest', 0);
+}
+
 export function roll1D6Reroll6(): RollResult {
   let roll = rollD6();
   const rolls = [roll];

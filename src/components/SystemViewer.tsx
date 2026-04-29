@@ -1,19 +1,27 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult } from '../types';
+import type { StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody, StellarClass, BodyAnnotations, ShipsInAreaResult, RawUdpProfile } from '../types';
+import { generatePlaceNames, getLcOptions } from '../lib/placeNameGen';
 import { exportToDocx } from '../lib/exportDocx';
+import { buildRawUdpProfile } from '../lib/rawUdp';
 import { FileJson, FileSpreadsheet, FileText, Sun, Globe, Users, Building, Anchor, Sparkles, ChevronDown, ChevronUp, Copy, Check, ExternalLink, Orbit } from 'lucide-react';
 import { formatNumber, formatLuminosity, formatValue, formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
 import {
   CULTURE_TRAIT_DESCRIPTIONS,
+  CULTURE_TRAIT_DESCRIPTIONS_LOW_POP,
   WEALTH_DESCRIPTIONS,
   WEALTH_DESCRIPTIONS_LOW_POP,
   POWER_STRUCTURE_DESCRIPTIONS,
+  POWER_STRUCTURE_DESCRIPTIONS_LOW_POP,
+  POWER_STRUCTURE_LABELS_LOW_POP,
   DEVELOPMENT_DESCRIPTIONS,
   DEVELOPMENT_DESCRIPTIONS_LOW_POP,
   SOURCE_OF_POWER_DESCRIPTIONS,
+  SOURCE_OF_POWER_DESCRIPTIONS_LOW_POP,
+  SOURCE_OF_POWER_LABELS_LOW_POP,
   TL_TABLE,
+  calculateStarport,
 } from '../lib/worldData';
-import { displayTL, displayTLDescriptor } from '../lib/economicPresets';
+import { displayTL, displayTLDescriptor, getGrowthModel, getGdpPerDayForWorld } from '../lib/economicPresets';
 import { generateShipsInTheArea } from '../lib/shipsInArea';
 import { STAR_COLOR_NAMES } from '../lib/stellarData';
 import { hillSphereAU } from '../lib/physicalProperties';
@@ -105,6 +113,63 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   }, [system, annotations, shipsResult]);
 
   const [copied, setCopied] = useState(false);
+  const [rawUdpMode, setRawUdpMode] = useState(false);
+
+  // FRD-069: Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [originalSystem, setOriginalSystem] = useState<StarSystem | null>(null);
+  const [pendingSystem, setPendingSystem] = useState<StarSystem>(system);
+
+  // Sync pendingSystem when external system changes (if not editing)
+  useEffect(() => {
+    if (!isEditing) {
+      setPendingSystem(system);
+    }
+  }, [system, isEditing]);
+
+  const displaySystem = isEditing ? pendingSystem : system;
+
+  function enterEditMode() {
+    setOriginalSystem(JSON.parse(JSON.stringify(system)));
+    setPendingSystem(JSON.parse(JSON.stringify(system)));
+    setIsEditing(true);
+  }
+
+  function discardEdits() {
+    if (originalSystem) {
+      setPendingSystem(originalSystem);
+    }
+    setIsEditing(false);
+    setOriginalSystem(null);
+  }
+
+  async function saveEdits() {
+    if (!onUpdateSystem) return;
+    const saved: StarSystem = {
+      ...pendingSystem,
+      editedAt: Date.now(),
+    };
+    await onUpdateSystem(saved);
+    setIsEditing(false);
+    setOriginalSystem(null);
+  }
+
+  async function saveAsNew() {
+    if (!onUpdateSystem) return;
+    const newName = window.prompt('Save as new system name:', `${pendingSystem.name || 'Unnamed'} (edited)`);
+    if (newName === null) return;
+    const copied: StarSystem = {
+      ...JSON.parse(JSON.stringify(pendingSystem)),
+      id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      createdAt: Date.now(),
+      name: newName,
+      editedAt: undefined,
+    };
+    await onUpdateSystem(copied);
+    setIsEditing(false);
+    setOriginalSystem(null);
+  }
+
   const handleCopyFor2DMap = useCallback(async () => {
     const payload = {
       starSystem: system,
@@ -128,6 +193,32 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
       setTimeout(() => setCopied(false), 2000);
     }
   }, [system]);
+
+  const LC_OPTIONS = getLcOptions();
+  const [baseLc, setBaseLc] = useState<string>('random');
+  const [driftLc, setDriftLc] = useState<string>('random');
+
+  const handleGenerateNames = useCallback(() => {
+    if (!onUpdateSystem) return;
+    const names = generatePlaceNames(system, baseLc, driftLc);
+    const updatedSystem: StarSystem = {
+      ...system,
+      placeNames: names,
+      name: system.name || names.systemName,
+    };
+    onUpdateSystem(updatedSystem);
+    // Pre-fill body name annotations for any body without a user-set name
+    const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
+    const existing: BodyAnnotations = stored ? JSON.parse(stored) : {};
+    const merged = { ...existing };
+    for (const [bodyId, name] of Object.entries(names.bodyNames)) {
+      if (!merged[bodyId]?.name) {
+        merged[bodyId] = { name, notes: merged[bodyId]?.notes ?? '' };
+      }
+    }
+    localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(merged));
+    setAnnotations(merged);
+  }, [system, baseLc, driftLc, onUpdateSystem]);
 
   return (
     <div className="space-y-6">
@@ -167,6 +258,36 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         </div>
 
         <div className="flex items-center gap-2">
+          {!isEditing && onUpdateSystem && (
+            <button
+              onClick={enterEditMode}
+              className="btn-secondary flex items-center gap-2"
+              title="Enter edit mode"
+            >
+              ✎ Edit
+            </button>
+          )}
+          {isEditing && (
+            <>
+              <button onClick={saveEdits} className="btn-primary flex items-center gap-2">
+                💾 Save
+              </button>
+              <button onClick={saveAsNew} className="btn-secondary flex items-center gap-2">
+                💾 Save As…
+              </button>
+              <button onClick={discardEdits} className="btn-secondary flex items-center gap-2 text-red-400">
+                ✕ Discard
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setRawUdpMode(v => !v)}
+            className={`btn-secondary flex items-center gap-2 ${rawUdpMode ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : ''}`}
+            title="Toggle RAW UDP (CE UWP) display mode"
+          >
+            <span className="text-xs font-bold">{rawUdpMode ? 'CE' : 'Mneme'}</span>
+            RAW
+          </button>
           <button onClick={onExportJSON} className="btn-secondary flex items-center gap-2">
             <FileJson size={16} />
             JSON
@@ -212,6 +333,55 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         </div>
       </div>
 
+      {/* FRD-069: Edit mode banner */}
+      {isEditing && (
+        <div className="p-3 rounded border-l-4 border-amber-500 bg-amber-500/10 flex items-center justify-between">
+          <span className="text-sm font-medium text-amber-400">
+            ✎ Editing Mode — changes are previewed live. Click Save to commit, or Discard to rollback.
+          </span>
+          <span className="text-xs text-amber-400/70">
+            {pendingSystem.editedAt ? `Last saved: ${new Date(pendingSystem.editedAt).toLocaleString()}` : 'Never edited'}
+          </span>
+        </div>
+      )}
+
+      {/* FRD-063: Place name generation */}
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Place names:</span>
+        <select
+          value={baseLc}
+          onChange={(e) => setBaseLc(e.target.value)}
+          className="rounded px-2 py-1 text-xs border"
+          style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+          title="Base language culture"
+        >
+          <option value="random">Random (base)</option>
+          {LC_OPTIONS.map(lc => <option key={lc.id} value={lc.id}>{lc.label}</option>)}
+        </select>
+        <select
+          value={driftLc}
+          onChange={(e) => setDriftLc(e.target.value)}
+          className="rounded px-2 py-1 text-xs border"
+          style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+          title="Drift language culture"
+        >
+          <option value="random">Random (drift)</option>
+          {LC_OPTIONS.map(lc => <option key={lc.id} value={lc.id}>{lc.label}</option>)}
+        </select>
+        <button
+          onClick={handleGenerateNames}
+          disabled={!onUpdateSystem}
+          className="btn-secondary text-xs px-3 py-1"
+        >
+          Generate Place Names
+        </button>
+        {system.placeNames && (
+          <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--accent-cyan, #06b6d4)20', color: 'var(--accent-cyan, #06b6d4)' }}>
+            {system.placeNames.systemName} · {system.placeNames.baseLc}/{system.placeNames.driftLc}
+          </span>
+        )}
+      </div>
+
       {/* Sticky tab bar — scrolls to each section (QA-010) */}
       <div className="sticky top-0 z-20 border-b pb-2" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
         <div className="flex flex-wrap gap-2">
@@ -235,7 +405,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Sparkles style={{ color: 'var(--accent-red)' }} size={20} />
           Overview
         </h2>
-        <OverviewTab system={system} />
+        <OverviewTab system={displaySystem} rawUdpMode={rawUdpMode} rawProfile={displaySystem.rawUdpProfile ?? buildRawUdpProfile(displaySystem)} />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}
@@ -244,7 +414,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Sun style={{ color: 'var(--accent-red)' }} size={20} />
           Star
         </h2>
-        <StarTab system={system} />
+        <StarTab system={displaySystem} />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}
@@ -253,7 +423,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Globe style={{ color: 'var(--accent-red)' }} size={20} />
           World
         </h2>
-        <WorldTab world={system.mainWorld} />
+        <WorldTab world={displaySystem.mainWorld} />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}
@@ -262,7 +432,25 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Users style={{ color: 'var(--accent-red)' }} size={20} />
           Inhabitants
         </h2>
-        <InhabitantsTab inhabitants={system.inhabitants} system={system} onUpdateSystem={onUpdateSystem} shipsResult={shipsResult} setShipsResult={setShipsResult} onOpenShipsPriceList={() => setShowShipsPriceList(true)} />
+        <InhabitantsTab
+          inhabitants={displaySystem.inhabitants}
+          system={displaySystem}
+          onUpdateSystem={onUpdateSystem}
+          shipsResult={shipsResult}
+          setShipsResult={setShipsResult}
+          onOpenShipsPriceList={() => setShowShipsPriceList(true)}
+          onGlossary={onGlossary}
+          rawUdpMode={rawUdpMode}
+          rawProfile={displaySystem.rawUdpProfile ?? buildRawUdpProfile(displaySystem)}
+          isEditing={isEditing}
+          onEditInhabitants={(updatedInhabitants) => {
+            setPendingSystem(prev => ({
+              ...prev,
+              inhabitants: updatedInhabitants,
+              rawUdpProfile: undefined, // will be recomputed on demand
+            }));
+          }}
+        />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}
@@ -349,9 +537,38 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
 // Overview Tab
 // ============================================================
 
-function OverviewTab({ system }: { system: StarSystem }) {
+function OverviewTab({ system, rawUdpMode, rawProfile }: { system: StarSystem; rawUdpMode: boolean; rawProfile: RawUdpProfile }) {
   return (
     <div className="grid md:grid-cols-2 gap-6">
+      {/* FRD-068: RAW UDP UWP Card */}
+      {rawUdpMode && (
+        <div className="card space-y-4 md:col-span-2" style={{ borderColor: 'var(--accent-amber, #f59e0b)' }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <span className="text-amber-400 font-bold">CE</span>
+              RAW UWP
+            </h3>
+            <span className="text-xs px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              {rawProfile.tradeCodes.join(' ') || '—'}
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-3xl font-mono font-bold tracking-wider" style={{ color: 'var(--text-primary)' }}>
+              {rawProfile.uwp}
+            </div>
+            <div className="text-xs space-y-1" style={{ color: 'var(--text-secondary)' }}>
+              <div>Starport {rawProfile.starport} | Size {rawProfile.size.toString(16).toUpperCase()} | Atmo {rawProfile.atmosphere.toString(16).toUpperCase()} | Hydro {rawProfile.hydrographics.toString(16).toUpperCase()}</div>
+              <div>Pop {rawProfile.population.toString(16).toUpperCase()} | Gov {rawProfile.government.toString(16).toUpperCase()} | Law {rawProfile.lawLevel.toString(16).toUpperCase()} | TL {rawProfile.techLevel.toString(16).toUpperCase()}</div>
+            </div>
+          </div>
+          {rawProfile.bases.length > 0 && (
+            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Bases: {rawProfile.bases.join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Sun style={{ color: 'var(--accent-red)' }} size={20} />
@@ -380,7 +597,28 @@ function OverviewTab({ system }: { system: StarSystem }) {
             system.mainWorld.habitability > -5 ? 'habitability-marginal' :
             'habitability-hostile'
           } />
-          <DataRow label="Economic Assumptions" value={system.economicPresetLabel ?? 'Mneme'} />
+          <DataRow
+            label="Economic Assumptions"
+            value={
+              <span className="flex items-center gap-2">
+                {system.economicPresetLabel ?? 'Mneme'}
+                <span
+                  className="text-xs px-1.5 py-0.5 rounded border"
+                  style={{
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-secondary)',
+                  }}
+                  title={
+                    getGrowthModel(system.economicPreset) === 'compounding'
+                      ? 'Compounding — productivity grows with TL'
+                      : 'Stable — flat income across all TLs'
+                  }
+                >
+                  {getGrowthModel(system.economicPreset) === 'compounding' ? 'Compounding' : 'Stable'}
+                </span>
+              </span>
+            }
+          />
         </div>
       </div>
 
@@ -399,8 +637,22 @@ function OverviewTab({ system }: { system: StarSystem }) {
             }
           />
           <DataRow label="Population"  value={formatPopulation(system.inhabitants.population)} />
-          <DataRow label="Wealth"      value={system.inhabitants.wealth} />
-          <DataRow label="Government"  value={`${system.inhabitants.powerStructure} (${system.inhabitants.sourceOfPower})`} />
+          <DataRow label="Material Wealth" value={system.inhabitants.wealth} />
+          <DataRow label="Government"  value={(() => {
+            const useLowPop = system.inhabitants.populated !== false && system.inhabitants.population < 1_000_000;
+            const govLabel = useLowPop ? POWER_STRUCTURE_LABELS_LOW_POP[system.inhabitants.powerStructure] : system.inhabitants.powerStructure;
+            const powerLabel = useLowPop ? SOURCE_OF_POWER_LABELS_LOW_POP[system.inhabitants.sourceOfPower] : system.inhabitants.sourceOfPower;
+            return `${govLabel} (${powerLabel})`;
+          })()} />
+          {rawUdpMode && rawProfile.tradeCodes.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {rawProfile.tradeCodes.map(code => (
+                <span key={code} className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  {code}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -660,19 +912,21 @@ function WorldTab({ world }: { world: MainWorld }) {
 // Inhabitants Tab
 // ============================================================
 
-function CultureTraitList({ traits }: { traits: string[] }) {
+function CultureTraitList({ traits, useLowPop }: { traits: string[]; useLowPop: boolean }) {
   if (traits.length === 0) return <span style={{ color: 'var(--text-secondary)' }}>None</span>;
   return (
     <div className="space-y-3 mt-1">
       {traits.map(trait => (
-        <CultureTraitCard key={trait} trait={trait} />
+        <CultureTraitCard key={trait} trait={trait} useLowPop={useLowPop} />
       ))}
     </div>
   );
 }
 
-function CultureTraitCard({ trait }: { trait: string }) {
-  const description = CULTURE_TRAIT_DESCRIPTIONS[trait] ?? 'No description available.';
+function CultureTraitCard({ trait, useLowPop }: { trait: string; useLowPop: boolean }) {
+  const description = useLowPop
+    ? (CULTURE_TRAIT_DESCRIPTIONS_LOW_POP[trait] ?? CULTURE_TRAIT_DESCRIPTIONS[trait] ?? 'No description available.')
+    : (CULTURE_TRAIT_DESCRIPTIONS[trait] ?? 'No description available.');
   return (
     <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)',
          borderLeft: '3px solid var(--accent-red)' }}>
@@ -785,8 +1039,17 @@ function FootnoteBlock({ children }: { children: React.ReactNode }) {
   );
 }
 
-function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult, onOpenShipsPriceList }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void; onOpenShipsPriceList?: () => void }) {
+function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult, onOpenShipsPriceList, onGlossary, rawUdpMode, rawProfile, isEditing, onEditInhabitants }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void; onOpenShipsPriceList?: () => void; onGlossary?: () => void; rawUdpMode: boolean; rawProfile: RawUdpProfile; isEditing: boolean; onEditInhabitants?: (inhabitants: Inhabitants) => void }) {
   const isPopulated = inhabitants.populated !== false;
+
+  const [hideEconomicFraming, setHideEconomicFraming] = useState(
+    () => localStorage.getItem('mneme_hide_economic_framing') === 'true'
+  );
+  function toggleEconomicFraming() {
+    const next = !hideEconomicFraming;
+    setHideEconomicFraming(next);
+    localStorage.setItem('mneme_hide_economic_framing', String(next));
+  }
 
   if (!isPopulated) {
     return (
@@ -802,10 +1065,12 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
 
   const useLowPop = inhabitants.populated !== false && inhabitants.population < 1_000_000;
   const wealthDesc = useLowPop ? WEALTH_DESCRIPTIONS_LOW_POP[inhabitants.wealth] : WEALTH_DESCRIPTIONS[inhabitants.wealth];
-  const govDesc    = POWER_STRUCTURE_DESCRIPTIONS[inhabitants.powerStructure];
+  const govDesc    = useLowPop ? POWER_STRUCTURE_DESCRIPTIONS_LOW_POP[inhabitants.powerStructure] : POWER_STRUCTURE_DESCRIPTIONS[inhabitants.powerStructure];
   const devDesc    = useLowPop ? DEVELOPMENT_DESCRIPTIONS_LOW_POP[inhabitants.development] : DEVELOPMENT_DESCRIPTIONS[inhabitants.development];
-  const powerDesc  = SOURCE_OF_POWER_DESCRIPTIONS[inhabitants.sourceOfPower];
+  const powerDesc  = useLowPop ? SOURCE_OF_POWER_DESCRIPTIONS_LOW_POP[inhabitants.sourceOfPower] : SOURCE_OF_POWER_DESCRIPTIONS[inhabitants.sourceOfPower];
   const govSign    = inhabitants.governance >= 0 ? `+${inhabitants.governance}` : `${inhabitants.governance}`;
+  const govLabel   = useLowPop ? POWER_STRUCTURE_LABELS_LOW_POP[inhabitants.powerStructure] : inhabitants.powerStructure;
+  const powerLabel = useLowPop ? SOURCE_OF_POWER_LABELS_LOW_POP[inhabitants.sourceOfPower] : inhabitants.sourceOfPower;
 
   function handleRollWeekly() {
     if (!onUpdateSystem) return;
@@ -858,9 +1123,84 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
   return (
     <div className="grid md:grid-cols-2 gap-6">
 
+      {/* FRD-068: RAW UDP Details Card */}
+      {rawUdpMode && (
+        <div className="card space-y-4 md:col-span-2" style={{ borderColor: 'var(--accent-amber, #f59e0b)' }}>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <span className="text-amber-400 font-bold">CE</span>
+            RAW UWP Details
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+              <div className="text-xl font-mono font-bold">{rawProfile.starport}</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Starport</div>
+            </div>
+            <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+              <div className="text-xl font-mono font-bold">{rawProfile.size.toString(16).toUpperCase()}</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Size</div>
+              <div className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{rawProfile.mnemeSource.sizeKm.toLocaleString()} km</div>
+            </div>
+            <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+              <div className="text-xl font-mono font-bold">{rawProfile.atmosphere.toString(16).toUpperCase()}</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Atmosphere</div>
+              <div className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{rawProfile.mnemeSource.atmosphereType}</div>
+            </div>
+            <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+              <div className="text-xl font-mono font-bold">{rawProfile.hydrographics.toString(16).toUpperCase()}</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Hydro</div>
+            </div>
+            <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+              <div className="text-xl font-mono font-bold">{rawProfile.population.toString(16).toUpperCase()}</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Population</div>
+              <div className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>{rawProfile.mnemeSource.populationExact.toLocaleString()}</div>
+            </div>
+            <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+              <div className="text-xl font-mono font-bold">{rawProfile.government.toString(16).toUpperCase()}</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Government</div>
+            </div>
+            <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+              <div className="text-xl font-mono font-bold">{rawProfile.lawLevel.toString(16).toUpperCase()}</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Law Level</div>
+            </div>
+            <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--row-hover)' }}>
+              <div className="text-xl font-mono font-bold">{rawProfile.techLevel.toString(16).toUpperCase()}</div>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Tech Level</div>
+              <div className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Mneme TL {rawProfile.mnemeSource.techLevelMneme}</div>
+            </div>
+          </div>
+          {rawProfile.tradeCodes.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {rawProfile.tradeCodes.map(code => (
+                <span key={code} className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
+                  {code}
+                </span>
+              ))}
+            </div>
+          )}
+          {rawProfile.bases.length > 0 && (
+            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              Bases: {rawProfile.bases.join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Demographics */}
       <div className="card space-y-4">
-        <h3 className="text-lg font-semibold">Demographics</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Demographics</h3>
+          {onGlossary && (
+            <button
+              onClick={onGlossary}
+              className="text-xs flex items-center gap-1 px-2 py-1 rounded border"
+              style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)' }}
+              title="Open Glossary — Wealth &amp; Development explained"
+              type="button"
+            >
+              <ExternalLink size={12} /> Glossary
+            </button>
+          )}
+        </div>
 
         <TechLevelCard tl={inhabitants.effectiveTL ?? inhabitants.techLevel} foundingTL={inhabitants.foundingTL} presetLabel={system.economicPresetLabel} />
 
@@ -883,37 +1223,219 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
           )}
         </div>
 
-        {/* Wealth */}
-        <div>
-          <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Wealth</div>
-          <DescriptionCard
-            title={inhabitants.wealth}
-            description={wealthDesc.description}
-          />
+        {/* Material Wealth & Equity/Development — with hide toggle */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            Economic Indicators
+          </span>
+          <button
+            onClick={toggleEconomicFraming}
+            className="text-xs px-2 py-0.5 rounded border"
+            style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)' }}
+            type="button"
+            title={hideEconomicFraming ? 'Show economic indicators' : 'Hide economic indicators'}
+          >
+            {hideEconomicFraming ? 'Show' : 'Hide'}
+          </button>
         </div>
 
-        {/* Contextual tension note (QA-028) */}
-        {(() => {
-          const note = getWealthDevelopmentContext(inhabitants.wealth, inhabitants.development);
-          if (!note) return null;
-          return (
-            <div className="text-xs p-2 rounded border-l-2" style={{ backgroundColor: 'var(--row-hover)', borderColor: 'var(--accent-red)' }}>
-              <strong style={{ color: 'var(--text-primary)' }}>Narrative context:</strong>{' '}
-              <span style={{ color: 'var(--text-secondary)' }}>{note}</span>
+        {!hideEconomicFraming && (
+          <>
+            {/* Material Wealth */}
+            <div>
+              <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Material Wealth</div>
+              <DescriptionCard
+                title={inhabitants.wealth}
+                description={wealthDesc.description}
+              />
             </div>
-          );
-        })()}
 
-        {/* Development */}
-        <div>
-          <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>World Development</div>
-          <DescriptionCard
-            title={inhabitants.development}
-            subtitle={`HDI ${devDesc.hdi}`}
-            description={devDesc.description}
-          />
-        </div>
+            {/* Contextual tension note (QA-028) */}
+            {(() => {
+              const note = getWealthDevelopmentContext(inhabitants.wealth, inhabitants.development);
+              if (!note) return null;
+              return (
+                <div className="text-xs p-2 rounded border-l-2" style={{ backgroundColor: 'var(--row-hover)', borderColor: 'var(--accent-red)' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Narrative context:</strong>{' '}
+                  <span style={{ color: 'var(--text-secondary)' }}>{note}</span>
+                </div>
+              );
+            })()}
+
+            {/* Equity & Development */}
+            <div>
+              <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Equity &amp; Development</div>
+              <DescriptionCard
+                title={inhabitants.development}
+                subtitle={`HDI ${devDesc.hdi}`}
+                description={devDesc.description}
+              />
+            </div>
+          </>
+        )}
+        {hideEconomicFraming && (
+          <div className="text-xs p-2 rounded" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--row-hover)' }}>
+            Economic indicators hidden. Wealth: <strong style={{ color: 'var(--text-primary)' }}>{inhabitants.wealth}</strong> · Development: <strong style={{ color: 'var(--text-primary)' }}>{inhabitants.development}</strong>
+          </div>
+        )}
       </div>
+
+      {/* FRD-069: Economics Dials (edit mode only) */}
+      {isEditing && onEditInhabitants && (
+        <div className="card space-y-4 md:col-span-2" style={{ borderColor: 'var(--accent-cyan, #06b6d4)' }}>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <span className="text-cyan-400">✎</span>
+            Economics Dials
+          </h3>
+          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            Override rolled values. Starport and trade values recalculate automatically.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                Wealth
+              </label>
+              <select
+                value={inhabitants.wealth}
+                onChange={(e) => {
+                  const w = e.target.value as import('../types').WealthLevel;
+                  onEditInhabitants({ ...inhabitants, wealth: w });
+                }}
+                className="w-full rounded px-2 py-2 text-sm border"
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                {(['Average', 'Better-off', 'Prosperous', 'Affluent'] as const).map(w => (
+                  <option key={w} value={w}>{w}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                Development
+              </label>
+              <select
+                value={inhabitants.development}
+                onChange={(e) => {
+                  const d = e.target.value as import('../types').DevelopmentLevel;
+                  onEditInhabitants({ ...inhabitants, development: d });
+                }}
+                className="w-full rounded px-2 py-2 text-sm border"
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                {(['UnderDeveloped', 'Developing', 'Mature', 'Developed', 'Well Developed', 'Very Developed'] as const).map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                Tech Level (MTL)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={18}
+                value={inhabitants.techLevel}
+                onChange={(e) => {
+                  const tl = Math.max(0, Math.min(18, Number(e.target.value)));
+                  onEditInhabitants({ ...inhabitants, techLevel: tl });
+                }}
+                className="w-full rounded px-2 py-2 text-sm border"
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                Population
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={inhabitants.population}
+                onChange={(e) => {
+                  const pop = Math.max(0, Number(e.target.value));
+                  onEditInhabitants({ ...inhabitants, population: pop });
+                }}
+                className="w-full rounded px-2 py-2 text-sm border"
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                Power Structure
+              </label>
+              <select
+                value={inhabitants.powerStructure}
+                onChange={(e) => {
+                  const p = e.target.value as import('../types').PowerStructure;
+                  onEditInhabitants({ ...inhabitants, powerStructure: p });
+                }}
+                className="w-full rounded px-2 py-2 text-sm border"
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                {(['Anarchy', 'Confederation', 'Federation', 'Unitary State'] as const).map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
+                Source of Power
+              </label>
+              <select
+                value={inhabitants.sourceOfPower}
+                onChange={(e) => {
+                  const p = e.target.value as import('../types').PowerSource;
+                  onEditInhabitants({ ...inhabitants, sourceOfPower: p });
+                }}
+                className="w-full rounded px-2 py-2 text-sm border"
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                {(['Aristocracy', 'Ideocracy', 'Kratocracy', 'Democracy', 'Meritocracy'] as const).map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Recalculate Starport */}
+          <div className="pt-2 border-t" style={{ borderColor: 'var(--border-color)' }}>
+            <button
+              onClick={() => {
+                const preset = system.economicPreset;
+                if (!preset) return;
+                const gdp = getGdpPerDayForWorld(inhabitants.techLevel, inhabitants.development, inhabitants.wealth, preset);
+                const weeklyRoll = inhabitants.starport.weeklyRoll ?? 10;
+                const recalc = calculateStarport(inhabitants.population, inhabitants.techLevel, inhabitants.wealth, inhabitants.development, weeklyRoll, gdp);
+                onEditInhabitants({
+                  ...inhabitants,
+                  starport: {
+                    ...inhabitants.starport,
+                    class: recalc.class,
+                    pss: recalc.pss,
+                    rawClass: recalc.rawClass,
+                    tlCap: recalc.tlCap,
+                    annualTrade: recalc.annualTrade,
+                    weeklyBase: recalc.weeklyBase,
+                    weeklyActivity: recalc.weeklyActivity,
+                  },
+                });
+              }}
+              className="text-xs px-3 py-1.5 rounded border transition-colors"
+              style={{
+                backgroundColor: 'var(--bg-primary)',
+                borderColor: 'var(--border-color)',
+                color: 'var(--text-primary)',
+              }}
+            >
+              Recalculate Starport & Trade
+            </button>
+            <span className="text-xs ml-2" style={{ color: 'var(--text-secondary)' }}>
+              Uses current Wealth × Development × TL × Population
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Government */}
       <div className="card space-y-4">
@@ -923,7 +1445,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
         <div>
           <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Power Structure</div>
           <DescriptionCard
-            title={inhabitants.powerStructure}
+            title={govLabel}
             description={govDesc.description}
           />
         </div>
@@ -932,9 +1454,9 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
         <div>
           <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>Source of Power</div>
           <DescriptionCard
-            title={inhabitants.sourceOfPower}
+            title={powerLabel}
             description={powerDesc.description}
-          />
+/>
         </div>
 
         {/* Governance DM */}
@@ -1103,7 +1625,7 @@ function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setS
           <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
             Culture Traits
           </div>
-          <CultureTraitList traits={inhabitants.cultureTraits} />
+          <CultureTraitList traits={inhabitants.cultureTraits} useLowPop={useLowPop} />
         </div>
       </div>
     </div>
@@ -1634,7 +2156,7 @@ function PhysProp({ label, value }: { label: string; value: string }) {
 // Shared Helper Components
 // ============================================================
 
-function DataRow({ label, value, className = '' }: { label: string; value: string; className?: string }) {
+function DataRow({ label, value, className = '' }: { label: string; value: React.ReactNode; className?: string }) {
   return (
     <div className="flex items-center justify-between py-1 border-b last:border-0" style={{ borderColor: 'var(--border-color)' }}>
       <span style={{ color: 'var(--text-secondary)' }}>{label}</span>

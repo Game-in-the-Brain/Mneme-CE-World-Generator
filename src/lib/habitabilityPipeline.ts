@@ -23,6 +23,7 @@ import {
   convertAtmosphere,
   getConvertedAtmoHabMod,
   ZONE_TEMPERATURE_DM,
+  ZONE_HAZARD_DM,
   DENSITY_GREENHOUSE_DM,
   HAZARD_TABLE_V2,
   HAZARD_INTENSITY_V2,
@@ -48,6 +49,12 @@ function lookupTemperatureV2(roll: number): { type: TemperatureType; habMod: num
 function getZoneTempDM(zone: Zone | ZoneId): number {
   if (zone === 'Cold') return -2; // legacy Zone maps to Cool
   return ZONE_TEMPERATURE_DM[zone as ZoneId] ?? 0;
+}
+
+// 260427-01 Option 1: zone radiation hazard. Legacy 'Cold' / 'Outer' map to 0.
+function getZoneHazardDM(zone: Zone | ZoneId): number {
+  if (zone === 'Cold' || zone === 'Outer') return 0;
+  return ZONE_HAZARD_DM[zone as ZoneId] ?? 0;
 }
 
 // ---------------------
@@ -192,15 +199,18 @@ export function runHabitabilityWaterfall(
   const tempResult = lookupTemperatureV2(tempRollRaw);
   body.temperatureV2 = tempResult.type;
 
-  // === Step 4: Hazard (2D6 + Reactivity DM + atmosphere hazard bias) ===
+  // === Step 4: Hazard (2D6 + Reactivity DM + atmosphere hazard bias + Zone Radiation DM) ===
+  // Zone radiation DM added per 260427-01 Option 1. Stacks additively.
   const hazardBias = atmoCompEntry.hazardBias;
-  let hazardRollMod = reactivity;
+  const zoneHazardDM = getZoneHazardDM(zone);
+  let hazardRollMod = reactivity + zoneHazardDM;
   if (hazardBias.corrosive) hazardRollMod += hazardBias.corrosive;
   if (hazardBias.toxic) hazardRollMod += hazardBias.toxic;
 
   const hazardRoll = Math.max(2, Math.min(12, roll2D6().value + hazardRollMod));
   const hazardEntry = HAZARD_TABLE_V2[hazardRoll] ?? HAZARD_TABLE_V2[2];
   body.hazardV2 = hazardEntry.hazard;
+  body.zoneHazardDM = zoneHazardDM;
 
   // === Step 5: Hazard Intensity (2D6) ===
   const intensityRoll = Math.max(2, Math.min(12, roll2D6().value));
@@ -251,6 +261,19 @@ export function runHabitabilityWaterfall(
     let disLevel = lifePreset.biosphereDisadvantage;
     if (biochemOffset > 0) disLevel -= biochemOffset;
     disLevel += effectiveTempAdjust;
+
+    // 260427-01 Option 2: Habitable-Zone biosphere bonus.
+    // Conservative zone + biochem ≥ Common → shift two dice toward advantage.
+    // Magnitude tuned 2026-04-27 from −1 to −2 after empirical batch showed
+    // the −1 shift was too small to meaningfully widen HZ biosphere viability.
+    // The increase is justified by the right-place-AND-right-chemistry gate
+    // (biochem ≥ Common) rather than across-the-board HZ favouritism.
+    const isHZ = zone === 'Conservative';
+    const hasMinBiochemForHZBonus =
+      biochemIndex >= biochemOrder.indexOf('Common');
+    const hzBonusActive = isHZ && hasMinBiochemForHZBonus;
+    if (hzBonusActive) disLevel -= 2;
+    body.hzBiosphereBonusApplied = hzBonusActive;
 
     const pool = buildBiosphereDicePool(disLevel);
     const rollResult = rollKeep(pool.diceCount, 6, pool.keepCount, pool.keepType);

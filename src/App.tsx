@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { StarSystem, ViewMode, GeneratorOptions } from './types';
 import { generateStarSystem } from './lib/generator';
+import { generatePlaceNames } from './lib/placeNameGen';
+import { preloadNpfData } from './lib/npf-loader';
 import {
   saveSystem, getAllSystems, deleteSystem, clearAllSystems,
   exportToJSON, exportAllToJSON, exportToCSV, downloadFile, importSystemsFromJSON,
@@ -15,6 +17,8 @@ import { SystemsView } from './components/SystemsView';
 import { Navigation, type Theme } from './components/Navigation';
 import { parseSpectralType } from './lib/spectralParser';
 import './App.css';
+
+preloadNpfData();
 
 function App() {
   const [view, setView] = useState<ViewMode>('dashboard');
@@ -179,6 +183,11 @@ function App() {
         candidates.sort((a, b) => a.score - b.score);
         system = candidates[0].system;
         if (!exactMatch) iterations = maxIterations;
+      }
+
+      if (options.includeNames) {
+        system = { ...system, placeNames: generatePlaceNames(system, 'random', 'random') };
+        if (!system.name) system.name = system.placeNames!.systemName;
       }
 
       setCurrentSystem(system);

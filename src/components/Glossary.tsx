@@ -177,6 +177,26 @@ specific purpose." />
           def="A bonus or penalty applied to a dice roll. Positive DM = better outcome;
 negative DM = worse outcome. The Governance DM reflects how effectively a society is
 administered." />
+        <GlossaryEntry term="Material Wealth" unit="Wealth level"
+          def="The physical and financial abundance of a world — natural resources, trade
+surplus, per-capita income. Measures what the world has, not how it is shared. Wealth and
+Development are independent: a world can be resource-rich but institutionally weak, or
+resource-poor but highly organised. Real-world analogues: Gulf petro-states (Kuwait, Qatar)
+= high Wealth before modern diversification, low early Development. Venezuela post-2010 =
+high Wealth (oil reserves) but collapsing institutions (low Development). A mining colony
+flush with ore exports can be Affluent while its workers live in company-owned habitats." />
+        <GlossaryEntry term="Equity &amp; Development" unit="Development level"
+          def="The institutional and human-capital capacity of a world — healthcare access,
+education, rule of law, and how equitably resources are distributed. Measures how well the
+world functions for its people, not how much it has. Real-world analogues: Singapore =
+minimal natural resources (low raw Wealth) but exceptional institutions, education, and
+infrastructure (Very Developed). Cuba = low material wealth (trade restrictions) but high
+literacy, healthcare access, and HDI relative to income. Nordic social democracies =
+moderate natural resources, Very Developed through investment in institutions. Post-
+industrial Rust Belt = declining material Wealth, but legacy high-Development infrastructure
+persisting from prior investment. A world can be UnderDeveloped with Affluent Wealth (new
+resource extraction colony, few services) or Well Developed with Average Wealth (old
+established colony that invested in people over raw output)." />
       </GlossarySection>
 
         <GlossarySection title="Technology Levels (MTL)">

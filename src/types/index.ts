@@ -217,6 +217,10 @@ export interface PlanetaryBody {
   biosphereTN?: number;
   hasSubsurfaceOceanOverride?: boolean;
 
+  // 260427-01: zone-driven habitability inputs
+  zoneHazardDM?: number;
+  hzBiosphereBonusApplied?: boolean;
+
   baselineHabitability?: number;
   habitabilityBreakdown?: {
     gravity: number;
@@ -255,6 +259,31 @@ export interface PlanetaryBody {
   ringClass?: 'faint' | 'visible' | 'showpiece' | 'great';
 }
 
+export interface RawUdpProfile {
+  uwp: string;
+  starport: StarportClass;
+  size: number;
+  atmosphere: number;
+  hydrographics: number;
+  population: number;
+  government: number;
+  lawLevel: number;
+  techLevel: number;
+  bases: string[];
+  tradeCodes: string[];
+  travelZone: TravelZone;
+  hasBelt: boolean;
+  hasGas: boolean;
+  mnemeSource: {
+    sizeKm: number;
+    atmosphereType: AtmosphereType;
+    populationExact: number;
+    techLevelMneme: number;
+    techLevelCe: number;
+    governmentRoll: number;
+  };
+}
+
 export interface StarSystem {
   id: string;
   createdAt: number;
@@ -288,6 +317,9 @@ export interface StarSystem {
   /** QA-058: allow ships to be generated at X-class ports */
   allowShipsAtXPort?: boolean;
 
+  // FRD-063: generated place names (system + bodies)
+  placeNames?: PlaceNames;
+
   // FR-042: v2 positioning fields (additive, non-breaking)
   heliopauseAU?: number;
   frostLineAU?: number;
@@ -311,6 +343,57 @@ export interface StarSystem {
   // FRD-047: Batch management
   batchId?: string;
   batchOrder?: number;
+
+  // 260427-02: hierarchical multi-star tree (gated by GeneratorOptions.v2MultiStar).
+  // Coexists with companionStars[]; legacy consumers stay on the flat array.
+  rootOrbitNode?: OrbitNode;
+  multiStarVersion?: 'v1-flat' | 'v2-tree';
+
+  /** FRD-068: cached RAW UDP profile (computed on demand) */
+  rawUdpProfile?: RawUdpProfile;
+
+  /** FRD-069: timestamp of last edit */
+  editedAt?: number;
+
+  /** FRD-069: dice lock state for re-rollable fields */
+  diceLocks?: {
+    worldType?: boolean;
+    distance?: boolean;
+    mass?: boolean;
+    habitability?: boolean;
+    wealth?: boolean;
+    development?: boolean;
+    powerStructure?: boolean;
+    sourceOfPower?: boolean;
+    population?: boolean;
+    techLevel?: boolean;
+  };
+}
+
+// =====================
+// 260427-02: Multi-Star Hierarchy
+// =====================
+
+export type OrbitNode = StarLeaf | BinaryNode;
+
+export interface StarLeaf {
+  kind: 'star';
+  starId: string;
+  totalMass: number;
+}
+
+export interface BinaryNode {
+  kind: 'binary';
+  primary: OrbitNode;
+  secondary: OrbitNode;
+  semiMajorAxisAU: number;
+  eccentricity: number;
+  totalMass: number;
+  rPrimaryAU: number;
+  rSecondaryAU: number;
+  periodYears: number;
+  sTypeCapAU: number;
+  pTypeFloorAU: number;
 }
 
 // =====================
@@ -389,6 +472,18 @@ export interface TableWeights {
   dice: number[]; // length 11, indices 0..10 map to rolls 2..12
 }
 
+// =====================
+// Place Name Generation (FRD-063)
+// =====================
+
+export interface PlaceNames {
+  baseLc: string;
+  driftLc: string;
+  driftLevel: number;
+  systemName: string;
+  bodyNames: Record<string, string>;
+}
+
 export interface GeneratorOptions {
   starClass: StellarClass | 'random';
   starGrade: StellarGrade | 'random';
@@ -405,12 +500,20 @@ export interface GeneratorOptions {
   goalHabitable?: boolean;
   /** QA-058: allow ships to be generated at X-class ports */
   allowShipsAtXPort?: boolean;
+  /** QA-049: preferred economic growth model — surfaces curve type as first-class user choice */
+  growthModel?: 'compounding' | 'stable';
   /** FR-042: v2 positioning feature flag */
   v2Positioning?: boolean;
+  /** 260427-02: wide-only hierarchical multi-star generation */
+  v2MultiStar?: boolean;
   /** FR-041: active extraterrestrial life assumptions preset ID */
   activeLifeAssumptionsId?: string;
   /** QA-Mega+: allow Mega+ structure habitats (default OFF for CE/Traveller) */
   allowMegaStructures?: boolean;
+  /** FRD-068: RAW UDP mode — display worlds in CE UWP format */
+  rawUdpMode?: boolean;
+  /** FRD-063: auto-generate place names when generating a system */
+  includeNames?: boolean;
 }
 
 export interface ExtraterrestrialLifeAssumptions {

@@ -233,15 +233,29 @@ export function constrainCompanionGrade(
 // =====================
 
 export function getCompanionOrbitDistance(previousClass: StellarClass, roll: number): number {
-  // Roll is 3D6
+  // Roll is 3D6 — legacy REF-003 behaviour
   const baseDistances: Record<StellarClass, number> = {
     O: 120, B: 80, A: 60, F: 50, G: 40, K: 30, M: 20
   };
-  
+
   const base = baseDistances[previousClass];
   const multiplier = 0.5 + (roll / 36) * 1.5; // 0.5 to 2.0
-  
+
   return round(base * multiplier, 1);
+}
+
+/**
+ * 260427-02 wide-only companion separation: 3D3 × heliopause × (1 + e), with a
+ * hard floor of 3 × heliopause × (1 + e). Guarantees the S-type stability cone
+ * (0.46 × a × (1 − e)) sits outside the heliopause so INRAS stays single-star.
+ */
+export function getWideCompanionOrbitDistance(
+  d3d3Roll: number,
+  heliopauseAU: number,
+  eccentricity: number,
+): number {
+  const safeRoll = Math.max(d3d3Roll, 3);
+  return round(safeRoll * heliopauseAU * (1 + eccentricity), 1);
 }
 
 // =====================

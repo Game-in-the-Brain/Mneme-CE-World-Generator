@@ -6,7 +6,7 @@ import type { PlanetaryBody, Star, ZoneBoundaries, ZoneId } from '../types';
 import { roll3D6 } from './dice';
 import { calculateV2Zones, type V2ZoneData } from './stellarData';
 
-const EM_PER_SOLAR_MASS = 333000; // 1 M☉ ≈ 333,000 Earth Masses
+const EM_PER_SOLAR_MASS = 332946; // 1 M☉ = 332,946 Earth Masses (IAU 2012)
 
 // ---------------------
 // Zone Roll Functions

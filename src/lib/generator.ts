@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type {
   StarSystem, Star, MainWorld, Inhabitants, PlanetaryBody,
   StellarClass, StellarGrade, Zone, BodyType, GasWorldClass, LesserEarthType, ZoneBoundaries,
-  WorldType, GeneratorOptions
+  WorldType, GeneratorOptions, StarportClass, ResourceLevel
 } from '../types';
 import { getGdpPerDayForWorld, getSoc7MonthlyIncome, CE_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_POWER_WEIGHTS, DEFAULT_GOV_WEIGHTS, MNEME_WEALTH_WEIGHTS } from './economicPresets';
 import { roll5D6, roll2D6, roll3D6, rollExploding, rollKeep, rollD6, rollTL } from './dice';
@@ -29,6 +29,39 @@ import { placeBodiesV2 } from './positioning';
 import { runHabitabilityWaterfall, selectMainworld } from './habitabilityPipeline';
 import { getLifePresetById, BUILT_IN_LIFE_PRESETS } from './lifePresets';
 import { generateLevel2Children } from './moons';
+import { buildOrbitTree } from './multiStar';
+import { buildRawUdpProfile } from './rawUdp';
+
+// =====================
+// Starport Floor Helper (R4 / QA-070 / QA-076)
+// =====================
+
+function getStarportFloorClass(
+  population: number,
+  envHab: number,
+  habitatType: string | undefined,
+  biochemicalResources: ResourceLevel
+): StarportClass | undefined {
+  if (population >= 500_000) return undefined;
+
+  // Mining / Inhospitable worlds need at least Class D to export
+  if (envHab <= 0 && habitatType) {
+    const lower = habitatType.toLowerCase();
+    if (lower.includes('mining') || lower.includes('industrial')) {
+      return 'D';
+    }
+  }
+
+  // Agricultural worlds need at least Class E to trade surplus
+  if (envHab > 0) {
+    const agResources: ResourceLevel[] = ['Abundant', 'Inexhaustible'];
+    if (agResources.includes(biochemicalResources)) {
+      return 'E';
+    }
+  }
+
+  return undefined;
+}
 
 // =====================
 // Star System Generator
@@ -45,6 +78,14 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     powerWeights:            options?.powerWeights            ?? options?.tlProductivityPreset?.powerWeights ?? DEFAULT_POWER_WEIGHTS,
     govWeights:              options?.govWeights              ?? options?.tlProductivityPreset?.govWeights ?? DEFAULT_GOV_WEIGHTS,
     wealthWeights:           options?.wealthWeights           ?? options?.tlProductivityPreset?.wealthWeights ?? MNEME_WEALTH_WEIGHTS,
+    v2Positioning:           options?.v2Positioning,
+    v2MultiStar:             options?.v2MultiStar,
+    activeLifeAssumptionsId: options?.activeLifeAssumptionsId,
+    allowMegaStructures:     options?.allowMegaStructures,
+    allowShipsAtXPort:       options?.allowShipsAtXPort,
+    goalStarportMin:         options?.goalStarportMin,
+    goalMinPopulation:       options?.goalMinPopulation,
+    goalHabitable:           options?.goalHabitable,
   };
 
   const id = uuidv4();
@@ -58,6 +99,20 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
 
   // Generate companion stars
   const companionStars = generateCompanionStars(primaryStar);
+
+  // 260427-02: build hierarchical orbit tree when v2MultiStar is enabled.
+  // Wide-only by design; companion separation = 3D3 × heliopause × (1 + e).
+  // INRAS untouched — planet generation continues to receive primaryStar only.
+  let rootOrbitNode: StarSystem['rootOrbitNode'];
+  let multiStarVersion: StarSystem['multiStarVersion'] = 'v1-flat';
+  if (opts.v2MultiStar) {
+    const heliopauseAU = Math.sqrt(primaryStar.luminosity) * 120;
+    rootOrbitNode = buildOrbitTree(primaryStar, companionStars, heliopauseAU);
+    // Mirror the tree separations back onto the flat companionStars[] so legacy
+    // UI/exports show the new wide-only distances rather than stale REF-003 values.
+    overlayTreeSeparationsOntoCompanions(companionStars, rootOrbitNode);
+    multiStarVersion = 'v2-tree';
+  }
 
   // Generate planetary system FIRST to determine largest body mass (for Habitat sizing)
   const planetaryResult = generatePlanetarySystem(
@@ -152,8 +207,41 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     allowShipsAtXPort: opts.allowShipsAtXPort,
     moons: allMoons,
     rings: allRings,
+    rootOrbitNode,
+    multiStarVersion,
+    rawUdpProfile: buildRawUdpProfile({
+      id, createdAt, primaryStar, companionStars, zones,
+      mainWorld, inhabitants,
+      circumstellarDisks: disks,
+      dwarfPlanets: dwarfs,
+      terrestrialWorlds: terrestrials,
+      iceWorlds: ices,
+      gasWorlds: gases,
+    } as StarSystem),
     ...v2SystemFields,
   };
+}
+
+// 260427-02: when v2MultiStar is on, copy the tree's BinaryNode separations back
+// onto the flat companionStars[] array so legacy callers (UI, DOCX, CSV) reflect
+// the wide-only distances. Walk the left-skewed tree: each BinaryNode's
+// secondary leaf corresponds to companions[i] in build order.
+function overlayTreeSeparationsOntoCompanions(
+  companions: Star[],
+  root: StarSystem['rootOrbitNode'],
+): void {
+  if (!root || root.kind !== 'binary') return;
+  // Walk down the primary chain — each step yields one secondary leaf.
+  const separations: number[] = [];
+  let cursor: typeof root = root;
+  while (cursor && cursor.kind === 'binary') {
+    separations.unshift(cursor.semiMajorAxisAU);
+    if (cursor.primary.kind !== 'binary') break;
+    cursor = cursor.primary;
+  }
+  for (let i = 0; i < companions.length && i < separations.length; i++) {
+    companions[i].orbitDistance = separations[i];
+  }
 }
 
 // =====================
@@ -476,13 +564,16 @@ function generateInhabitants(
 
   const gdpPerDay = getGdpPerDayForWorld(techLevel, devResult.level, wealth, opts.tlProductivityPreset!);
 
+  // R4 / QA-070: determine starport floor based on world function
+  const floorClass = getStarportFloorClass(population, envHab, habitatType, mainWorld.biochemicalResources);
+
   // QA-034: depression penalty is always applied after starport calculation
-  let foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll, gdpPerDay);
+  let foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll, gdpPerDay, floorClass);
   let starportResult = foundingStarportResult;
 
   if (effectiveTL !== techLevel) {
     const effectiveGdpPerDay = getGdpPerDayForWorld(effectiveTL, devResult.level, wealth, opts.tlProductivityPreset!);
-    starportResult = calculateStarport(population, effectiveTL, wealth, devResult.level, weeklyRoll, effectiveGdpPerDay);
+    starportResult = calculateStarport(population, effectiveTL, wealth, devResult.level, weeklyRoll, effectiveGdpPerDay, floorClass);
   }
 
   const starport = {

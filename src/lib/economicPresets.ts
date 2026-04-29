@@ -336,6 +336,16 @@ export const STAGNANT_PRESET: TLProductivityPreset = {
 
 export const BUILT_IN_PRESETS: TLProductivityPreset[] = [MNEME_PRESET, CE_PRESET, STAGNANT_PRESET];
 
+/**
+ * QA-049: Derive the economic growth model label from a preset's curve.
+ * Compounding = productivity grows with TL (mneme, linear, custom).
+ * Stable = flat income across all TLs.
+ */
+export function getGrowthModel(preset: TLProductivityPreset | undefined): 'compounding' | 'stable' {
+  if (!preset) return 'compounding';
+  return preset.curve === 'flat' ? 'stable' : 'compounding';
+}
+
 // =====================
 // QA: CE TL Display Mapping
 // =====================

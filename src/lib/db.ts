@@ -280,7 +280,10 @@ export function exportToCSV(system: StarSystem): string {
     'mw_radius_km',
     'mw_diameter_km',
     'mw_surface_g',
-    'mw_escape_velocity_ms'
+    'mw_escape_velocity_ms',
+    // FRD-068: RAW UDP
+    'uwp',
+    'trade_codes'
   ];
   
   // Build base values array
@@ -319,7 +322,9 @@ export function exportToCSV(system: StarSystem): string {
     Math.round(system.mainWorld.radius),
     Math.round(system.mainWorld.size), // diameter = size for main world
     system.mainWorld.gravity,
-    Math.round(system.mainWorld.escapeVelocity)
+    Math.round(system.mainWorld.escapeVelocity),
+    system.rawUdpProfile?.uwp ?? '',
+    system.rawUdpProfile?.tradeCodes.join(' ') ?? ''
   ];
   
   // Add companion star blocks (S1_, S2_, S3_) — max 3 companions

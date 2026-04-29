@@ -13,6 +13,7 @@ import {
   getIncomeForSoc,
   getGdpPerDayFromPreset,
   getBoatYears,
+  getGrowthModel,
   exportPresetToJSON,
   importPresetFromJSON,
   BOAT_PRICE_CR,
@@ -150,6 +151,14 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
   const [showInfo, setShowInfo] = useState(false);
   const [presetImportStatus, setPresetImportStatus] = useState<string | null>(null);
 
+  // QA-049: Growth Model toggle state
+  const [growthModel, setGrowthModel] = useState<'compounding' | 'stable'>(
+    () => {
+      const opts = loadGeneratorOptions();
+      return opts.growthModel ?? getGrowthModel(opts.tlProductivityPreset);
+    }
+  );
+
   // =====================
   // Life Assumptions State (FR-041)
   // =====================
@@ -220,6 +229,13 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
     setGeneratorOptions({ ...current, tlProductivityPreset: activePreset });
   }, [activePreset]);
 
+  // QA-049: Persist growth model to generator options
+  useEffect(() => {
+    const current = loadGeneratorOptions();
+    saveGeneratorOptions({ ...current, growthModel });
+    setGeneratorOptions({ ...current, growthModel });
+  }, [growthModel]);
+
   // Sync table weights to active preset when a named preset is selected (QA-055)
   useEffect(() => {
     if (activePreset.id !== 'custom' && activePreset.id !== 'custom-default') {
@@ -243,6 +259,16 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
     if (builtIn) {
       setActivePreset(builtIn);
+    }
+  }
+
+  // QA-049: Growth Model toggle handler
+  function handleGrowthModelChange(model: 'compounding' | 'stable') {
+    setGrowthModel(model);
+    if (model === 'compounding') {
+      switchToBuiltIn('mneme');
+    } else {
+      switchToBuiltIn('ce');
     }
   }
 
@@ -618,6 +644,48 @@ export function Settings({ systems, onViewSystem, onDeleteSystem, onImport, onEx
           <DollarSign className="text-[#e53935]" size={20} />
           Economic Assumptions
         </h3>
+
+        {/* QA-049: Growth Model Toggle */}
+        <div className="p-4 bg-white/5 rounded-lg space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-[#9e9e9e]">Growth Model</span>
+            <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-[#9e9e9e]">
+              {getGrowthModel(activePreset) === 'compounding' ? 'Compounding' : 'Stable'}
+            </span>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleGrowthModelChange('compounding')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                getGrowthModel(activePreset) === 'compounding'
+                  ? 'bg-[#e53935]/20 border-[#e53935] text-white'
+                  : 'bg-white/5 border-white/10 text-[#9e9e9e] hover:bg-white/10'
+              }`}
+              type="button"
+              title="Compounding — productivity grows exponentially with TL (Mneme default)"
+            >
+              <div className="font-medium">Compounding</div>
+              <div className="text-xs opacity-70 mt-0.5">Income scales with TL (~3.3× per step)</div>
+            </button>
+            <button
+              onClick={() => handleGrowthModelChange('stable')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                getGrowthModel(activePreset) === 'stable'
+                  ? 'bg-[#e53935]/20 border-[#e53935] text-white'
+                  : 'bg-white/5 border-white/10 text-[#9e9e9e] hover:bg-white/10'
+              }`}
+              type="button"
+              title="Stable — flat income across all TLs (CE / Traveller default)"
+            >
+              <div className="font-medium">Stable</div>
+              <div className="text-xs opacity-70 mt-0.5">Same income at every TL</div>
+            </button>
+          </div>
+          <p className="text-xs text-[#9e9e9e]">
+            Selecting a model loads its matching built-in preset (Mneme or CE). You can still customize
+            Boat Years, income, and table weights afterward.
+          </p>
+        </div>
 
         {/* Preset Selector */}
         <div className="p-4 bg-white/5 rounded-lg space-y-4">

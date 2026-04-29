@@ -75,7 +75,9 @@ export function GeneratorDashboard({
   const [goalMinPopulation, setGoalMinPopulation] = useState<string>(defaults.goalMinPopulation?.toString() || '');
   const [goalHabitable, setGoalHabitable] = useState<boolean>(defaults.goalHabitable || false);
   const [allowShipsAtXPort, setAllowShipsAtXPort] = useState<boolean>(defaults.allowShipsAtXPort ?? true);
-  const [goalModeOpen, setGoalModeOpen] = useState(false);
+  const [rawUdpMode, setRawUdpMode] = useState<boolean>(defaults.rawUdpMode ?? false);
+  const [includeNames, setIncludeNames] = useState<boolean>(defaults.includeNames ?? false);
+  const [goalModeOpen, setGoalModeOpen] = useState(true);
 
   const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
   const isKnownPreset = allPresets.some((p) => p.id === activePreset.id);
@@ -97,8 +99,10 @@ export function GeneratorDashboard({
       goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
       goalHabitable: goalHabitable || undefined,
       allowShipsAtXPort: allowShipsAtXPort || undefined,
+      rawUdpMode,
+      includeNames,
     });
-  }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, allowShipsAtXPort]);
+  }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, allowShipsAtXPort, rawUdpMode, includeNames]);
 
   function handlePresetChange(id: string) {
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
@@ -123,6 +127,8 @@ export function GeneratorDashboard({
       goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
       goalHabitable: goalHabitable || undefined,
       allowShipsAtXPort: allowShipsAtXPort || undefined,
+      rawUdpMode,
+      includeNames,
     });
   }
 
@@ -209,70 +215,35 @@ export function GeneratorDashboard({
             </div>
           </div>
 
-          {/* Populated toggle */}
-          <div>
-            <label className="block text-xs mb-2 font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Inhabitants
-            </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPopulated(true)}
-                className="flex-1 py-2 rounded text-sm font-medium transition-all border"
-                style={populated ? {
-                  backgroundColor: 'var(--accent-red)',
-                  borderColor: 'var(--accent-red)',
-                  color: '#ffffff',
-                } : {
-                  backgroundColor: 'var(--bg-primary)',
-                  borderColor: 'var(--border-color)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                Populated
-              </button>
-              <button
-                type="button"
-                onClick={() => setPopulated(false)}
-                className="flex-1 py-2 rounded text-sm font-medium transition-all border"
-                style={!populated ? {
-                  backgroundColor: 'var(--accent-red)',
-                  borderColor: 'var(--accent-red)',
-                  color: '#ffffff',
-                } : {
-                  backgroundColor: 'var(--bg-primary)',
-                  borderColor: 'var(--border-color)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                Unpopulated
-              </button>
-            </div>
-            {populated && (
-              <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                If Hab &gt; 0: natural population via 10<sup>Hab</sup> × 2D6.
-                If Hab ≤ 0: inhabitants live in an artificial habitat (MVT/GVT table).
-              </p>
-            )}
-          </div>
-
-          {/* Sector Dynamics — Goal Mode (FR-033) */}
+          {/* System Targets (FR-033) — populated toggle + goal loop options */}
           <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
             <button
               onClick={() => setGoalModeOpen((v) => !v)}
-              className="text-xs flex items-center gap-1 mb-2 font-medium"
-              style={{ color: 'var(--text-secondary)' }}
+              className="flex items-center gap-1 mb-2 text-sm font-semibold w-full text-left"
+              style={{ color: 'var(--text-primary)' }}
               type="button"
             >
-              {goalModeOpen ? '▾' : '▸'} Sector Dynamics — Goal Mode
+              {goalModeOpen ? '▾' : '▸'} System Targets
             </button>
 
             {goalModeOpen && (
               <div className="text-left space-y-3">
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Set optional targets. The generator will loop up to 2,000 times and return the closest matching world.
+                  Set targets for the kind of world you need. The generator will loop up to 2,000 times to find the closest match — useful when building a subsector and you need a specific kind of world.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="populated-toggle"
+                      type="checkbox"
+                      checked={populated}
+                      onChange={(e) => setPopulated(e.target.checked)}
+                      className="rounded"
+                    />
+                    <label htmlFor="populated-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                      Inhabited world
+                    </label>
+                  </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
                       Min Starport
@@ -303,29 +274,49 @@ export function GeneratorDashboard({
                       style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                     />
                   </div>
-                  <div className="flex items-end">
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={goalHabitable}
-                        onChange={(e) => setGoalHabitable(e.target.checked)}
-                        className="rounded"
-                      />
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="habitable-toggle"
+                      type="checkbox"
+                      checked={goalHabitable}
+                      onChange={(e) => setGoalHabitable(e.target.checked)}
+                      className="rounded"
+                    />
+                    <label htmlFor="habitable-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                       Habitable world (Hab &gt; 0)
                     </label>
                   </div>
-                </div>
-                <div className="mt-3">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <div className="flex items-center gap-2">
                     <input
+                      id="ships-x-toggle"
                       type="checkbox"
                       checked={allowShipsAtXPort}
                       onChange={(e) => setAllowShipsAtXPort(e.target.checked)}
                       className="rounded"
                     />
-                    Allow ships at X-class ports
-                  </label>
+                    <label htmlFor="ships-x-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                      Allow ships at X-class ports
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="include-names-toggle"
+                      type="checkbox"
+                      checked={includeNames}
+                      onChange={(e) => setIncludeNames(e.target.checked)}
+                      className="rounded"
+                    />
+                    <label htmlFor="include-names-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                      Generate place names
+                    </label>
+                  </div>
                 </div>
+                {populated && (
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    If Hab &gt; 0: natural population via 10<sup>Hab</sup> × 2D6.
+                    If Hab ≤ 0: inhabitants live in an artificial habitat (MVT/GVT table).
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -406,6 +397,23 @@ export function GeneratorDashboard({
                   View Ships Price List
                 </button>
               </div>
+            </div>
+
+            {/* FRD-068: RAW UDP mode toggle */}
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                id="raw-udp-toggle"
+                type="checkbox"
+                checked={rawUdpMode}
+                onChange={(e) => setRawUdpMode(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="raw-udp-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                RAW UDP Mode
+              </label>
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                — Display worlds in classic Cepheus Engine UWP format
+              </span>
             </div>
           </div>
         </div>

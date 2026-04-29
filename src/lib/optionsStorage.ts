@@ -19,6 +19,8 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   v2Positioning: true,
   activeLifeAssumptionsId: 'mneme-default',
   allowMegaStructures: false,
+  rawUdpMode: false,
+  includeNames: false,
 };
 
 function isValidPreset(value: unknown): value is TLProductivityPreset {
@@ -127,6 +129,17 @@ export function loadGeneratorOptions(): GeneratorOptions {
   const allowMegaStructures =
     typeof stored.allowMegaStructures === 'boolean' ? stored.allowMegaStructures : DEFAULT_GENERATOR_OPTIONS.allowMegaStructures;
 
+  const growthModel =
+    stored.growthModel === 'compounding' || stored.growthModel === 'stable'
+      ? stored.growthModel
+      : DEFAULT_GENERATOR_OPTIONS.growthModel;
+
+  const rawUdpMode =
+    typeof stored.rawUdpMode === 'boolean' ? stored.rawUdpMode : DEFAULT_GENERATOR_OPTIONS.rawUdpMode;
+
+  const includeNames =
+    typeof stored.includeNames === 'boolean' ? stored.includeNames : DEFAULT_GENERATOR_OPTIONS.includeNames;
+
   return {
     starClass,
     starGrade,
@@ -143,6 +156,9 @@ export function loadGeneratorOptions(): GeneratorOptions {
     v2Positioning,
     activeLifeAssumptionsId,
     allowMegaStructures,
+    growthModel,
+    rawUdpMode,
+    includeNames,
   };
 }
 
