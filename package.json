@@ -5,11 +5,27 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "node scripts/bundle-npf-data.mjs",
     "build": "tsc -b && vite build",
+    "prebuild": "node scripts/bundle-npf-data.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "batch:build": "esbuild scripts/batch-runner.ts --bundle --platform=node --format=cjs --outfile=scripts/.dist/batch-runner.cjs --define:import.meta.env.DEV=false --define:import.meta.env.PROD=true --log-level=warning",
+    "batch": "npm run --silent batch:build && node scripts/.dist/batch-runner.cjs",
+    "build:wrapper": "tsc -b && vite build --base ./",
+    "tauri:dev": "cargo tauri dev",
+    "tauri:build": "cargo tauri build",
+    "capacitor:sync": "npx cap sync",
+    "capacitor:build:android": "npx cap build android",
+    "wrapper:build:desktop": "npm run build:wrapper && cargo tauri build",
+    "wrapper:build:android": "npm run build:wrapper && npx cap sync && npx cap build android",
+    "postinstall": "node scripts/relink-gi7b.mjs"
   },
   "dependencies": {
+    "@gi7b/shared": "file:../name-place-faction-generator/shared",
+    "@gi7b/namegen": "file:../name-place-faction-generator/packages/namegen",
+    "@gi7b/placegen": "file:../name-place-faction-generator/packages/placegen",
+    "@gi7b/factiongen": "file:../name-place-faction-generator/packages/factiongen",
     "@tailwindcss/vite": "^4.2.2",
     "@types/uuid": "^10.0.0",
     "dexie": "^4.4.2",
@@ -22,6 +38,9 @@
     "vite-plugin-pwa": "^0.21.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@eslint/js": "^9.39.4",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",

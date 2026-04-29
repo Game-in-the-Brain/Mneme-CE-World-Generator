@@ -24,3 +24,15 @@ dist-ssr
 *.sw?
 .venv/
 ship_text.txt
+
+# Batch runner artifacts (260427-02)
+scripts/.dist/
+out/
+# Wrapper build outputs
+/src-tauri/target
+/src-tauri/gen
+*.msi
+*.appimage
+*.deb
+*.apk
+*.aab

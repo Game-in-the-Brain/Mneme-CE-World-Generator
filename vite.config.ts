@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import tailwindcss from '@tailwindcss/vite'
 import { execSync } from 'child_process'
+import { resolve } from 'path'
 
 // Get version info from git
 function getGitVersion() {
@@ -36,9 +37,17 @@ function getGitVersion() {
 
 const gitVersion = getGitVersion()
 
+const NPF_ROOT = resolve(__dirname, '../name-place-faction-generator');
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/Mneme-CE-World-Generator/',
+  resolve: {
+    alias: {
+      // Use the browser-safe entry point so lc-node.js (readFileSync) is excluded from the bundle
+      '@gi7b/namegen': resolve(NPF_ROOT, 'packages/namegen/dist/index-browser.js'),
+    },
+  },
   build: {
     rollupOptions: {
       input: {
@@ -61,12 +70,12 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: '/icon-192x192.svg',
+            src: 'icon-192x192.svg',
             sizes: '192x192',
             type: 'image/svg+xml'
           },
           {
-            src: '/icon-512x512.svg',
+            src: 'icon-512x512.svg',
             sizes: '512x512',
             type: 'image/svg+xml'
           }
