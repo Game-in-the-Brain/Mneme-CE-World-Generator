@@ -1,8 +1,11 @@
 # REF-003: Orbit Table
 
-**Reference Document for:** [260409-v02 Mneme-CE-World-Generator-FRD.md](../260409-v02%20Mneme-CE-World-Generator-FRD.md)  
-**Section:** 5.4 Companion Orbit  
-**Last Updated:** 2026-04-09
+**Reference Document for:** [260409-v02 Mneme-CE-World-Generator-FRD.md](../260409-v02%20Mneme-CE-World-Generator-FRD.md)
+**Section:** 5.4 Companion Orbit
+**Last Updated:** 2026-04-27
+
+> **2026-04-27 Notice — Superseded by 260427-02 under `v2MultiStar` flag.**
+> When `v2MultiStar` is enabled (default `false`), companion separation is rolled as **3D3 × heliopause_AU** with a hard floor of `3 × heliopause × (1 + e)`, and is no longer drawn from the table below. The table is preserved for legacy systems and for the v1 path. Rationale: the legacy table routinely places companions inside the heliopause, where their gravity would force INRAS truncation — incompatible with the design constraint that INRAS generation must remain single-star-aware. See `260427-02 MWG-REDESIGN-multi-star-hierarchy.md`.
 
 ---
 

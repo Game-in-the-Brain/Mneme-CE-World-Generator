@@ -323,7 +323,21 @@ Each saved system has a unique key in the format `YYMMDD-HHMMSS-[CLASS][GRADE]-[
 
 **`.mneme-batch`** — export an entire batch (all systems + metadata) for sharing sectors between devices or backing up campaigns.
 
+**`.mneme-map`** — export a batch in 3D Interstellar Map format for importing into the sector map.
+
 **CSV (Wide-row format)** — the entire star system in a single row. Standard fields cover the star and main world, followed by open-ended prefixed columns for companion stars (`S1_`, `S2_`) and planetary bodies (`P01_`, `P02_`, `D01_`, etc.). Multiple systems form a flat-file database where each row is self-contained and identifiable by its system key. Compatible with Excel, Google Sheets, and any data tool.
+
+**DOCX (Microsoft Word)** — beautifully formatted document export of any generated system, including:
+- Title page with star class and generation timestamp
+- Primary star and companion stars
+- Habitable zones with AU distances
+- Main world physical characteristics, environment, and habitability
+- Inhabitants: tech level, population, wealth, development, governance, starport, travel zone, and culture traits
+- Planetary system table with moons and rings
+- Full physical properties detail for every body
+- Ships in the area (if generated)
+
+Perfect for referees who want to hand out printed system briefs to players.
 
 ---
 

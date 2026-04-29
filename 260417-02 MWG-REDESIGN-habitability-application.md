@@ -145,7 +145,7 @@ If the body was shepherded inward during a Hot Jupiter Event, its AU has decreas
 
 ---
 
-## 6. Step 4 — Hazard (2D6 + Reactivity DM)
+## 6. Step 4 — Hazard (2D6 + Reactivity DM + Zone Radiation DM)
 
 | 2D6 (modified) | Hazard Type | Habitability Mod |
 |---|---|---|
@@ -159,6 +159,26 @@ If the body was shepherded inward during a Hot Jupiter Event, its AU has decreas
 **Modifiers:**
 - Composition Reactivity DM adds to roll (more reactive compositions produce more hazardous outcomes)
 - Atmosphere Composition Hazard Bias stacks (Sulfuric +2 Corrosive +1 Toxic, etc.)
+- **Zone Radiation DM** stacks (see table below) — captures stellar UV/X-ray flux, solar-wind erosion, and atmospheric stripping for inner-zone bodies.
+
+### Zone Radiation Hazard DM
+
+Added 2026-04-27 to address the design gap where zone position only affected temperature. Inner zones now carry a hazard cost; outer zones do not (see `260427-01` for full rationale and Option 3's deliberate no-op).
+
+| Zone | Hazard DM | Justification |
+|---|---|---|
+| Infernal | **+2** | Direct stellar exposure; intense UV/X-ray; coronal mass ejection impact; atmospheric stripping |
+| Hot | **+1** | Significant stellar wind erosion; periodic flare exposure |
+| Conservative | 0 | Earth-like; magnetosphere assumed effective |
+| Cool | 0 | Reduced flux; neutral |
+| Frost Line | 0 | Negligible stellar effects |
+| O1 | 0 | Stellar contribution negligible (GCR not modelled at this fidelity) |
+| O2 | 0 | — |
+| O3 | 0 | — |
+| O4 | 0 | — |
+| O5 | 0 | — |
+
+**Effect:** an Infernal-zone world rolls 2D6 + Reactivity + atmo bias **+ 2** for hazard, biasing toward Toxic / Radioactive. Hot is +1. All other zones are +0. The Reactivity and atmosphere-bias modifiers stack on top.
 
 ---
 
@@ -227,7 +247,17 @@ Three sources adjust the dice pool BEFORE rolling:
 | Hot | +2 dis levels |
 | Inferno | +3 dis levels |
 
-**(C) Subsurface Ocean Override** — Hydrous/Volatile-Rich Dwarfs with tidal heating halve the Temperature penalty:
+**(C) Habitable-Zone Biosphere Bonus** — Conservative-zone bodies with sufficient organic feedstock get a small dice-pool advantage. Added 2026-04-27 (`260427-01`); makes the HZ mechanically distinct from "lucky elsewhere."
+
+**Trigger (BOTH required):**
+- Zone is `Conservative`
+- Biochem tier ≥ `Common` (after Reactivity DM)
+
+**Effect:** `disLevel −= 1` (one die shifts from disadvantage toward advantage). Stacks with the Biochem and Temperature adjustments.
+
+**Why gated on biochem:** an HZ rock without organic chemistry still cannot grow life. The bonus rewards worlds with **both** the right place **and** the right chemistry, not just orbital luck.
+
+**(D) Subsurface Ocean Override** — Hydrous/Volatile-Rich Dwarfs with tidal heating halve the Temperature penalty:
 
 **Trigger (all three required):**
 - Composition ∈ {Hydrous/Icy-Rock, Volatile-Rich} (Dwarf) OR {Hydrous/Ocean} (Terrestrial)
@@ -421,6 +451,10 @@ interface Body {
   // Flags
   hasSubsurfaceOceanOverride: boolean  // trigger fired?
   wasShepherded: boolean                // Hot Jupiter shepherding?
+
+  // Zone radiation + HZ biosphere bonus (260427-01)
+  zoneHazardDM?: number                  // applied at step 4 (Hazard)
+  hzBiosphereBonusApplied?: boolean      // true if Conservative + biochem ≥ Common
 }
 
 interface StarSystem {
@@ -630,6 +664,7 @@ All open questions from this draft have been resolved in `260417-03 MWG-REDESIGN
 - **Hot Jupiter shepherded re-evaluation:** Temperature re-rolled only. Other attributes fixed.
 - **B3 → B4 boundary:** Keep discrete tiers. The jump models the Great Oxidation Event threshold.
 - **Extreme negative scores:** No floor. MVT/GVT fallback handles arbitrarily hostile worlds.
+- **Zone-only-affects-temperature problem:** Resolved 2026-04-27 in `260427-01`. Inner zones now carry a Hazard DM (+2 Infernal, +1 Hot); Conservative HZ now carries a small biosphere dice-pool bonus when biochem ≥ Common; outer zones are deliberately unchanged. See `260427-01` §1–2 for full rationale.
 
 ---
 

@@ -27,6 +27,9 @@
 | 14 | **Life Assumptions file location** | `src/lib/lifePresets.ts` (separate from `economicPresets.ts`). |
 | 15 | **Feature flag for Phase 3 positioning** | `v2Positioning: boolean` in `GeneratorOptions`, default `false`. |
 | 16 | **Zone rename: Cold→Cool, Outer→O1–O5** | Locked. `ZoneId` type expands; UI labels update. Old `'Cold'` and `'Outer'` values removed from codebase. |
+| 17 | **Zone position only affects temperature (FR-043 gap)** | Resolved 2026-04-27 in `260427-01`. Zone now also feeds Hazard (Option 1) and Biosphere (Option 2). Outer zones deliberately unchanged (Option 3). |
+| 18 | **Inner-zone radiation hazard** | Add `ZONE_HAZARD_DM` table: Infernal +2, Hot +1, all others 0. Stacks with Reactivity + atmosphere bias on the step-4 hazard roll. See §6.3. |
+| 19 | **Habitable-Zone biosphere bonus** | When `zone === 'Conservative'` AND `biochem ≥ Common`, reduce biosphere `disLevel` by 1. Stacks with biochem and temperature adjustments. See §6.7. |
 
 ---
 
@@ -633,7 +636,7 @@ Pre-computed inputs: mass, composition, density, gravity, radius, zone, parent i
 
 ### 6.3 Hazard Stack
 
-**Hazard roll:** 2D6 + Reactivity DM + atmo hazard bias.
+**Hazard roll:** 2D6 + Reactivity DM + atmo hazard bias **+ Zone Radiation DM** (added 2026-04-27, see `260427-01`).
 
 | Roll | Hazard | Hab Mod |
 |---|---|---|
@@ -643,6 +646,19 @@ Pre-computed inputs: mass, composition, density, gravity, radius, zone, parent i
 | 9 | Biohazard | −2 |
 | 10 | Toxic | −3 |
 | 11–12 | Radioactive | −4 |
+
+**Zone Radiation DM (`ZONE_HAZARD_DM`):**
+
+| Zone | DM | Justification |
+|---|---|---|
+| Infernal | +2 | Direct stellar exposure, UV/X-ray flux, atmospheric stripping |
+| Hot | +1 | Stellar wind erosion, periodic flare exposure |
+| Conservative | 0 | Earth-like; magnetosphere assumed effective |
+| Cool | 0 | Reduced flux, neutral |
+| Frost Line | 0 | Negligible stellar effects |
+| O1–O5 | 0 | Stellar contribution negligible (GCR not modelled) |
+
+Outer-zone GCR exposure is deliberately not modelled — outer zones already pay through Temperature (see §6.6 subsurface override for the rare path to outer-zone biospheres). See `260427-01` §2 Option 3 for the rationale.
 
 **Hazard intensity:** 2D6 → Trace(0) / Light(0) / Moderate(−1) / Heavy(−2) / Extreme(−3).
 
@@ -680,6 +696,29 @@ Pre-computed inputs: mass, composition, density, gravity, radius, zone, parent i
 **Effect:** Temperature's dice adjustment is halved, rounded toward less severe.
 - Freezing dis+3 → dis+2
 - Cold dis+2 → dis+1
+
+### 6.7 Habitable-Zone Biosphere Bonus
+
+Added 2026-04-27 (`260427-01` Option 2). Makes the Conservative HZ mechanically distinct from "elsewhere with lucky rolls" — without disturbing other components.
+
+**Trigger (BOTH required):**
+- `zone === 'Conservative'`
+- Biochem tier ≥ `Common` (after Reactivity DM applied)
+
+**Effect:** `disLevel −= 2` in the biosphere dice-pool computation (revised 2026-04-27 from −1 after empirical batch). Stacks with the Biochem and Temperature dice adjustments. Equivalent to shifting two dice from disadvantage toward advantage.
+
+**Why gated on biochem:** an HZ rock without organic feedstock still cannot sustain life. The bonus rewards worlds with both the right place and the right chemistry.
+
+**Stacking order (in `runHabitabilityWaterfall` step 7):**
+1. Start `disLevel` at `lifePreset.biosphereDisadvantage` (default 2)
+2. Subtract `biochemOffset` (positive biochem mod)
+3. Add `effectiveTempAdjust` (after subsurface override halving)
+4. **Subtract 1 if HZ biosphere bonus triggers** (this step)
+5. Build dice pool from final `disLevel`
+
+### 6.8 Outer Zones — Deliberate No-Op
+
+`260427-01` Option 3 documents that O1–O5 receive **no new modifiers** in this rebalancing. They retain their existing Temperature DM (−4 to −8) and zero hazard contribution. Cosmic radiation is not modelled separately; the subsurface ocean override (§6.6) remains the rare path to outer-zone habitability. This is recorded so future contributors do not assume the inner-zone hazard DM table is incomplete.
 
 ---
 
@@ -726,5 +765,10 @@ Pre-computed inputs: mass, composition, density, gravity, radius, zone, parent i
 | Roche survival rate (base) | ~28% | ±5% |
 | Rogue moons per system | 0–1 (rare) | — |
 | Ring upgrade from Roche failure | ~2–5% of ringed parents gain a tier | ±2% |
+| Mainworld Conservative-zone share (post 260427-01, retuned 2026-04-27) | 30–50% | ±5% |
+| Mainworld Outer-zone share | ≤ 15% | ±5% |
+| Mainworld Hot+Infernal share (M-dwarf bias respected) | ≤ 20% | ±5% |
+| Inner-zone Toxic+ hazard rate among Infernal worlds (matches JWST TRAPPIST-1 b/c) | 70–90% | ±10% |
+| HZ biosphere ≥ B2 rate | informational only | — |
 
-Run 10,000-system batch export. Adjust table values if empirical results diverge beyond tolerance.
+Run 10,000-system batch export. Adjust table values if empirical results diverge beyond tolerance. If the post-260427-01 numbers fall outside tolerance, the recommended retune order is documented in `260427-01` §6.

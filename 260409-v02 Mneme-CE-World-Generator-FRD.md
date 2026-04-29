@@ -276,6 +276,12 @@ See [REF-003: Orbit Table](./references/REF-003-orbit-table.md) for full table.
 
 > **Roll-18 recursion rule:** If the re-roll also yields 18, multiply again (×100 total). Cap at 2 re-rolls — a third consecutive 18 is treated as 17.
 
+> **2026-04-27 Update — `v2MultiStar` flag.** When `v2MultiStar` is enabled (default `false`), the legacy table above is replaced by **3D3 × heliopause_AU** with a hard floor of `3 × heliopause × (1 + e)`. This places every companion's S-type stability cone (`0.46 × a × (1 − e)`) outside the heliopause, so INRAS generation, FR-042 positioning, FR-043 habitability, and mainworld selection remain single-star. Hierarchical orbit tree and barycenter math are added per `260427-02 MWG-REDESIGN-multi-star-hierarchy.md`. Trade-off: close binaries and circumbinary (P-type) planets are out of scope under v2MultiStar by design.
+
+### 5.5 Multi-Star Hierarchy (v2MultiStar)
+
+When `v2MultiStar` is enabled, companion stars are organised into a hierarchical orbit tree (`OrbitNode = StarLeaf | BinaryNode`) rooted on `StarSystem.rootOrbitNode`. Each `BinaryNode` caches its barycenter offsets (`rPrimary`, `rSecondary`), Kepler period, and stability envelope. The legacy `companionStars[]` array is preserved alongside the tree for back-compat with UI, DOCX, CSV. Full spec: `260427-02 MWG-REDESIGN-multi-star-hierarchy.md`.
+
 ---
 
 ## 6. Main World Generation Module

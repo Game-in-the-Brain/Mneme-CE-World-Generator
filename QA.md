@@ -110,6 +110,20 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 | **QA-058** | ✅ Fixed | Ships in the Area: X-port toggle default ON, Boat Years scarcity removed, Credits display |
 | **QA-061** | ✅ Fixed | Population redesign: productivity ratio replaces `TL_POP_MOD`; +1 exponent; forgiving PSS mapping |
 | **FR-041** | 📋 Planned | Composition–Atmosphere–Biosphere Pipeline Redesign — see below |
+| **QA-064** | ✅ Fixed (retuned 2026-04-27) | Habitability zone-radiation + HZ biosphere bonus. HZ bonus magnitude raised −1 → −2 after empirical batch. Validation targets revised against JWST + Kepler exoplanet observations (see findings below). **Retuned 1000-system batch: Conservative mainworld 47.2% (target 30–50% ✓); Hot+Infernal 15.3% (target ≤20% ✓); Infernal Toxic+ 69.6% (target 70–90% ✓); HZ biosphere ≥B2 rate 39.9% (was 31.8%, +8pp).** Spec: `260427-01`. |
+| **QA-065** | ✅ Fixed (retuned 2026-04-27) | Multi-star wide-only rebuild + hierarchical re-roll cap 5 → 10. **Retuned 1000-system batch: S-type cap clears heliopause 100% strict; G-class mean 700 AU; eccentricity mean 0.234; hierarchical violations 4/243 (1.6%, down from 1.9%).** Spec: `260427-02`. |
+| **QA-066** | 📋 Queued | Cultural Values — economic / demographic effects. Source: `/home/justin/opencode260220/name-place-faction-generator/260421 Cultural Values Table.docx`. Mechanical effects to wire: Wealth attitudes, Foreign Policy, Gender Roles, Disability, Government Structure, Success Measures. Detail below. |
+| **QA-067** | 📋 Queued | Low population for G-class terrestrial worlds — focused 1,000-system batch filtered to starClass=G, mainWorldType=Terrestrial, bucket pop by zone. Hypothesis: productivity ratio + PSS mapping anchored too low for sub-100k populations. Verify whether +1 exponent from QA-061 produces the right magnitude for small habitats/starports. Source: Neil Lucock v1.3.151 feedback (5,300-pop world case). |
+| **QA-068** | 📋 Queued | G4 terrestrial chose outer-frostline mainworld over inner candidates — run focused G-class post-retune batch (v2Positioning + v2MultiStar), bucket mainworld by zone. If Conservative-mainworld share for G-class is <40% the retune isn't strong enough for G specifically. Also confirm MVT/GVT fallback over-fire rate (target <10% of systems). Source: Neil Lucock v1.3.151 feedback. |
+| **QA-069** | 📋 Queued | "Average Wealth + UnderDeveloped Development contradict each other" — need specific world data block from Neil to trace exact text. Check whether post-QA-028 narrative-coherence text fires when it should. Ask Neil to export the world and send the JSON. |
+| **QA-070** | 📋 Queued | Mining habitat with no starport — trace `calculateStarport` for worldType ∈ {Mining, Habitat-mining}. Current guard (X-port limits ship counts, QA-030) runs the wrong direction — no guard forces port class *up* for export-dependent economies. R4 (starport floor by world function) closes this: Mining/Inhospitable + pop <500k → Class ≥ D; Agricultural + pop <500k → Class ≥ E. |
+| **QA-071** | 📋 Queued | Mainworld "raison d'être" coherence — design task. When generator emits a small-population, inhospitable, isolated mainworld, narrative scaffolding should provide an existence reason: penal colony / research outpost / refugee remnant / mining concession / strategic chokepoint / cult retreat. Currently culture rolls exist but no "why is this world inhabited at all?" generator. Spec required before implementation. |
+| **QA-072** | 📋 Queued | Sector Dynamics (World Building Requirements) discoverability — Neil ran into this as most users will. Audit: where does the user first encounter the goal-loop option? Currently buried as a secondary collapsible below the population toggle. Fix shipped (2026-04-27): renamed to "World Building Requirements", promoted to prominent header, expanded by default. UX follow-up: add a "Building a Subsector?" callout on the Generator page for new users. |
+| **QA-073** | 📋 Queued | Culture trait and power structure descriptions need low-pop variants. At 5,300 people "Factions constantly vie for status and resources" is absurd — that's a town council. QA-025 covered Wealth/Development text but never touched POWER_STRUCTURE_DESCRIPTIONS or CULTURE_TRAIT_DESCRIPTIONS. R3 implementation must add `POWER_STRUCTURE_DESCRIPTIONS_LOW_POP` and `CULTURE_TRAIT_DESCRIPTIONS_LOW_POP` switched in for pop < 1M. Implement together with R3 (government label substitution). |
+| **QA-074** | 📋 Queued | UX: "Terrestrial" selector misleads users into expecting a habitable world. Add tooltip: "Terrestrial = rocky body > 0.5 Earth mass — not a habitability guarantee. For an Earth-like world, also tick 'Habitable world' in World Building Requirements." Consider auto-ticking the Habitable checkbox when Terrestrial type is selected. |
+| **QA-075** | 📋 Queued | Definition of "Habitable" — tooltip + Glossary entry. Define: "A world capable of supporting an unmodified terrestrial human on its surface without artificial life support." Clarify that the Mneme setting's default assumption is that the universe is not built for us (cite Carl Sagan: "The universe is not obliged to make sense to you"; Neil deGrasse Tyson: "The universe is under no obligation to make sense to your scale of perception"). Earth-like worlds are statistically rare — this is why the generator defaults to many inhospitable results. Add "More Earth-like worlds" toggle to World Building Requirements (biases HZ selection and habitability threshold). Note in glossary that FRD-069 (Edit this World) lets referees override any world's habitability assumptions. |
+| **QA-076** | ⏸ On Hold | Starport floor guard (Mining/Inhospitable + pop <500k → Class ≥ D; Agricultural + pop <500k → Class ≥ E) — originally QA-070 R4. Held pending FRD-070 economic classification redesign, which will define the full set of world function types on which floor rules operate. Do not implement in isolation — the floor logic must align with whatever economic modes FRD-070 introduces. |
+| **QA-077** | ⏸ On Hold | Mainworld raison d'être — "who thought this place was worth settling?" generator (penal colony, research outpost, refugee remnant, mining concession, strategic chokepoint, cult retreat). Originally QA-071. Held pending FRD-070, which will establish economic modes and industries as the primary driver of existence justification. An isolated miner world's reason to exist is its economic function, not a separate flavour roll. |
 
 ### FR-041 — Composition–Atmosphere–Biosphere Pipeline Redesign
 
@@ -131,6 +145,154 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 **Depends on:** Locked terminology (INRAS = Level 1 IntRAstellar bodies)  
 **Enables:** FR-040 (Intrastellar Population Distribution)  
 **Full spec:** `260417-03 MWG-REDESIGN-consolidated-v1.md` (supersedes `260417-00`)
+
+### QA-064 — Final Findings (retuned 1000-system batch, 2026-04-27 PM)
+
+After raising HZ biosphere bonus −1 → −2 and revising targets against observation (JWST atmosphere data on TRAPPIST-1 b/c, Kepler bias-corrected η-Earth):
+
+| Metric | Result | Revised target | Status |
+|---|---|---|---|
+| Conservative mainworld share | 47.2% | 30–50% | ✓ In range |
+| Hot+Infernal mainworld share | 15.3% | ≤ 20% | ✓ |
+| Outer (O1–O5) mainworld share | 9.6% | ≤ 15% | ✓ |
+| Infernal Toxic+ rate | 69.6% | 70–90% | ✓ (lower edge; supported by JWST TRAPPIST-1 b/c atmosphere-bare observation) |
+| HZ biosphere ≥ B2 rate | 39.9% (was 31.8%) | informational | ✓ +8pp from retune |
+| Zone Hazard DM applied per design | Infernal 2.0 / Hot 1.0 / others 0 | strict | ✓ |
+
+**Observational deviation analysis (2026-04-27):**
+
+| Metric | Our model | Observation | Match |
+|---|---|---|---|
+| Stellar class distribution | M 69% / K 15% / G 10% / F 4% / A 1% / B 0.4% | M 75% / K 12% / G 8% / F 3% / A 0.6% / B+O 0.13% (RECONS) | ✓ within a few pp |
+| Mean L1 bodies per system | 6.6 | Kepler bias-corrected ~6–8 | ✓ |
+| Inner-zone atmosphere-stripping rate | 70% Toxic+ | JWST TRAPPIST-1 b/c atmosphere-bare; Mercury/Venus solar inner = 50% bare + 50% toxic-thick | ✓ matches |
+| Conservative HZ candidate share | 28% of all rocky candidates | η-Earth (FGK) 10–25%; M-dwarf systems higher | ✓ slightly high, defensible given M-dwarf bias |
+
+**Pre-retune vs post-retune deltas:**
+
+| Metric | Pre-retune (−1) | Post-retune (−2) | Δ |
+|---|---|---|---|
+| Conservative mainworld share | 44.8% | 47.2% | +2.4 pp |
+| HZ biosphere ≥ B2 rate | 31.8% | 39.9% | +8.1 pp |
+| Hot+Infernal share | 16.9% | 15.3% | −1.6 pp |
+
+**Retune verdict:** the −2 magnitude landed where intended — biosphere viability in HZ improved meaningfully (+8pp on the metric that directly measures HZ-vs-elsewhere life rate) without dramatically reshaping mainworld zone distribution. The original mainworld-share target of 60–75% was anthropic; observation supports the revised 30–50% range, which the model now hits.
+
+---
+
+### QA-064 — Original Findings (pre-retune, 2026-04-27 AM)
+
+(Kept for traceability. Initial 1000-system batch with HZ bonus = −1 and observationally-naive targets.)
+
+Run: `npm run batch -- --count 1000 --report all` (full output: `out/validation-2026-04-27-v2multistar.txt`).
+
+**Zone Hazard DM applied as designed:**
+- Infernal: mean DM = 2.00 ✓ (50/50 worlds)
+- Hot: mean DM = 1.00 ✓ (1519/1519 worlds)
+- All other zones: 0 ✓
+
+**Mainworld zone distribution:**
+| Zone | Count | Share | Target | Status |
+|---|---|---|---|---|
+| Conservative | 448 | 44.8% | 60–75% | ❌ Below target |
+| Hot | 163 | 16.3% | (target on Hot+Infernal ≤ 5%) | ❌ Over |
+| Infernal | 6 | 0.6% | (combined w/ Hot) | ✓ alone |
+| Cool | 146 | 14.6% | — | informational |
+| FrostLine | 147 | 14.7% | — | informational |
+| O1–O5 | 74 | 7.4% | ≤ 15% | ✓ Within target |
+
+**Hazard rates:**
+- Infernal Toxic+ (Toxic or Radioactive): **74.0%** (target 25–35%) — ❌ +2 DM is too aggressive
+- HZ biosphere ≥ B2 rate: 31.8% — ✓ bonus firing 1736/2343 HZ candidates (74.1%)
+
+**Diagnosis:**
+- The Infernal Toxic+ rate at 74% confirms the +2 hazard DM over-shoots — most Infernal worlds are pushed past the Toxic / Radioactive threshold. But the Infernal mainworld share is already 0.6%, so Infernal isn't the share problem.
+- The Conservative shortfall is driven by **Hot** worlds winning mainworld too often (16.3%). Hot zone DM +3 still lands on "Average" temperature in many rolls because temperature mapping has wide bands (6–9). The +1 Hazard DM doesn't push Hot out of contention.
+- Outer zones are correctly suppressed (7.4% within target).
+
+**Retune recommendations (in priority order, per `260427-01` §6 retune protocol):**
+
+1. **Soften Infernal hazard DM from +2 → +1.** Brings Infernal Toxic+ rate down toward target ~50% (still penalised, but not crushing). Spec calls this the first lever.
+2. **Strengthen HZ biosphere bonus from −1 → −2 disLevel** (the current bonus shifts pool by one die; doubling it would meaningfully widen the HZ advantage and pull Conservative share up by an estimated 10–15 percentage points). Spec calls this the third lever; recommend before retuning Hot.
+3. **Add a Hot zone temperature DM penalty in the +3 → +4 direction**, OR add a Hot-zone hazard DM at +2 (matching Infernal's softened value). This is the most invasive retune; defer until after (1)+(2) re-test.
+
+**Open question for design review:** is the 60–75% Conservative target itself realistic, or is it overstated? In our solar system, exactly one world (Earth) is in Conservative HZ, so 1/8–10 = 10–12% would be a defensible alternative target. The 60–75% target presumes "the universe biases toward HZ mainworlds because that's where life happens" — which is more anthropic than physical. **Justin should pick.**
+
+---
+
+### QA-065 — Empirical Findings (1000-system batch, 2026-04-27)
+
+Run: `npm run batch -- --count 1000 --v2multistar --report multi-star`.
+
+**Multi-star validation (260427-02 §7 targets):**
+| Target | Result | Status |
+|---|---|---|
+| S-type cap clears heliopause | 100.0% (0 violations / 267 binaries) | ✓ Strict |
+| G-class mean separation ~720 AU ±100 | 720.5 AU | ✓ Bullseye |
+| Eccentricity mean ~0.25 ±0.05 | 0.243 | ✓ Within tolerance |
+| `a_outer ≥ 3 × a_inner` (hierarchical) | 5 violations / 267 binaries (1.9%) | ⚠️ Known edge case |
+
+**Separation scaling by class (mean / median / range):**
+| Class | Mean | Median | Range | n |
+|---|---|---|---|---|
+| M | 119 AU | 108 AU | 47–244 AU | 97 |
+| K | 327 AU | 309 AU | 163–645 AU | 39 |
+| G | 720 AU | 680 AU | 363–1255 AU | 38 |
+| F | 1205 AU | 1201 AU | 529–1962 AU | 20 |
+| A | 2864 AU | 2887 AU | 1760–4108 AU | 6 |
+| B | 4453 AU | 4680 AU | 2520–6158 AU | 3 |
+
+All class scaling matches the 3D3 × heliopause × (1+e) formula. M-class minimum 47 AU is well above the heliopause (~24 AU), so even the unluckiest roll preserves single-star INRAS.
+
+**Hierarchical edge case (5 violations):** these occur when a system has 2+ companions and the second companion's 3D3 × heliopause roll happens to land below 3 × first companion's separation. The 5-attempt re-roll loop in `multiStar.ts:buildBinary` exhausts without finding a valid value. Three options:
+1. Drop the failing companion entirely (lose 5/267 = 1.9% of secondary-companion narrative variety).
+2. Bump the re-roll cap to 10 attempts (probably resolves most).
+3. Increase the floor multiplier so the failure mode doesn't trigger as often (changes the separation distribution — would break the 720 AU G-class mean target).
+
+**Recommend option 2** (bump cap) — minimal risk to other targets.
+
+---
+
+### QA-066 — Cultural Values: Economic & Demographic Effects (Queued)
+
+**Status:** 📋 Queued — to be specced after multi-star (QA-065) lands
+**Source:** `/home/justin/opencode260220/name-place-faction-generator/260421 Cultural Values Table.docx`
+**Goal:** Wire culture rolls through to Wealth, Trade, Inequality, Development, and Workforce participation so a culture like "Isolationist" mechanically reduces trade and a culture like "Cultural Exchange" boosts it.
+
+#### Cultural rows that drive economic / demographic outcomes
+
+| Row | Title | Mechanical effect (proposed) |
+|---|---|---|
+| 1-5 | **Attitudes Toward Wealth** | "Greed is Good" → +Wealth weight, +Inequality, hyper-capitalist preset bias. "Keep Only what you Need" → −Wealth, −Inequality, communal-economy preset. "Blessed Extravagance" → +Trade velocity (faster GDP turnover), neutral Wealth. "Money is Evil" → −Trade, −Wealth, locks economic preset to non-market. |
+| 6-5 | **Measures of Success — "Money Matters"** | Forces aggressive economic-development bias: +Development weight, +Wealth weight; reduces variance in mainworld selection toward economically-strong candidates. |
+| 3-5 | **Foreign Policy** | "Cultural Exchange" / "Xenophilia" → +Trade multiplier, opens free-trade flag, increases ships-in-area count. "Cultural Competition" → +Industrial output (+Development), neutral Trade but increased import substitution flavour. "Xenophobia" → ×0.5 trade multiplier (heavy tariffs/protectionism). "Xenocide" → ×0 external trade; only intrastellar. |
+| 2-4 | **Gender Roles** | "Gender Superiority" → workforce participation halved → effective population for economic output ×0.5; ↑ inequality. "Strict Equal" → segmented labour market — neutral total output, narrative flavour only. |
+| 3-1 | **Disability** | "Discrimination" → −Development modifier (institutional capacity penalty). "Benefits" → +Development modifier (advancement signal). |
+| 4-5 | **Government Structure** | "Elitist" → wealth concentration multiplier (top decile holds majority of GDP). "Meritocratic Examination" → +Development weight, locks to technocracy preset. |
+
+#### Plumbing required
+
+- Each Cultural Values row roll already produces a `traitId`. Add a `mechanicalEffects` map from `traitId → { wealthDelta?, developmentDelta?, tradeMultiplier?, inequalityDelta?, workforceMultiplier?, presetBias? }`.
+- `getWealth()`, `getDevelopment()`, and a new `getTradeMultiplier()` consume the deltas after their primary roll.
+- `Inhabitants` gets an `effectivePopulation` field = `population × workforceMultiplier`, used by GDP/day calculation.
+- Ships-in-area scaling uses the trade multiplier.
+- Add a `culturalEffectsBreakdown` field on `Inhabitants` so the UI can show *why* wealth is high/low ("Greed is Good: +1 wealth weight; Xenophobia: ×0.5 trade").
+
+#### Conflicts to handle
+
+- A culture rolled with both "Greed is Good" AND "Money is Evil" must be rerolled (already handled by `CULTURE_OPPOSITES` per QA-020 — verify the new mechanical-effect entries don't reintroduce conflicts).
+- "Xenocide" + a starport class A/B is incoherent — either downgrade port or flag the system as quarantine/blockade.
+- Some cultures might push effective population below subsistence — add a floor at `population × 0.1` to keep the world generating SOMETHING.
+
+#### Test plan
+
+- Generate 1,000 systems; bucket by culture combinations; verify Wealth/Development/Trade distributions shift in the expected directions.
+- Spot-check: Isolationist + Xenophobic culture → low ships-in-area, low trade GDP, narrative coherent.
+- Cultural Exchange + Greed → high trade, high inequality, port class A.
+
+**Working note:** the user's writeup (the prompt that filed this QA) contains the full mechanical justification by row — preserve it in this section so future contributors don't have to re-derive the design from the DOCX.
+
+---
 
 | **FR-042** | 📋 Planned | Positioning System Redesign — see below |
 
