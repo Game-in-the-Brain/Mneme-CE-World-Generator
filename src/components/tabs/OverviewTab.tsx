@@ -1,8 +1,8 @@
 import { Sun, Globe, Users, Anchor } from 'lucide-react';
-import { formatNumber, formatLuminosity, formatPopulation, formatCredits } from '../lib/format';
-import { displayTL, getGrowthModel } from '../lib/economicPresets';
-import { POWER_STRUCTURE_LABELS_LOW_POP, SOURCE_OF_POWER_LABELS_LOW_POP } from '../lib/worldData';
-import type { StarSystem, RawUdpProfile } from '../types';
+import { formatNumber, formatLuminosity, formatPopulation, formatCredits } from '../../lib/format';
+import { displayTL, getGrowthModel } from '../../lib/economicPresets';
+import { POWER_STRUCTURE_LABELS_LOW_POP, SOURCE_OF_POWER_LABELS_LOW_POP } from '../../lib/worldData';
+import type { StarSystem, RawUdpProfile } from '../../types';
 import { DataRow, ZoneBox } from './tabHelpers';
 
 export function OverviewTab({ system, rawUdpMode, rawProfile }: { system: StarSystem; rawUdpMode: boolean; rawProfile: RawUdpProfile }) {

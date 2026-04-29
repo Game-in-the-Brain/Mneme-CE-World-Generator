@@ -1,20 +1,21 @@
 import { useState } from 'react';
-import { ExternalLink } from 'lucide-react';
-import { formatCredits, formatAnnualTrade, formatPopulation } from '../lib/format';
-import { displayTL, displayTLDescriptor } from '../lib/economicPresets';
-import { generateShipsInTheArea } from '../lib/shipsInArea';
+import { ExternalLink, RotateCcw } from 'lucide-react';
+import { formatCredits, formatAnnualTrade, formatPopulation } from '../../lib/format';
+import { displayTL } from '../../lib/economicPresets';
+import { generateShipsInTheArea } from '../../lib/shipsInArea';
 import {
-  CULTURE_TRAIT_DESCRIPTIONS,
-  CULTURE_TRAIT_DESCRIPTIONS_LOW_POP,
   WEALTH_DESCRIPTIONS,
   WEALTH_DESCRIPTIONS_LOW_POP,
   POWER_STRUCTURE_DESCRIPTIONS,
   POWER_STRUCTURE_DESCRIPTIONS_LOW_POP,
   SOURCE_OF_POWER_DESCRIPTIONS,
   SOURCE_OF_POWER_DESCRIPTIONS_LOW_POP,
-  TL_TABLE,
-} from '../lib/worldData';
-import { recalculateStarportFromDials } from '../lib/economicsEngine';
+  DEVELOPMENT_DESCRIPTIONS,
+  DEVELOPMENT_DESCRIPTIONS_LOW_POP,
+  POWER_STRUCTURE_LABELS_LOW_POP,
+  SOURCE_OF_POWER_LABELS_LOW_POP,
+} from '../../lib/worldData';
+import { recalculateStarportFromDials } from '../../lib/economicsEngine';
 import type {
   Inhabitants,
   StarSystem,
@@ -25,12 +26,26 @@ import type {
   DevelopmentLevel,
   PowerStructure,
   PowerSource,
-} from '../types';
-import { DataRow, PhysProp, HabitabilityBox, BodyCountCard, formatCompactNumber, getSystemCode } from './tabHelpers';
+} from '../../types';
+import { DataRow } from './tabHelpers';
 import { CultureTraitList, TechLevelCard, DescriptionCard, FootnoteBlock } from './WorldTab';
 
-export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult, onOpenShipsPriceList, onGlossary, rawUdpMode, rawProfile, isEditing, onEditInhabitants }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void; onOpenShipsPriceList?: () => void; onGlossary?: () => void; rawUdpMode: boolean; rawProfile: RawUdpProfile; isEditing: boolean; onEditInhabitants?: (inhabitants: Inhabitants) => void }) {
+export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult, onOpenShipsPriceList, onGlossary, rawUdpMode, rawProfile, isEditing, onEditInhabitants, originalInhabitants }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void; onOpenShipsPriceList?: () => void; onGlossary?: () => void; rawUdpMode: boolean; rawProfile: RawUdpProfile; isEditing: boolean; onEditInhabitants?: (inhabitants: Inhabitants) => void; originalInhabitants?: Inhabitants }) {
   const isPopulated = inhabitants.populated !== false;
+
+  // FR-069c: track which fields differ from originally rolled values
+  const hasOriginal = !!originalInhabitants;
+  function isChanged<K extends keyof Inhabitants>(field: K): boolean {
+    return hasOriginal && inhabitants[field] !== originalInhabitants[field];
+  }
+  const starportChanged = hasOriginal && (
+    inhabitants.starport.class !== originalInhabitants.starport.class ||
+    inhabitants.starport.pss !== originalInhabitants.starport.pss ||
+    inhabitants.starport.annualTrade !== originalInhabitants.starport.annualTrade ||
+    inhabitants.starport.weeklyBase !== originalInhabitants.starport.weeklyBase ||
+    inhabitants.starport.weeklyActivity !== originalInhabitants.starport.weeklyActivity
+  );
+  const amberText = { color: 'var(--accent-amber, #f59e0b)' };
 
   const [hideEconomicFraming, setHideEconomicFraming] = useState(
     () => localStorage.getItem('mneme_hide_economic_framing') === 'true'
@@ -39,6 +54,16 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
     const next = !hideEconomicFraming;
     setHideEconomicFraming(next);
     localStorage.setItem('mneme_hide_economic_framing', String(next));
+  }
+
+  function handleReset<K extends keyof Inhabitants>(field: K, needsRecalc = false) {
+    if (!originalInhabitants || !onEditInhabitants) return;
+    const restored = { ...inhabitants, [field]: originalInhabitants[field] } as Inhabitants;
+    if (needsRecalc) {
+      onEditInhabitants(recalculateStarportFromDials(restored, system.economicPreset));
+    } else {
+      onEditInhabitants(restored);
+    }
   }
 
   if (!isPopulated) {
@@ -282,9 +307,21 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
-                Wealth
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)]" style={isChanged('wealth') ? amberText : undefined}>
+                  Wealth {isChanged('wealth') && '•'}
+                </label>
+                {isChanged('wealth') && (
+                  <button
+                    onClick={() => handleReset('wealth', true)}
+                    className="text-[10px] px-1 py-0.5 rounded hover:bg-white/10 transition-colors"
+                    style={amberText}
+                    title="Reset to rolled value"
+                  >
+                    <RotateCcw size={10} className="inline mr-0.5" />Roll
+                  </button>
+                )}
+              </div>
               <select
                 value={inhabitants.wealth}
                 onChange={(e) => {
@@ -293,7 +330,7 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                   onEditInhabitants(updated);
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
-                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: isChanged('wealth') ? 'var(--accent-amber, #f59e0b)' : 'var(--border-color)', color: 'var(--text-primary)' }}
               >
                 {(['Average', 'Better-off', 'Prosperous', 'Affluent'] as const).map(w => (
                   <option key={w} value={w}>{w}</option>
@@ -301,9 +338,21 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
               </select>
             </div>
             <div>
-              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
-                Development
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)]" style={isChanged('development') ? amberText : undefined}>
+                  Development {isChanged('development') && '•'}
+                </label>
+                {isChanged('development') && (
+                  <button
+                    onClick={() => handleReset('development', true)}
+                    className="text-[10px] px-1 py-0.5 rounded hover:bg-white/10 transition-colors"
+                    style={amberText}
+                    title="Reset to rolled value"
+                  >
+                    <RotateCcw size={10} className="inline mr-0.5" />Roll
+                  </button>
+                )}
+              </div>
               <select
                 value={inhabitants.development}
                 onChange={(e) => {
@@ -312,7 +361,7 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                   onEditInhabitants(updated);
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
-                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: isChanged('development') ? 'var(--accent-amber, #f59e0b)' : 'var(--border-color)', color: 'var(--text-primary)' }}
               >
                 {(['UnderDeveloped', 'Developing', 'Mature', 'Developed', 'Well Developed', 'Very Developed'] as const).map(d => (
                   <option key={d} value={d}>{d}</option>
@@ -320,9 +369,21 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
               </select>
             </div>
             <div>
-              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
-                Tech Level (MTL)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)]" style={isChanged('techLevel') ? amberText : undefined}>
+                  Tech Level (MTL) {isChanged('techLevel') && '•'}
+                </label>
+                {isChanged('techLevel') && (
+                  <button
+                    onClick={() => handleReset('techLevel', true)}
+                    className="text-[10px] px-1 py-0.5 rounded hover:bg-white/10 transition-colors"
+                    style={amberText}
+                    title="Reset to rolled value"
+                  >
+                    <RotateCcw size={10} className="inline mr-0.5" />Roll
+                  </button>
+                )}
+              </div>
               <input
                 type="number"
                 min={0}
@@ -334,13 +395,25 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                   onEditInhabitants(updated);
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
-                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: isChanged('techLevel') ? 'var(--accent-amber, #f59e0b)' : 'var(--border-color)', color: 'var(--text-primary)' }}
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
-                Population
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)]" style={isChanged('population') ? amberText : undefined}>
+                  Population {isChanged('population') && '•'}
+                </label>
+                {isChanged('population') && (
+                  <button
+                    onClick={() => handleReset('population', true)}
+                    className="text-[10px] px-1 py-0.5 rounded hover:bg-white/10 transition-colors"
+                    style={amberText}
+                    title="Reset to rolled value"
+                  >
+                    <RotateCcw size={10} className="inline mr-0.5" />Roll
+                  </button>
+                )}
+              </div>
               <input
                 type="number"
                 min={0}
@@ -351,13 +424,25 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                   onEditInhabitants(updated);
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
-                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: isChanged('population') ? 'var(--accent-amber, #f59e0b)' : 'var(--border-color)', color: 'var(--text-primary)' }}
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
-                Power Structure
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)]" style={isChanged('powerStructure') ? amberText : undefined}>
+                  Power Structure {isChanged('powerStructure') && '•'}
+                </label>
+                {isChanged('powerStructure') && (
+                  <button
+                    onClick={() => handleReset('powerStructure', false)}
+                    className="text-[10px] px-1 py-0.5 rounded hover:bg-white/10 transition-colors"
+                    style={amberText}
+                    title="Reset to rolled value"
+                  >
+                    <RotateCcw size={10} className="inline mr-0.5" />Roll
+                  </button>
+                )}
+              </div>
               <select
                 value={inhabitants.powerStructure}
                 onChange={(e) => {
@@ -365,7 +450,7 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                   onEditInhabitants({ ...inhabitants, powerStructure: p });
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
-                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: isChanged('powerStructure') ? 'var(--accent-amber, #f59e0b)' : 'var(--border-color)', color: 'var(--text-primary)' }}
               >
                 {(['Anarchy', 'Confederation', 'Federation', 'Unitary State'] as const).map(p => (
                   <option key={p} value={p}>{p}</option>
@@ -373,9 +458,21 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
               </select>
             </div>
             <div>
-              <label className="block text-[10px] uppercase tracking-wide mb-1 text-[var(--text-secondary)]">
-                Source of Power
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)]" style={isChanged('sourceOfPower') ? amberText : undefined}>
+                  Source of Power {isChanged('sourceOfPower') && '•'}
+                </label>
+                {isChanged('sourceOfPower') && (
+                  <button
+                    onClick={() => handleReset('sourceOfPower', false)}
+                    className="text-[10px] px-1 py-0.5 rounded hover:bg-white/10 transition-colors"
+                    style={amberText}
+                    title="Reset to rolled value"
+                  >
+                    <RotateCcw size={10} className="inline mr-0.5" />Roll
+                  </button>
+                )}
+              </div>
               <select
                 value={inhabitants.sourceOfPower}
                 onChange={(e) => {
@@ -383,7 +480,7 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
                   onEditInhabitants({ ...inhabitants, sourceOfPower: p });
                 }}
                 className="w-full rounded px-2 py-2 text-sm border"
-                style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                style={{ backgroundColor: 'var(--bg-primary)', borderColor: isChanged('sourceOfPower') ? 'var(--accent-amber, #f59e0b)' : 'var(--border-color)', color: 'var(--text-primary)' }}
               >
                 {(['Aristocracy', 'Ideocracy', 'Kratocracy', 'Democracy', 'Meritocracy'] as const).map(p => (
                   <option key={p} value={p}>{p}</option>
@@ -441,8 +538,18 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
       </div>
 
       {/* Starport */}
-      <div className="card space-y-4">
-        <h3 className="text-lg font-semibold">Starport</h3>
+      <div
+        className="card space-y-4"
+        style={starportChanged ? { borderLeft: '3px solid var(--accent-amber, #f59e0b)' } : undefined}
+      >
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          Starport
+          {starportChanged && (
+            <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              Pending
+            </span>
+          )}
+        </h3>
         <div className="space-y-2">
           <DataRow
             label="Class"

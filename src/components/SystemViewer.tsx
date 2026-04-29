@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import type { StarSystem, BodyAnnotations, ShipsInAreaResult, RawUdpProfile } from '../types';
+import type { StarSystem, BodyAnnotations, ShipsInAreaResult } from '../types';
 import { generatePlaceNames, getLcOptions } from '../lib/placeNameGen';
 import { exportToDocx } from '../lib/exportDocx';
 import { buildRawUdpProfile } from '../lib/rawUdp';
@@ -427,6 +427,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           rawUdpMode={rawUdpMode}
           rawProfile={displaySystem.rawUdpProfile ?? buildRawUdpProfile(displaySystem)}
           isEditing={isEditing}
+          originalInhabitants={originalSystem?.inhabitants}
           onEditInhabitants={(updatedInhabitants) => {
             setPendingSystem(prev => ({
               ...prev,

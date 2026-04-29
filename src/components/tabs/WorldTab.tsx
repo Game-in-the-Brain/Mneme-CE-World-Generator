@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { formatNumber } from '../lib/format';
-import { displayTL, displayTLDescriptor } from '../lib/economicPresets';
-import { CULTURE_TRAIT_DESCRIPTIONS, CULTURE_TRAIT_DESCRIPTIONS_LOW_POP, TL_TABLE } from '../lib/worldData';
-import type { MainWorld } from '../types';
+import { formatNumber } from '../../lib/format';
+import { displayTL, displayTLDescriptor } from '../../lib/economicPresets';
+import { CULTURE_TRAIT_DESCRIPTIONS, CULTURE_TRAIT_DESCRIPTIONS_LOW_POP, TL_TABLE } from '../../lib/worldData';
+import type { MainWorld } from '../../types';
 import { DataRow, HabitabilityBox, getAtmosphereHabitability, getTemperatureHabitability, getHazardHabitability } from './tabHelpers';
 
 export function WorldTab({ world }: { world: MainWorld }) {

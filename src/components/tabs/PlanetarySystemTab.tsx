@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { formatNumber, formatValue } from '../lib/format';
-import { hillSphereAU } from '../lib/physicalProperties';
-import type { StarSystem, PlanetaryBody, BodyAnnotations } from '../types';
-import { DataRow, ZoneBox, PhysProp, HabitabilityBox, BodyCountCard } from './tabHelpers';
+import { formatNumber, formatValue } from '../../lib/format';
+import { hillSphereAU } from '../../lib/physicalProperties';
+import type { StarSystem, PlanetaryBody, BodyAnnotations } from '../../types';
+import { PhysProp, BodyCountCard } from './tabHelpers';
 
 export function PlanetarySystemTab({
   system, annotations, onAnnotation,

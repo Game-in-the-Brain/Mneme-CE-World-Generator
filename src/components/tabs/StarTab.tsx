@@ -1,6 +1,6 @@
-import { formatNumber, formatLuminosity } from '../lib/format';
-import { STAR_COLOR_NAMES } from '../lib/stellarData';
-import type { StarSystem, Star, StellarClass } from '../types';
+import { formatNumber, formatLuminosity } from '../../lib/format';
+import { STAR_COLOR_NAMES } from '../../lib/stellarData';
+import type { StarSystem, Star, StellarClass } from '../../types';
 import { DataRow } from './tabHelpers';
 
 export function StarTab({ system }: { system: StarSystem }) {

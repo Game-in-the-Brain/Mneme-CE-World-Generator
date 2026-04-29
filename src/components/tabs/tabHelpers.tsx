@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { StarSystem } from '../types';
+import type { StarSystem } from '../../types';
 
 export function DataRow({ label, value, className = '' }: { label: string; value: ReactNode; className?: string }) {
   return (
