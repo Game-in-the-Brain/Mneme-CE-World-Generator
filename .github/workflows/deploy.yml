@@ -25,6 +25,12 @@ jobs:
       - name: Clone name-place-faction-generator
         run: git clone https://github.com/Game-in-the-Brain/name-place-faction-generator.git ../name-place-faction-generator
 
+      - name: Build name-place-faction-generator packages
+        run: |
+          cd ../name-place-faction-generator
+          npm install
+          npm run build
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
