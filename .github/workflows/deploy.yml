@@ -22,6 +22,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout name-place-faction-generator
+        uses: actions/checkout@v4
+        with:
+          repository: Game-in-the-Brain/name-place-faction-generator
+          path: ../name-place-faction-generator
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
