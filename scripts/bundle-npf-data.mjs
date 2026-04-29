@@ -10,8 +10,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const genRoot = resolve(root, '../name-place-faction-generator');
 
 if (!existsSync(genRoot)) {
-  console.error(`[bundle-npf-data] ERROR: generator repo not found at ${genRoot}`);
-  process.exit(1);
+  console.warn(`[bundle-npf-data] WARNING: generator repo not found at ${genRoot}; skipping regeneration`);
+  process.exit(0);
 }
 
 function readJson(p) {
