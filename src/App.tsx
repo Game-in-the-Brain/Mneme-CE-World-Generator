@@ -18,10 +18,9 @@ import { Navigation, type Theme } from './components/Navigation';
 import { parseSpectralType } from './lib/spectralParser';
 import './App.css';
 
-preloadNpfData();
-
 function App() {
   const [view, setView] = useState<ViewMode>('dashboard');
+  const [, setNpfReady] = useState(false);
   const [currentSystem, setCurrentSystem] = useState<StarSystem | null>(null);
   const [savedSystems, setSavedSystems] = useState<StarSystem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -46,6 +45,11 @@ function App() {
       setDesktopTheme(theme);
     }
   }, [theme]);
+
+  // Preload NPF linguistic data asynchronously
+  useEffect(() => {
+    preloadNpfData().then(() => setNpfReady(true)).catch(() => setNpfReady(false));
+  }, []);
 
   const handleThemeChange = useCallback((newTheme: Theme) => {
     // If clicking phone while on phone, go back to desktop

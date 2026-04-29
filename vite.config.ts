@@ -54,6 +54,12 @@ export default defineConfig({
         main: './index.html',
         'solar-system-2d': './solar-system-2d/index.html',
       },
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['lucide-react'],
+        },
+      },
     },
   },
   plugins: [
@@ -81,7 +87,7 @@ export default defineConfig({
           }
         ]
       }
-    })
+    }),
   ],
   define: {
     __APP_VERSION__: JSON.stringify(gitVersion.version),

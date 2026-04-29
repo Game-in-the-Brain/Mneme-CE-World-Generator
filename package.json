@@ -22,10 +22,10 @@
     "postinstall": "node scripts/relink-gi7b.mjs"
   },
   "dependencies": {
-    "@gi7b/shared": "file:../name-place-faction-generator/shared",
+    "@gi7b/factiongen": "file:../name-place-faction-generator/packages/factiongen",
     "@gi7b/namegen": "file:../name-place-faction-generator/packages/namegen",
     "@gi7b/placegen": "file:../name-place-faction-generator/packages/placegen",
-    "@gi7b/factiongen": "file:../name-place-faction-generator/packages/factiongen",
+    "@gi7b/shared": "file:../name-place-faction-generator/shared",
     "@tailwindcss/vite": "^4.2.2",
     "@types/uuid": "^10.0.0",
     "dexie": "^4.4.2",
@@ -50,6 +50,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.0",
     "vite": "^6.4.2"
