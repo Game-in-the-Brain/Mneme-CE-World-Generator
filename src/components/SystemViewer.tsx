@@ -444,7 +444,18 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Building style={{ color: 'var(--accent-red)' }} size={20} />
           Planetary System
         </h2>
-        <PlanetarySystemTab system={system} annotations={annotations} onAnnotation={handleAnnotation} />
+        <PlanetarySystemTab
+          system={displaySystem}
+          annotations={annotations}
+          onAnnotation={handleAnnotation}
+          isEditing={isEditing}
+          onEditBodies={(updatedSystem) => {
+            setPendingSystem(_prev => ({
+              ...updatedSystem,
+              rawUdpProfile: undefined,
+            }));
+          }}
+        />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}

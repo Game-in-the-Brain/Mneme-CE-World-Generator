@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, Plus } from 'lucide-react';
+import { addBodyToSystem, deleteBodiesFromSystem } from '../../lib/systemEditor';
 import { formatNumber, formatValue } from '../../lib/format';
 import { hillSphereAU } from '../../lib/physicalProperties';
-import type { StarSystem, PlanetaryBody, BodyAnnotations } from '../../types';
+import type { StarSystem, PlanetaryBody, BodyAnnotations, GasWorldClass } from '../../types';
 import { PhysProp, BodyCountCard } from './tabHelpers';
 
 export function PlanetarySystemTab({
-  system, annotations, onAnnotation,
+  system, annotations, onAnnotation, isEditing, onEditBodies,
 }: {
   system: StarSystem;
   annotations: BodyAnnotations;
   onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
+  isEditing?: boolean;
+  onEditBodies?: (system: StarSystem) => void;
 }) {
   // FR-044: count only L1 bodies (no parentId) in the type cards
   const l1Dwarfs = system.dwarfPlanets.filter(b => !b.parentId);
@@ -87,6 +90,48 @@ export function PlanetarySystemTab({
     mainWorldBody,
   ].sort((a, b) => a.distanceAU - b.distanceAU);
 
+  // FRD-069d/e: Edit mode state for add/delete
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  const [showAddDropdown, setShowAddDropdown] = useState(false);
+  const [hsrWarning, setHsrWarning] = useState<string | null>(null);
+
+  function handleToggleDelete(bodyId: string) {
+    setPendingDeleteIds(prev => {
+      const next = new Set(prev);
+      if (next.has(bodyId)) next.delete(bodyId);
+      else next.add(bodyId);
+      return next;
+    });
+  }
+
+  function handleConfirmDeletes() {
+    if (!onEditBodies || pendingDeleteIds.size === 0) return;
+
+    // Check if mainworld is being deleted
+    const mainworldId = allL1Bodies.find(b => b.isMainWorld)?.id;
+    const isDeletingMainworld = mainworldId ? pendingDeleteIds.has(mainworldId) : false;
+
+    if (isDeletingMainworld) {
+      const confirmed = window.confirm(
+        'This is the mainworld. Deleting it will remove all Inhabitants data. Confirm?'
+      );
+      if (!confirmed) return;
+    }
+
+    const result = deleteBodiesFromSystem(system, Array.from(pendingDeleteIds));
+    onEditBodies(result.system);
+    setPendingDeleteIds(new Set());
+  }
+
+  function handleAddBody(type: 'random' | 'disk' | 'dwarf' | 'terrestrial' | 'ice' | 'gas', gasClass?: string) {
+    if (!onEditBodies) return;
+    const gc = gasClass as GasWorldClass | undefined;
+    const { system: updated, warning } = addBodyToSystem(system, type, gc);
+    onEditBodies(updated);
+    setShowAddDropdown(false);
+    if (warning) setHsrWarning(warning);
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-5 md:grid-cols-7 gap-4">
@@ -158,8 +203,71 @@ export function PlanetarySystemTab({
           annotations={annotations}
           onAnnotation={onAnnotation}
           starMassSolar={system.primaryStar.mass}
+          isEditing={isEditing}
+          pendingDeleteIds={pendingDeleteIds}
+          onToggleDelete={handleToggleDelete}
         />
       </div>
+
+      {/* FRD-069d/e: Add/Delete controls in edit mode */}
+      {isEditing && onEditBodies && (
+        <div className="space-y-3">
+          {/* HSR Warning */}
+          {hsrWarning && (
+            <div className="p-3 rounded text-sm border border-amber-500/30 bg-amber-500/10 text-amber-400">
+              ⚠️ {hsrWarning}
+            </div>
+          )}
+
+          {/* Confirm Deletes */}
+          {pendingDeleteIds.size > 0 && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleConfirmDeletes}
+                className="px-4 py-2 rounded text-sm font-medium bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 transition-colors"
+              >
+                Confirm Delete ({pendingDeleteIds.size})
+              </button>
+              <button
+                onClick={() => setPendingDeleteIds(new Set())}
+                className="px-3 py-2 rounded text-sm border transition-colors"
+                style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}
+              >
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          {/* Add World */}
+          <div className="relative">
+            <button
+              onClick={() => setShowAddDropdown(v => !v)}
+              className="flex items-center gap-2 px-4 py-2 rounded text-sm font-medium border transition-colors"
+              style={{ borderColor: 'var(--accent-cyan, #06b6d4)', color: 'var(--accent-cyan, #06b6d4)' }}
+            >
+              <Plus size={16} />
+              Add World
+            </button>
+            {showAddDropdown && (
+              <div className="absolute mt-2 w-56 rounded-lg border shadow-lg z-10" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border-color)' }}>
+                <div className="py-1">
+                  <button onClick={() => handleAddBody('random')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors">🎲 Random body</button>
+                  <button onClick={() => handleAddBody('terrestrial')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors">🌍 Terrestrial world</button>
+                  <button onClick={() => handleAddBody('dwarf')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors">🌑 Dwarf planet</button>
+                  <button onClick={() => handleAddBody('ice')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors">❄️ Ice world</button>
+                  <div className="px-3 py-1 text-xs" style={{ color: 'var(--text-secondary)' }}>Gas Giants</div>
+                  <button onClick={() => handleAddBody('gas', 'I')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors pl-6">Gas I (Small)</button>
+                  <button onClick={() => handleAddBody('gas', 'II')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors pl-6">Gas II (Medium)</button>
+                  <button onClick={() => handleAddBody('gas', 'III')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors pl-6">Gas III (Large)</button>
+                  <button onClick={() => handleAddBody('gas', 'IV')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors pl-6">Gas IV</button>
+                  <button onClick={() => handleAddBody('gas', 'V')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors pl-6">Gas V (Super)</button>
+                  <button onClick={() => handleAddBody('disk')} className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 transition-colors">💿 Circumstellar disk</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -171,12 +279,18 @@ function ParentBodyList({
   annotations,
   onAnnotation,
   starMassSolar,
+  isEditing,
+  pendingDeleteIds,
+  onToggleDelete,
 }: {
   bodies: (PlanetaryBody & { typeLabel: string; isMainWorld: boolean; atmosphere?: string; temperature?: string; habitability?: number })[];
   parentChildren: Map<string, PlanetaryBody[]>;
   annotations: BodyAnnotations;
   onAnnotation: (id: string, field: 'name' | 'notes', value: string) => void;
   starMassSolar: number;
+  isEditing?: boolean;
+  pendingDeleteIds?: Set<string>;
+  onToggleDelete?: (id: string) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
@@ -208,6 +322,9 @@ function ParentBodyList({
               isCollapsed={isCollapsed}
               onToggleCollapse={hasChildren ? () => toggle(body.id) : undefined}
               starMassSolar={starMassSolar}
+              isEditing={isEditing}
+              isPendingDelete={pendingDeleteIds?.has(body.id) ?? false}
+              onToggleDelete={onToggleDelete}
             />
             {hasChildren && !isCollapsed && (
               <div className="ml-4 md:ml-6 border-l-2 pl-3 md:pl-4 space-y-1 mt-1" style={{ borderColor: 'var(--border-color)' }}>
@@ -221,6 +338,9 @@ function ParentBodyList({
                     isMainWorld={false}
                     indentLevel={1}
                     starMassSolar={starMassSolar}
+                    isEditing={isEditing}
+                    isPendingDelete={pendingDeleteIds?.has(child.id) ?? false}
+                    onToggleDelete={onToggleDelete}
                   />
                 ))}
               </div>
@@ -251,6 +371,9 @@ function BodyRow({
   body, index, annotations, onAnnotation, isMainWorld,
   indentLevel = 0, hasChildren, isCollapsed, onToggleCollapse,
   starMassSolar,
+  isEditing,
+  isPendingDelete,
+  onToggleDelete,
 }: {
   body: PlanetaryBody & { typeLabel: string; atmosphere?: string; temperature?: string; habitability?: number };
   index: number;
@@ -262,6 +385,9 @@ function BodyRow({
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   starMassSolar: number;
+  isEditing?: boolean;
+  isPendingDelete?: boolean;
+  onToggleDelete?: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasPhysics = body.radiusKm != null;
@@ -272,6 +398,7 @@ function BodyRow({
     <div className="rounded text-sm" style={{ backgroundColor: indentLevel > 0 ? 'transparent' : 'var(--row-hover)' }}>
       <div
         className="flex items-center justify-between p-2 cursor-pointer"
+        style={isPendingDelete ? { textDecoration: 'line-through', opacity: 0.6, borderLeft: '3px solid var(--accent-red, #e53935)' } : undefined}
         onClick={() => setExpanded(e => !e)}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
@@ -358,6 +485,15 @@ function BodyRow({
             );
           })()}
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {isEditing && onToggleDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleDelete(body.id); }}
+              className={`shrink-0 p-1 rounded transition-colors ${isPendingDelete ? 'bg-red-500/20 text-red-400' : 'hover:bg-white/10 text-[var(--text-secondary)]'}`}
+              title={isPendingDelete ? 'Undo delete' : 'Mark for deletion'}
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
 

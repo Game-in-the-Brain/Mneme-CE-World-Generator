@@ -1008,7 +1008,7 @@ function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries, useV2
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function generateBody(type: BodyType, primaryStar: Star, _zones: ZoneBoundaries): PlanetaryBody {
+export function generateBody(type: BodyType, primaryStar: Star, _zones: ZoneBoundaries): PlanetaryBody {
   const id = uuidv4();
   const sqrtL = Math.sqrt(primaryStar.luminosity);
 
