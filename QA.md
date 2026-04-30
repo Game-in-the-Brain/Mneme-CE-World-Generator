@@ -8,7 +8,7 @@
 
 **Project:** Mneme CE World Generator PWA  
 **Repo:** [Game-in-the-Brain / Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain)  
-**Last Updated:** 2026-04-17
+**Last Updated:** 2026-04-30
 
 ---
 
@@ -124,6 +124,39 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 | **QA-075** | 📋 Queued | Definition of "Habitable" — tooltip + Glossary entry. Define: "A world capable of supporting an unmodified terrestrial human on its surface without artificial life support." Clarify that the Mneme setting's default assumption is that the universe is not built for us (cite Carl Sagan: "The universe is not obliged to make sense to you"; Neil deGrasse Tyson: "The universe is under no obligation to make sense to your scale of perception"). Earth-like worlds are statistically rare — this is why the generator defaults to many inhospitable results. Add "More Earth-like worlds" toggle to World Building Requirements (biases HZ selection and habitability threshold). Note in glossary that FRD-069 (Edit this World) lets referees override any world's habitability assumptions. |
 | **QA-076** | ⏸ On Hold | Starport floor guard (Mining/Inhospitable + pop <500k → Class ≥ D; Agricultural + pop <500k → Class ≥ E) — originally QA-070 R4. Held pending FRD-070 economic classification redesign, which will define the full set of world function types on which floor rules operate. Do not implement in isolation — the floor logic must align with whatever economic modes FRD-070 introduces. |
 | **QA-077** | ⏸ On Hold | Mainworld raison d'être — "who thought this place was worth settling?" generator (penal colony, research outpost, refugee remnant, mining concession, strategic chokepoint, cult retreat). Originally QA-071. Held pending FRD-070, which will establish economic modes and industries as the primary driver of existence justification. An isolated miner world's reason to exist is its economic function, not a separate flavour roll. |
+| **QA-078** | ✅ Fixed | GitHub Actions `Deploy to GitHub Pages` workflow fails with `isEditing used before its declaration` in `SystemViewer.tsx`. Fixed by reordering hooks. |
+
+### QA-078 — GitHub Actions Build Failure: `isEditing` Used Before Declaration
+
+**Status:** ✅ Fixed (2026-04-30, version log `260430-212003`)
+
+**Symptom:** Two consecutive `Deploy to GitHub Pages` workflow runs failed on `main`:
+- Run #127 — commit `989006f` — feat(FRD-063a): name generation controls, edit-mode name editing
+- Run #128 — commit `b3ccf63` — docs: add version log for 260430 session
+
+**Error (from GitHub Actions annotations):**
+```
+src/components/SystemViewer.tsx(86,30): error TS2448: Block-scoped variable 'isEditing' used before its declaration.
+src/components/SystemViewer.tsx(86,30): error TS2454: Variable 'isEditing' is used before being assigned.
+src/components/SystemViewer.tsx(106,17): error TS2448: Block-scoped variable 'isEditing' used before its declaration.
+src/components/SystemViewer.tsx(106,17): error TS2454: Variable 'isEditing' is used before being assigned.
+```
+
+**Root Cause:** In `SystemViewer.tsx`, `useSystemEditMode()` was called *after* two callbacks that referenced `isEditing`:
+- Line 86: `const displayAnnotations = isEditing ? pendingAnnotations : annotations;`
+- Line 106: `handleAnnotation` dependency array includes `isEditing`
+
+TypeScript's `tsc -b` (used by `npm run build`) enforces stricter block-scoping than `tsc --noEmit`, so local `npx tsc --noEmit` passed but CI failed.
+
+**Fix:** Move the `useSystemEditMode()` call (and the `useState` hooks for `copied`/`rawUdpMode` that precede it) to **before** `displayAnnotations` and `handleAnnotation`.
+
+**Files changed:** `src/components/SystemViewer.tsx`
+
+**Verification:**
+- `npm run build` (which runs `tsc -b && vite build`) now passes locally
+- Next push to `main` should produce a green workflow run
+
+---
 
 ### FR-041 — Composition–Atmosphere–Biosphere Pipeline Redesign
 

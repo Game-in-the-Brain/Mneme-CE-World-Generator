@@ -358,6 +358,7 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
           <DescriptionCard
             title={govLabel}
             description={govDesc.description}
+            titleStyle={isChanged('powerStructure') ? { color: 'var(--text-secondary)' } : undefined}
           />
         </div>
 
@@ -367,14 +368,15 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
           <DescriptionCard
             title={powerLabel}
             description={powerDesc.description}
-/>
+            titleStyle={isChanged('sourceOfPower') ? { color: 'var(--text-secondary)' } : undefined}
+          />
         </div>
 
         {/* Governance DM */}
         <div>
           <div className="flex items-baseline justify-between mb-1">
             <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Governance DM</span>
-            <span className="font-bold text-lg">{govSign}</span>
+            <span className="font-bold text-lg" style={isChanged('governance') ? { color: 'var(--text-secondary)' } : undefined}>{govSign}</span>
           </div>
           <FootnoteBlock>
             <strong>What this means:</strong> The Governance DM is a cross-table modifier derived from
@@ -408,6 +410,7 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
           <DataRow
             label="Travel Zone"
             value={inhabitants.travelZone + (inhabitants.travelZoneReason ? ` — ${inhabitants.travelZoneReason}` : '')}
+            isChanged={isChanged('travelZone')}
           />
         </div>
         <div>

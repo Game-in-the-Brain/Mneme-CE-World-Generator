@@ -35,6 +35,7 @@ export function StarTab({
           isPrimary
           isEditing={isEditing}
           onEdit={onEditPrimaryStar}
+          starChanged={!!starChanged}
         />
       </div>
 
@@ -67,11 +68,13 @@ function StarDetails({
   star,
   isEditing,
   onEdit,
+  starChanged,
 }: {
   star: Star;
   isPrimary?: boolean;
   isEditing?: boolean;
   onEdit?: (stellarClass: StellarClass, grade: StellarGrade) => void;
+  starChanged?: boolean;
 }) {
   const colorName = STAR_COLOR_NAMES[star.class];
   const SPECTRAL_CLASSES: StellarClass[] = ['O', 'B', 'A', 'F', 'G', 'K', 'M'];
@@ -121,13 +124,13 @@ function StarDetails({
                 {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
-            <DataRow label="Spectral" value={`${star.class}${star.grade}`} />
+            <DataRow label="Spectral" value={`${star.class}${star.grade}`} isChanged={starChanged} />
           </>
         ) : (
           <>
-            <DataRow label="Class"  value={star.class} />
-            <DataRow label="Grade"  value={star.grade.toString()} />
-            <DataRow label="Spectral" value={`${star.class}${star.grade}`} />
+            <DataRow label="Class"  value={star.class} isChanged={starChanged} />
+            <DataRow label="Grade"  value={star.grade.toString()} isChanged={starChanged} />
+            <DataRow label="Spectral" value={`${star.class}${star.grade}`} isChanged={starChanged} />
           </>
         )}
       </div>

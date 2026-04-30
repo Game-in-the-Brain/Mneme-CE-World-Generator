@@ -36,6 +36,7 @@ export function InhabitantsStarportPanel({
               ? `Class ${inhabitants.starport.class} (founded Class ${inhabitants.starport.foundingClass})`
               : `Class ${inhabitants.starport.class}`
           }
+          isChanged={starportChanged}
         />
         <DataRow
           label="PSS"
@@ -44,6 +45,7 @@ export function InhabitantsStarportPanel({
               ? `${inhabitants.starport.pss} (founded ${inhabitants.starport.foundingPSS}) (raw ${inhabitants.starport.rawClass}, TL cap ${inhabitants.starport.tlCap})`
               : `${inhabitants.starport.pss} (raw ${inhabitants.starport.rawClass}, TL cap ${inhabitants.starport.tlCap})`
           }
+          isChanged={starportChanged}
         />
         <DataRow
           label="Bases"
@@ -52,9 +54,10 @@ export function InhabitantsStarportPanel({
             inhabitants.starport.hasScoutBase  && 'Scout Base',
             inhabitants.starport.hasPirateBase && 'Pirate Base',
           ].filter(Boolean).join(', ') || 'None'}
+          isChanged={starportChanged}
         />
-        <DataRow label="Annual Trade" value={formatAnnualTrade(inhabitants.starport.annualTrade)} />
-        <DataRow label="Weekly Base"  value={formatCredits(inhabitants.starport.weeklyBase)} />
+        <DataRow label="Annual Trade" value={formatAnnualTrade(inhabitants.starport.annualTrade)} isChanged={starportChanged} />
+        <DataRow label="Weekly Base"  value={formatCredits(inhabitants.starport.weeklyBase)} isChanged={starportChanged} />
       </div>
 
       {/* Weekly activity with roll button (FR-029) */}

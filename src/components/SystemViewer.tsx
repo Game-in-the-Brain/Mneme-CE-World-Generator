@@ -64,6 +64,20 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   const [pendingAnnotations, setPendingAnnotations] = useState<BodyAnnotations>({});
   const [shipsResult, setShipsResult] = useState<ShipsInAreaResult | null>(null);
   const [showShipsPriceList, setShowShipsPriceList] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [rawUdpMode, setRawUdpMode] = useState(false);
+
+  const {
+    isEditing,
+    originalSystem,
+    pendingSystem,
+    displaySystem,
+    enterEditMode,
+    discardEdits: baseDiscardEdits,
+    saveEdits: baseSaveEdits,
+    saveAsNew: baseSaveAsNew,
+    setPendingSystem,
+  } = useSystemEditMode(system, onUpdateSystem);
 
   useEffect(() => {
     const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
@@ -110,21 +124,6 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
     await exportToDocx(system, annotations, shipsResult);
   }, [system, annotations, shipsResult]);
 
-  const [copied, setCopied] = useState(false);
-  const [rawUdpMode, setRawUdpMode] = useState(false);
-
-  const {
-    isEditing,
-    originalSystem,
-    pendingSystem,
-    displaySystem,
-    enterEditMode,
-    discardEdits: baseDiscardEdits,
-    saveEdits: baseSaveEdits,
-    saveAsNew: baseSaveAsNew,
-    setPendingSystem,
-  } = useSystemEditMode(system, onUpdateSystem);
-
   // Wrap save/discard to include annotation staging
   const saveEdits = useCallback(async () => {
     await baseSaveEdits();
@@ -136,13 +135,13 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   }, [baseSaveEdits, pendingAnnotations, system.id]);
 
   const saveAsNew = useCallback(async () => {
-    await baseSaveAsNew();
-    if (Object.keys(pendingAnnotations).length > 0) {
-      localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(pendingAnnotations));
+    const copied = await baseSaveAsNew();
+    if (copied && Object.keys(pendingAnnotations).length > 0) {
+      localStorage.setItem(`mneme_annotations_${copied.id}`, JSON.stringify(pendingAnnotations));
       setAnnotations(pendingAnnotations);
       setPendingAnnotations({});
     }
-  }, [baseSaveAsNew, pendingAnnotations, system.id]);
+  }, [baseSaveAsNew, pendingAnnotations]);
 
   const discardEdits = useCallback(() => {
     baseDiscardEdits();
@@ -178,7 +177,6 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   const [driftLc, setDriftLc] = useState<string>('random');
 
   const handleGenerateNames = useCallback(() => {
-    if (!onUpdateSystem) return;
     const descriptorMode = loadGeneratorOptions().nameDescriptorMode;
     const names = generatePlaceNames(system, baseLc, driftLc, descriptorMode);
     const updatedSystem: StarSystem = {
@@ -186,19 +184,40 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
       placeNames: names,
       name: system.name || names.systemName,
     };
-    onUpdateSystem(updatedSystem);
-    // Pre-fill body name annotations for any body without a user-set name
-    const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
-    const existing: BodyAnnotations = stored ? JSON.parse(stored) : {};
-    const merged = { ...existing };
-    for (const [bodyId, name] of Object.entries(names.bodyNames)) {
-      if (!merged[bodyId]?.name) {
-        merged[bodyId] = { name, notes: merged[bodyId]?.notes ?? '' };
+
+    if (isEditing) {
+      // In edit mode, stage changes in pendingSystem instead of saving immediately
+      setPendingSystem(prev => ({
+        ...prev,
+        placeNames: names,
+        name: prev.name || names.systemName,
+      }));
+      // Also stage body name annotations in pendingAnnotations
+      setPendingAnnotations(prev => {
+        const merged = { ...prev };
+        for (const [bodyId, name] of Object.entries(names.bodyNames)) {
+          if (!merged[bodyId]?.name) {
+            merged[bodyId] = { name, notes: merged[bodyId]?.notes ?? '' };
+          }
+        }
+        return merged;
+      });
+    } else {
+      if (!onUpdateSystem) return;
+      onUpdateSystem(updatedSystem);
+      // Pre-fill body name annotations for any body without a user-set name
+      const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
+      const existing: BodyAnnotations = stored ? JSON.parse(stored) : {};
+      const merged = { ...existing };
+      for (const [bodyId, name] of Object.entries(names.bodyNames)) {
+        if (!merged[bodyId]?.name) {
+          merged[bodyId] = { name, notes: merged[bodyId]?.notes ?? '' };
+        }
       }
+      localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(merged));
+      setAnnotations(merged);
     }
-    localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(merged));
-    setAnnotations(merged);
-  }, [system, baseLc, driftLc, onUpdateSystem]);
+  }, [system, baseLc, driftLc, onUpdateSystem, isEditing]);
 
   return (
     <div className="space-y-6">
@@ -388,7 +407,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Sparkles style={{ color: 'var(--accent-red)' }} size={20} />
           Overview
         </h2>
-        <OverviewTab system={displaySystem} rawUdpMode={rawUdpMode} rawProfile={displaySystem.rawUdpProfile ?? buildRawUdpProfile(displaySystem)} />
+        <OverviewTab system={displaySystem} originalSystem={originalSystem} rawUdpMode={rawUdpMode} rawProfile={displaySystem.rawUdpProfile ?? buildRawUdpProfile(displaySystem)} />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}
@@ -418,7 +437,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           <Globe style={{ color: 'var(--accent-red)' }} size={20} />
           World
         </h2>
-        <WorldTab world={displaySystem.mainWorld} />
+        <WorldTab world={displaySystem.mainWorld} originalWorld={originalSystem?.mainWorld} />
       </section>
 
       {/* eslint-disable-next-line react-hooks/refs */}

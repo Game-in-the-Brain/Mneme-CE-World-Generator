@@ -7,34 +7,35 @@ import { CULTURE_TRAIT_DESCRIPTIONS, CULTURE_TRAIT_DESCRIPTIONS_LOW_POP, TL_TABL
 import type { MainWorld } from '../../types';
 import { DataRow, HabitabilityBox, getAtmosphereHabitability, getTemperatureHabitability, getHazardHabitability } from './tabHelpers';
 
-export function WorldTab({ world }: { world: MainWorld }) {
+export function WorldTab({ world, originalWorld }: { world: MainWorld; originalWorld?: MainWorld }) {
   return (
     <div className="grid md:grid-cols-2 gap-6">
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Physical Characteristics</h3>
         <div className="space-y-2">
-          <DataRow label="Type"            value={world.type} />
-          <DataRow label="Size"            value={`${formatNumber(world.size)} km`} />
-          <DataRow label="Mass"            value={`${formatNumber(world.massEM)} ${world.type === 'Dwarf' ? 'LM' : 'EM'}`} />
-          <DataRow label="Density"         value={`${world.densityGcm3} g/cm³`} />
-          <DataRow label="Gravity"         value={`${world.gravity} G`} />
-          <DataRow label="Radius"          value={`${formatNumber(world.radius)} km`} />
-          <DataRow label="Escape Velocity" value={`${formatNumber(world.escapeVelocity)} km/s`} />
+          <DataRow label="Type"            value={world.type} isChanged={!!originalWorld && world.type !== originalWorld.type} />
+          <DataRow label="Size"            value={`${formatNumber(world.size)} km`} isChanged={!!originalWorld && world.size !== originalWorld.size} />
+          <DataRow label="Mass"            value={`${formatNumber(world.massEM)} ${world.type === 'Dwarf' ? 'LM' : 'EM'}`} isChanged={!!originalWorld && world.massEM !== originalWorld.massEM} />
+          <DataRow label="Density"         value={`${world.densityGcm3} g/cm³`} isChanged={!!originalWorld && world.densityGcm3 !== originalWorld.densityGcm3} />
+          <DataRow label="Gravity"         value={`${world.gravity} G`} isChanged={!!originalWorld && world.gravity !== originalWorld.gravity} />
+          <DataRow label="Radius"          value={`${formatNumber(world.radius)} km`} isChanged={!!originalWorld && world.radius !== originalWorld.radius} />
+          <DataRow label="Escape Velocity" value={`${formatNumber(world.escapeVelocity)} km/s`} isChanged={!!originalWorld && world.escapeVelocity !== originalWorld.escapeVelocity} />
         </div>
       </div>
 
       <div className="card space-y-4">
         <h3 className="text-lg font-semibold">Environment</h3>
         <div className="space-y-2">
-          <DataRow label="Atmosphere"  value={`${world.atmosphere} (TL${world.atmosphereTL})`} />
-          <DataRow label="Temperature" value={`${world.temperature} (TL${world.temperatureTL})`} />
+          <DataRow label="Atmosphere"  value={`${world.atmosphere} (TL${world.atmosphereTL})`} isChanged={!!originalWorld && world.atmosphere !== originalWorld.atmosphere} />
+          <DataRow label="Temperature" value={`${world.temperature} (TL${world.temperatureTL})`} isChanged={!!originalWorld && world.temperature !== originalWorld.temperature} />
           <DataRow
             label="Hazard"
             value={world.hazard !== 'None'
               ? `${world.hazard} (${world.hazardIntensity}, TL${world.hazardIntensityTL})`
               : 'None'}
+            isChanged={!!originalWorld && (world.hazard !== originalWorld.hazard || world.hazardIntensity !== originalWorld.hazardIntensity)}
           />
-          <DataRow label="Resources" value={world.biochemicalResources} />
+          <DataRow label="Resources" value={world.biochemicalResources} isChanged={!!originalWorld && world.biochemicalResources !== originalWorld.biochemicalResources} />
         </div>
       </div>
 
@@ -145,16 +146,17 @@ export function TechLevelCard({ tl, foundingTL, presetLabel }: { tl: number; fou
   );
 }
 
-export function DescriptionCard({ title, subtitle, description }: {
+export function DescriptionCard({ title, subtitle, description, titleStyle }: {
   title: string;
   subtitle?: string;
   description: string;
+  titleStyle?: React.CSSProperties;
 }) {
   return (
     <div className="p-3 rounded" style={{ backgroundColor: 'var(--row-hover)',
          borderLeft: '3px solid var(--accent-red)' }}>
       <div className="flex items-baseline gap-2 mb-1">
-        <span className="font-semibold text-sm">{title}</span>
+        <span className="font-semibold text-sm" style={titleStyle}>{title}</span>
         {subtitle && (
           <span className="text-xs font-medium" style={{ color: 'var(--accent-red)' }}>{subtitle}</span>
         )}

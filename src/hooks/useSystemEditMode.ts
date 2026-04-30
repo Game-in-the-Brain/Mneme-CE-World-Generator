@@ -9,7 +9,7 @@ export interface SystemEditState {
   enterEditMode: () => void;
   discardEdits: () => void;
   saveEdits: () => Promise<void>;
-  saveAsNew: () => Promise<void>;
+  saveAsNew: () => Promise<StarSystem | undefined>;
   setPendingSystem: React.Dispatch<React.SetStateAction<StarSystem>>;
 }
 
@@ -55,19 +55,22 @@ export function useSystemEditMode(
   }
 
   async function saveAsNew() {
-    if (!onUpdateSystem) return;
-    const newName = window.prompt('Save as new system name:', `${pendingSystem.name || 'Unnamed'} (edited)`);
-    if (newName === null) return;
+    if (!onUpdateSystem) return undefined;
+    const newName = window.prompt('Save as new system name:', `${pendingSystem.name || 'Unnamed'} (copy)`);
+    if (newName === null) return undefined;
     const copied: StarSystem = {
       ...JSON.parse(JSON.stringify(pendingSystem)),
       id: crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       createdAt: Date.now(),
-      name: newName,
+      name: newName || `${pendingSystem.name || 'Unnamed'} (copy)`,
       editedAt: undefined,
+      batchId: undefined,
+      diceLocks: undefined,
     };
     await onUpdateSystem(copied);
     setIsEditing(false);
     setOriginalSystem(null);
+    return copied;
   }
 
   return {

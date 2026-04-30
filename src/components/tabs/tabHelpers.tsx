@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
 import type { StarSystem } from '../../types';
 
-export function DataRow({ label, value, className = '' }: { label: string; value: ReactNode; className?: string }) {
+export function DataRow({ label, value, isChanged, className = '' }: { label: string; value: ReactNode; isChanged?: boolean; className?: string }) {
   return (
     <div className="flex items-center justify-between py-1 border-b last:border-0" style={{ borderColor: 'var(--border-color)' }}>
       <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
-      <span className={`font-medium ${className}`}>{value}</span>
+      <span className={`font-medium ${className}`} style={isChanged ? { color: 'var(--text-secondary)' } : undefined}>
+        {value}
+      </span>
     </div>
   );
 }

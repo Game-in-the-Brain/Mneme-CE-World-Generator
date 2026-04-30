@@ -5,7 +5,7 @@ import { POWER_STRUCTURE_LABELS_LOW_POP, SOURCE_OF_POWER_LABELS_LOW_POP } from '
 import type { StarSystem, RawUdpProfile } from '../../types';
 import { DataRow, ZoneBox } from './tabHelpers';
 
-export function OverviewTab({ system, rawUdpMode, rawProfile }: { system: StarSystem; rawUdpMode: boolean; rawProfile: RawUdpProfile }) {
+export function OverviewTab({ system, originalSystem, rawUdpMode, rawProfile }: { system: StarSystem; originalSystem?: StarSystem | null; rawUdpMode: boolean; rawProfile: RawUdpProfile }) {
   return (
     <div className="grid md:grid-cols-2 gap-6">
       {/* FRD-068: RAW UDP UWP Card */}
@@ -43,10 +43,10 @@ export function OverviewTab({ system, rawUdpMode, rawProfile }: { system: StarSy
           Star System
         </h3>
         <div className="space-y-2">
-          <DataRow label="Primary Star"  value={`${system.primaryStar.class}${system.primaryStar.grade}`} />
-          <DataRow label="Mass"          value={`${formatNumber(system.primaryStar.mass)} M☉`} />
-          <DataRow label="Luminosity"    value={`${formatLuminosity(system.primaryStar.luminosity)} L☉`} />
-          <DataRow label="Companions"    value={system.companionStars.length.toString()} />
+          <DataRow label="Primary Star"  value={`${system.primaryStar.class}${system.primaryStar.grade}`} isChanged={!!originalSystem && (system.primaryStar.class !== originalSystem.primaryStar.class || system.primaryStar.grade !== originalSystem.primaryStar.grade)} />
+          <DataRow label="Mass"          value={`${formatNumber(system.primaryStar.mass)} M☉`} isChanged={!!originalSystem && system.primaryStar.mass !== originalSystem.primaryStar.mass} />
+          <DataRow label="Luminosity"    value={`${formatLuminosity(system.primaryStar.luminosity)} L☉`} isChanged={!!originalSystem && system.primaryStar.luminosity !== originalSystem.primaryStar.luminosity} />
+          <DataRow label="Companions"    value={system.companionStars.length.toString()} isChanged={!!originalSystem && system.companionStars.length !== originalSystem.companionStars.length} />
         </div>
       </div>
 
@@ -56,15 +56,15 @@ export function OverviewTab({ system, rawUdpMode, rawProfile }: { system: StarSy
           Main World
         </h3>
         <div className="space-y-2">
-          <DataRow label="Type"         value={system.mainWorld.type} />
-          <DataRow label="Size"         value={`${formatNumber(system.mainWorld.size)} km`} />
-          <DataRow label="Gravity"      value={`${system.mainWorld.gravity} G`} />
+          <DataRow label="Type"         value={system.mainWorld.type} isChanged={!!originalSystem && system.mainWorld.type !== originalSystem.mainWorld.type} />
+          <DataRow label="Size"         value={`${formatNumber(system.mainWorld.size)} km`} isChanged={!!originalSystem && system.mainWorld.size !== originalSystem.mainWorld.size} />
+          <DataRow label="Gravity"      value={`${system.mainWorld.gravity} G`} isChanged={!!originalSystem && system.mainWorld.gravity !== originalSystem.mainWorld.gravity} />
           <DataRow label="Habitability" value={system.mainWorld.habitability.toString()} className={
             system.mainWorld.habitability > 5  ? 'habitability-excellent' :
             system.mainWorld.habitability > 0  ? 'habitability-good' :
             system.mainWorld.habitability > -5 ? 'habitability-marginal' :
             'habitability-hostile'
-          } />
+          } isChanged={!!originalSystem && system.mainWorld.habitability !== originalSystem.mainWorld.habitability} />
           <DataRow
             label="Economic Assumptions"
             value={
@@ -103,15 +103,16 @@ export function OverviewTab({ system, rawUdpMode, rawProfile }: { system: StarSy
                 ? `${displayTL(system.inhabitants.effectiveTL, system.economicPresetLabel)} (founded at ${displayTL(system.inhabitants.foundingTL ?? system.inhabitants.techLevel, system.economicPresetLabel)})`
                 : `${displayTL(system.inhabitants.techLevel, system.economicPresetLabel)}`
             }
+            isChanged={!!originalSystem && system.inhabitants.techLevel !== originalSystem.inhabitants.techLevel}
           />
-          <DataRow label="Population"  value={formatPopulation(system.inhabitants.population)} />
-          <DataRow label="Material Wealth" value={system.inhabitants.wealth} />
+          <DataRow label="Population"  value={formatPopulation(system.inhabitants.population)} isChanged={!!originalSystem && system.inhabitants.population !== originalSystem.inhabitants.population} />
+          <DataRow label="Material Wealth" value={system.inhabitants.wealth} isChanged={!!originalSystem && system.inhabitants.wealth !== originalSystem.inhabitants.wealth} />
           <DataRow label="Government"  value={(() => {
             const useLowPop = system.inhabitants.populated !== false && system.inhabitants.population < 1_000_000;
             const govLabel = useLowPop ? POWER_STRUCTURE_LABELS_LOW_POP[system.inhabitants.powerStructure] : system.inhabitants.powerStructure;
             const powerLabel = useLowPop ? SOURCE_OF_POWER_LABELS_LOW_POP[system.inhabitants.sourceOfPower] : system.inhabitants.sourceOfPower;
             return `${govLabel} (${powerLabel})`;
-          })()} />
+          })()} isChanged={!!originalSystem && (system.inhabitants.powerStructure !== originalSystem.inhabitants.powerStructure || system.inhabitants.sourceOfPower !== originalSystem.inhabitants.sourceOfPower)} />
           {rawUdpMode && rawProfile.tradeCodes.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {rawProfile.tradeCodes.map(code => (
@@ -137,18 +138,23 @@ export function OverviewTab({ system, rawUdpMode, rawProfile }: { system: StarSy
                 ? `Class ${system.inhabitants.starport.class} (founded Class ${system.inhabitants.starport.foundingClass})`
                 : `Class ${system.inhabitants.starport.class}`
             }
+            isChanged={!!originalSystem && system.inhabitants.starport.class !== originalSystem.inhabitants.starport.class}
           />
-          <DataRow label="Port Activity" value={formatCredits(system.inhabitants.starport.weeklyActivity)} />
+          <DataRow label="Port Activity" value={formatCredits(system.inhabitants.starport.weeklyActivity)} isChanged={!!originalSystem && system.inhabitants.starport.weeklyActivity !== originalSystem.inhabitants.starport.weeklyActivity} />
           <DataRow label="Bases"       value={[
             system.inhabitants.starport.hasNavalBase  && 'Naval',
             system.inhabitants.starport.hasScoutBase  && 'Scout',
             system.inhabitants.starport.hasPirateBase && 'Pirate',
-          ].filter(Boolean).join(', ') || 'None'} />
+          ].filter(Boolean).join(', ') || 'None'} isChanged={!!originalSystem && (
+            system.inhabitants.starport.hasNavalBase !== originalSystem.inhabitants.starport.hasNavalBase ||
+            system.inhabitants.starport.hasScoutBase !== originalSystem.inhabitants.starport.hasScoutBase ||
+            system.inhabitants.starport.hasPirateBase !== originalSystem.inhabitants.starport.hasPirateBase
+          )} />
           <DataRow label="Travel Zone" value={system.inhabitants.travelZone} className={
             system.inhabitants.travelZone === 'Green' ? 'habitability-excellent' :
             system.inhabitants.travelZone === 'Amber' ? 'habitability-marginal' :
             'habitability-hostile'
-          } />
+          } isChanged={!!originalSystem && system.inhabitants.travelZone !== originalSystem.inhabitants.travelZone} />
 
           {/* Port Network note (QA-055) */}
           {(() => {
