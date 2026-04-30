@@ -15,7 +15,12 @@ function getGitVersion() {
     // Get commit date
     const commitDate = execSync('git log -1 --format=%cs').toString().trim()
     // Check for uncommitted changes
-    const dirty = execSync('git status --porcelain').toString().trim().length > 0
+    const porcelain = execSync('git status --porcelain').toString().trim()
+    const dirty = porcelain.length > 0
+    if (dirty) {
+      console.warn('[getGitVersion] Dirty working tree detected:')
+      console.warn(porcelain.split('\n').map(l => '  ' + l).join('\n'))
+    }
     const suffix = dirty ? '-dirty' : ''
     
     return {
