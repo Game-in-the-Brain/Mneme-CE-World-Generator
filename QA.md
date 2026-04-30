@@ -125,6 +125,7 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 | **QA-076** | ⏸ On Hold | Starport floor guard (Mining/Inhospitable + pop <500k → Class ≥ D; Agricultural + pop <500k → Class ≥ E) — originally QA-070 R4. Held pending FRD-070 economic classification redesign, which will define the full set of world function types on which floor rules operate. Do not implement in isolation — the floor logic must align with whatever economic modes FRD-070 introduces. |
 | **QA-077** | ⏸ On Hold | Mainworld raison d'être — "who thought this place was worth settling?" generator (penal colony, research outpost, refugee remnant, mining concession, strategic chokepoint, cult retreat). Originally QA-071. Held pending FRD-070, which will establish economic modes and industries as the primary driver of existence justification. An isolated miner world's reason to exist is its economic function, not a separate flavour roll. |
 | **QA-078** | ✅ Fixed | GitHub Actions `Deploy to GitHub Pages` workflow fails with `isEditing used before its declaration` in `SystemViewer.tsx`. Fixed by reordering hooks. |
+| **QA-079** | 📋 Queued | Companion stars should have generated names + editable name fields. Currently only the primary star and planetary bodies get names from the place name generator. Companion stars are unnamed. |
 
 ### QA-078 — GitHub Actions Build Failure: `isEditing` Used Before Declaration
 
@@ -155,6 +156,30 @@ TypeScript's `tsc -b` (used by `npm run build`) enforces stricter block-scoping 
 **Verification:**
 - `npm run build` (which runs `tsc -b && vite build`) now passes locally
 - Next push to `main` should produce a green workflow run
+
+---
+
+### QA-079 — Companion Star Names
+
+**Status:** 📋 Queued
+
+**Problem:** The place name generator (`generatePlaceNames`) and the edit-mode name editing UI only cover:
+- System name (header)
+- Planetary body names (annotations)
+
+Companion stars (`system.companionStars[]`) have no names at all. They display as "Companion 1", "Companion 2", etc.
+
+**Desired behaviour:**
+1. **Generation:** `generatePlaceNames()` should also generate a name for each companion star, stored in `placeNames.companionNames: Record<string, string>` (keyed by `star.id`).
+2. **Display:** In `SystemViewer.tsx` / `StarTab.tsx`, companion stars should show their generated name alongside "Companion {index}".
+3. **Edit mode:** Companion star names should be editable inline (similar to system name / body annotations) with changes staged in `pendingSystem` / `pendingAnnotations` until Save is clicked.
+4. **Legacy systems:** Like body names, legacy systems that have `placeNames` but no `companionNames` should auto-populate with defaults (e.g. "Companion 1") on first view.
+
+**Affected files:**
+- `src/lib/placeNameGen.ts` — generate companion star names
+- `src/types/system.ts` — add `companionNames` to `PlaceNames`
+- `src/components/tabs/StarTab.tsx` — display and edit companion star names
+- `src/components/SystemViewer.tsx` — pass annotation state for companion names
 
 ---
 
