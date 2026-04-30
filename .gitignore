@@ -36,3 +36,4 @@ out/
 *.deb
 *.apk
 *.aab
+src/lib/npf-data.generated.ts
