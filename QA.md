@@ -126,6 +126,7 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 | **QA-077** | ⏸ On Hold | Mainworld raison d'être — "who thought this place was worth settling?" generator (penal colony, research outpost, refugee remnant, mining concession, strategic chokepoint, cult retreat). Originally QA-071. Held pending FRD-070, which will establish economic modes and industries as the primary driver of existence justification. An isolated miner world's reason to exist is its economic function, not a separate flavour roll. |
 | **QA-078** | ✅ Fixed | GitHub Actions `Deploy to GitHub Pages` workflow fails with `isEditing used before its declaration` in `SystemViewer.tsx`. Fixed by reordering hooks. |
 | **QA-079** | 📋 Queued | Companion stars should have generated names + editable name fields. Currently only the primary star and planetary bodies get names from the place name generator. Companion stars are unnamed. |
+| **QA-080** | 📋 Queued | Main worlds and circumstellar disks don't get randomly generated names from the place name generator. The `generatePlaceNames()` function skips the main world body and all disk bodies, leaving them with blank or placeholder names. |
 
 ### QA-078 — GitHub Actions Build Failure: `isEditing` Used Before Declaration
 
@@ -180,6 +181,34 @@ Companion stars (`system.companionStars[]`) have no names at all. They display a
 - `src/types/system.ts` — add `companionNames` to `PlaceNames`
 - `src/components/tabs/StarTab.tsx` — display and edit companion star names
 - `src/components/SystemViewer.tsx` — pass annotation state for companion names
+
+---
+
+### QA-080 — Main Worlds and Circumstellar Disks Missing Generated Names
+
+**Status:** 📋 Queued
+
+**Problem:** `generatePlaceNames()` in `src/lib/placeNameGen.ts` iterates over:
+- `terrestrialWorlds`
+- `dwarfPlanets`
+- `iceWorlds`
+- `gasWorlds`
+- `moons`
+
+But it **skips** the main world and circumstellar disks. The result:
+- Main world shows a blank name field or placeholder in the Planetary System tab
+- Circumstellar disks show blank names in the body list
+- Only non-mainworld terrestrial bodies, dwarfs, ice worlds, gas giants, and moons receive generated names
+
+**Expected behaviour:**
+1. **Main world:** Should get a generated name from `PlaceGen` and store it in `placeNames.bodyNames` under a synthetic ID (e.g. `${system.id}-mainworld`). The existing `mainWorldBody` construction in `PlanetarySystemTab.tsx` already uses this ID pattern.
+2. **Circumstellar disks:** Each disk should get a generated name. Disks currently have no meaningful label beyond "Disk".
+3. **Edit mode:** Both main world and disk names should be editable inline like other body names, routed through `pendingAnnotations`.
+4. **Legacy migration:** Existing saved systems that lack mainworld/disk names should auto-populate on first view (same pattern as existing body name auto-fill in `SystemViewer.tsx` useEffect).
+
+**Affected files:**
+- `src/lib/placeNameGen.ts` — include main world and disks in name generation loop
+- `src/components/PlanetarySystemTab.tsx` / `PlanetarySystemBodies.tsx` — ensure synthetic IDs match the generated keys
 
 ---
 
