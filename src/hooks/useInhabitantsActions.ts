@@ -48,6 +48,7 @@ export function useInhabitantsActions(
       totalBodies,
       system.inhabitants.techLevel,
       system.economicPreset,
+      system.inhabitants.tradeMultiplier,
     );
     setShipsResult(result);
   }

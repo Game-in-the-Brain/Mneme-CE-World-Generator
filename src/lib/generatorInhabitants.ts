@@ -5,6 +5,7 @@ import { roll2D6, roll3D6, rollExploding } from './dice';
 import { getGdpPerDayForWorld, getSoc7MonthlyIncome } from './economicPresets';
 import { getStarportFloorClass } from './generatorHelpers';
 import { POWER_CULTURE_CONFLICTS, calculateDepressionPenalty, calculateStarport, determineTravelZone, generateCultureTraits, getDevelopment, getGovernanceDM, getHabitatSize, getPowerStructure, getSourceOfPower, getWealth, rollForBase } from './worldData';
+import { applyCulturalEffects } from './worldDataCulture';
 
 
 // =====================
@@ -59,17 +60,33 @@ export function generateInhabitants(
     population = Math.max(10, Math.floor(popRoll * maxPopulation * 0.05));
   }
 
-  const wealth = getWealth(undefined, mainWorld.biochemicalResources, opts.wealthWeights);
-
   const powerStructure = getPowerStructure(undefined, opts.powerWeights);
-
-  const devResult = getDevelopment(undefined, opts.developmentWeights);
 
   const sourceOfPower = getSourceOfPower(undefined, opts.govWeights);
 
+  // QA-066: generate culture traits BEFORE wealth/development so mechanical effects can modify rolls
+  const cultureExclude = POWER_CULTURE_CONFLICTS[sourceOfPower] ?? [];
+  const cultureTraits = generateCultureTraits(2, cultureExclude);
+  const culturalEffects = applyCulturalEffects(cultureTraits);
+
+  // Roll wealth and development, applying cultural deltas
+  const wealthRollRaw = opts.wealthWeights
+    ? (() => { const r = roll2D6(); return r.value; })()
+    : Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+  const wealthRoll = Math.max(2, Math.min(12, wealthRollRaw + culturalEffects.wealthDelta));
+  const wealth = getWealth(wealthRoll, mainWorld.biochemicalResources);
+
+  const devRollRaw = opts.developmentWeights
+    ? (() => { const r = roll2D6(); return r.value; })()
+    : Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+  const devRoll = Math.max(2, Math.min(12, devRollRaw + culturalEffects.developmentDelta));
+  const devResult = getDevelopment(devRoll);
+
   const governance = getGovernanceDM(devResult.level, wealth);
 
-  const penalty = calculateDepressionPenalty(population, devResult.level);
+  const effectivePopulation = Math.max(10, Math.floor(population * culturalEffects.workforceMultiplier));
+
+  const penalty = calculateDepressionPenalty(effectivePopulation, devResult.level);
   const effectiveTL = Math.max(0, techLevel - penalty);
 
   const weeklyRoll = roll3D6().value;
@@ -77,15 +94,15 @@ export function generateInhabitants(
   const gdpPerDay = getGdpPerDayForWorld(techLevel, devResult.level, wealth, opts.tlProductivityPreset!);
 
   // R4 / QA-070: determine starport floor based on world function
-  const floorClass = getStarportFloorClass(population, envHab, habitatType, mainWorld.biochemicalResources);
+  const floorClass = getStarportFloorClass(effectivePopulation, envHab, habitatType, mainWorld.biochemicalResources);
 
   // QA-034: depression penalty is always applied after starport calculation
-  let foundingStarportResult = calculateStarport(population, techLevel, wealth, devResult.level, weeklyRoll, gdpPerDay, floorClass);
+  let foundingStarportResult = calculateStarport(effectivePopulation, techLevel, wealth, devResult.level, weeklyRoll, gdpPerDay, floorClass);
   let starportResult = foundingStarportResult;
 
   if (effectiveTL !== techLevel) {
     const effectiveGdpPerDay = getGdpPerDayForWorld(effectiveTL, devResult.level, wealth, opts.tlProductivityPreset!);
-    starportResult = calculateStarport(population, effectiveTL, wealth, devResult.level, weeklyRoll, effectiveGdpPerDay, floorClass);
+    starportResult = calculateStarport(effectivePopulation, effectiveTL, wealth, devResult.level, weeklyRoll, effectiveGdpPerDay, floorClass);
   }
 
   const starport = {
@@ -104,10 +121,21 @@ export function generateInhabitants(
     foundingRawClass: foundingStarportResult.rawClass,
   };
 
+  // QA-066: apply travel zone delta from cultural effects
   const zoneResult = determineTravelZone(mainWorld.hazard, mainWorld.hazardIntensity, effectiveTL);
-
-  const cultureExclude = POWER_CULTURE_CONFLICTS[sourceOfPower] ?? [];
-  const cultureTraits = generateCultureTraits(2, cultureExclude);
+  let travelZone = zoneResult.zone;
+  let travelZoneReason = zoneResult.reason;
+  if (culturalEffects.travelZoneDelta !== 0) {
+    // Shift zone: positive delta → more dangerous (Green→Amber→Red)
+    const zoneOrder: import('../types').TravelZone[] = ['Green', 'Amber', 'Red'];
+    const currentIdx = zoneOrder.indexOf(travelZone);
+    const newIdx = Math.max(0, Math.min(zoneOrder.length - 1, currentIdx + culturalEffects.travelZoneDelta));
+    const newZone = zoneOrder[newIdx];
+    if (newZone !== travelZone) {
+      travelZone = newZone;
+      travelZoneReason = (travelZoneReason ?? '') + (travelZoneReason ? '; ' : '') + 'Modified by cultural attitudes';
+    }
+  }
 
   return {
     populated: true,
@@ -116,14 +144,17 @@ export function generateInhabitants(
     foundingTL: techLevel,
     effectiveTL,
     population,
+    effectivePopulation,
     wealth,
     powerStructure,
     development: devResult.level,
     sourceOfPower,
     governance,
     starport,
-    travelZone: zoneResult.zone,
-    travelZoneReason: zoneResult.reason,
+    travelZone,
+    travelZoneReason,
     cultureTraits,
+    tradeMultiplier: culturalEffects.tradeMultiplier,
+    culturalEffectsBreakdown: culturalEffects.breakdown,
   };
 }

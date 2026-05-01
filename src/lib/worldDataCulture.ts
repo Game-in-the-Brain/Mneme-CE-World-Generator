@@ -192,6 +192,133 @@ export const POWER_STRUCTURE_DESCRIPTIONS: Record<PowerStructure, { description:
 };
 
 /** R3: Low-population terminology variants for populations < 1,000,000 */
+// =====================
+// QA-066: Cultural Mechanical Effects
+// =====================
+
+export interface CulturalMechanicalEffect {
+  wealthDelta?: number;           // modifier to wealth roll weight
+  developmentDelta?: number;      // modifier to development roll weight
+  tradeMultiplier?: number;       // multiplier to trade budget (ships)
+  workforceMultiplier?: number;   // multiplier to effective population
+  travelZoneDelta?: number;       // modifier to travel zone roll
+}
+
+/** Maps culture trait names to their mechanical economic/demographic effects.
+ *  Unknown traits produce no effect — safe to extend incrementally. */
+export const CULTURAL_MECHANICAL_EFFECTS: Record<string, CulturalMechanicalEffect> = {
+  // Attitudes Toward Wealth (row 1-5)
+  'Money is Evil':            { wealthDelta: -2, tradeMultiplier: 0.3 },
+  'Keep Only what you Need':  { wealthDelta: -1, tradeMultiplier: 0.7 },
+  'Hidden Riches':            { wealthDelta: 0, tradeMultiplier: 0.9 },
+  'Money isn\'t Everything':  { wealthDelta: 0, tradeMultiplier: 1.0 },
+  'Greed is Good':            { wealthDelta: +2, tradeMultiplier: 1.3 },
+  'Blessed Extravagance':     { wealthDelta: +1, tradeMultiplier: 1.5 },
+
+  // Measures of Success (row 6-5)
+  'Money Matters':            { developmentDelta: +1, wealthDelta: +1 },
+
+  // Foreign Policy (row 3-5)
+  'Naive Foreign Policy':     { tradeMultiplier: 1.0, travelZoneDelta: 0 },
+  'Xenophilia':               { tradeMultiplier: 1.3, travelZoneDelta: -1 },
+  'Cultural Exchange':        { tradeMultiplier: 1.4, travelZoneDelta: -1 },
+  'Xenophobia':               { tradeMultiplier: 0.5, travelZoneDelta: +1 },
+  'Xenocide':                 { tradeMultiplier: 0.0, travelZoneDelta: +2 },
+
+  // Gender Roles (row 2-4)
+  'What Gender Roles?':       { workforceMultiplier: 1.0 },
+  'Gender Tendencies':        { workforceMultiplier: 0.95 },
+  'Strict Equal Gender Roles':{ workforceMultiplier: 0.9 },
+  'Gender Superiority':       { workforceMultiplier: 0.5 },
+  'Gender Isolation':         { workforceMultiplier: 0.7 },
+
+  // Disability (row 3-1)
+  'Disability is Death':      { developmentDelta: -2 },
+  'Disability Discrimination':{ developmentDelta: -1 },
+  'Disability Correction':    { developmentDelta: 0 },
+  'Disability Benefits':      { developmentDelta: +1 },
+  'Glorious Disability':      { developmentDelta: +2 },
+
+  // Government Structure (row 4-5)
+  'Elitist Government':       { wealthDelta: +1, developmentDelta: -1 },
+  'Meritocratic Examination': { developmentDelta: +2 },
+
+  // Other commonly-rolled traits with narrative-mechanical bridges
+  'Isolationist':             { tradeMultiplier: 0.6, travelZoneDelta: +1 },
+  'Cosmopolitan':             { tradeMultiplier: 1.2, travelZoneDelta: -1 },
+  'Militarist':               { tradeMultiplier: 0.9, travelZoneDelta: +1 },
+  'Pacifist':                 { tradeMultiplier: 0.8, travelZoneDelta: 0 },
+  'Hostile':                  { tradeMultiplier: 0.4, travelZoneDelta: +2 },
+  'Hospitable':               { tradeMultiplier: 1.1, travelZoneDelta: -1 },
+  'Competitive':              { tradeMultiplier: 1.2 },
+  'Collectivist':             { tradeMultiplier: 0.8, wealthDelta: -1 },
+  'Individualist':            { tradeMultiplier: 1.1, wealthDelta: +1 },
+  'Honorable':                { tradeMultiplier: 1.0 },
+  'Deceptive':                { tradeMultiplier: 0.7 },
+  'Ruthless':                 { tradeMultiplier: 1.1, wealthDelta: +1 },
+  'Generous':                 { tradeMultiplier: 0.9, wealthDelta: -1 },
+  'Paranoid':                 { tradeMultiplier: 0.5, travelZoneDelta: +1 },
+  'Progressive':              { developmentDelta: +1, tradeMultiplier: 1.1 },
+  'Rustic':                   { tradeMultiplier: 0.7, developmentDelta: -1 },
+  'Bureaucratic':             { tradeMultiplier: 0.8 },
+  'Libertarian':              { tradeMultiplier: 1.2, wealthDelta: +1 },
+  'Legalistic':               { tradeMultiplier: 0.9 },
+  'Anarchist':                { tradeMultiplier: 0.6, travelZoneDelta: +1 },
+};
+
+/** Apply cultural mechanical effects to derive trade multiplier, workforce multiplier,
+ *  and a human-readable breakdown. */
+export function applyCulturalEffects(
+  cultureTraits: string[]
+): {
+  tradeMultiplier: number;
+  workforceMultiplier: number;
+  wealthDelta: number;
+  developmentDelta: number;
+  travelZoneDelta: number;
+  breakdown: string[];
+} {
+  let tradeMultiplier = 1.0;
+  let workforceMultiplier = 1.0;
+  let wealthDelta = 0;
+  let developmentDelta = 0;
+  let travelZoneDelta = 0;
+  const breakdown: string[] = [];
+
+  for (const trait of cultureTraits) {
+    const effect = CULTURAL_MECHANICAL_EFFECTS[trait];
+    if (!effect) continue;
+
+    if (effect.tradeMultiplier !== undefined) {
+      tradeMultiplier *= effect.tradeMultiplier;
+      breakdown.push(`${trait}: trade ×${effect.tradeMultiplier}`);
+    }
+    if (effect.workforceMultiplier !== undefined) {
+      workforceMultiplier *= effect.workforceMultiplier;
+      breakdown.push(`${trait}: workforce ×${effect.workforceMultiplier}`);
+    }
+    if (effect.wealthDelta !== undefined) {
+      wealthDelta += effect.wealthDelta;
+      breakdown.push(`${trait}: wealth ${effect.wealthDelta >= 0 ? '+' : ''}${effect.wealthDelta}`);
+    }
+    if (effect.developmentDelta !== undefined) {
+      developmentDelta += effect.developmentDelta;
+      breakdown.push(`${trait}: development ${effect.developmentDelta >= 0 ? '+' : ''}${effect.developmentDelta}`);
+    }
+    if (effect.travelZoneDelta !== undefined) {
+      travelZoneDelta += effect.travelZoneDelta;
+      breakdown.push(`${trait}: travel zone ${effect.travelZoneDelta >= 0 ? '+' : ''}${effect.travelZoneDelta}`);
+    }
+  }
+
+  // Floor trade multiplier at 0 (xenocide can drive it to 0)
+  tradeMultiplier = Math.max(0, tradeMultiplier);
+  // Floor workforce at 10% to keep worlds generating SOMETHING
+  workforceMultiplier = Math.max(0.1, workforceMultiplier);
+
+  return { tradeMultiplier, workforceMultiplier, wealthDelta, developmentDelta, travelZoneDelta, breakdown };
+}
+
 export const POWER_STRUCTURE_DESCRIPTIONS_LOW_POP: Record<PowerStructure, { description: string }> = {
   'Anarchy':       { description: 'No recognised central authority exists. Power is held by local strong individuals, family heads, or small councils. Rules vary by settlement; travel between areas can be unpredictable.' },
   'Confederation': { description: 'A loose alliance of groups — settlements, clans, or organisations — that retain autonomy. The central body has limited powers, primarily defence and trade arbitration. Group interests frequently conflict with collective decisions.' },

@@ -20,7 +20,7 @@ export function recalculateStarportFromDials(
   );
   const weeklyRoll = inhabitants.starport.weeklyRoll ?? 10;
   const recalc = calculateStarport(
-    inhabitants.population,
+    inhabitants.effectivePopulation ?? inhabitants.population,
     inhabitants.techLevel,
     inhabitants.wealth,
     inhabitants.development,

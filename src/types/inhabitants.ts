@@ -20,6 +20,14 @@ export interface Inhabitants {
   travelZone: TravelZone;
   travelZoneReason?: string;
   cultureTraits: string[];
+
+  // QA-066: Cultural Values mechanical effects
+  /** Effective population after workforce participation modifiers */
+  effectivePopulation?: number;
+  /** Trade budget multiplier derived from cultural traits (affects ships-in-area) */
+  tradeMultiplier?: number;
+  /** Human-readable list of cultural trait → mechanical effect */
+  culturalEffectsBreakdown?: string[];
 }
 
 export type { Starport, ShipsInAreaResult };

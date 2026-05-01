@@ -106,7 +106,8 @@ export function generateShipsInTheArea(
   weeklyTradeValue: number,
   totalBodies: number,
   worldTL: number,
-  _preset?: TLProductivityPreset
+  _preset?: TLProductivityPreset,
+  tradeMultiplier?: number,
 ): ShipsInAreaResult {
   // Step 0: QA-059 — TL gate. Filter pool to ships buildable/servicable at this world's TL
   const availableShips = SHIPS.filter(s => s.minTL <= worldTL);
@@ -116,12 +117,13 @@ export function generateShipsInTheArea(
     warship: availableShips.filter(s => s.traffic_pool === 'warship'),
   };
 
-  // Step 1: Ships Budget = Weekly Trade Value × (1D6 × 10%)
+  // Step 1: Ships Budget = Weekly Trade Value × (1D6 × 10%) × tradeMultiplier
   const budgetRoll = rollD6();
   const rawBudget = weeklyTradeValue * (budgetRoll * 0.1);
 
   // QA-058: removed scarcity multiplier — let lower CE trade value drive scarcity naturally
-  const budget = rawBudget;
+  // QA-066: apply cultural trade multiplier
+  const budget = rawBudget * (tradeMultiplier ?? 1.0);
 
   // Step 2: Category distribution
   const distRoll = rollD6();

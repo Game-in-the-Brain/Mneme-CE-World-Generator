@@ -413,6 +413,31 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
             isChanged={isChanged('travelZone')}
           />
         </div>
+        {/* QA-066: Cultural mechanical effects */}
+        {inhabitants.culturalEffectsBreakdown && inhabitants.culturalEffectsBreakdown.length > 0 && (
+          <div className="p-3 rounded space-y-2" style={{ backgroundColor: 'var(--row-hover)' }}>
+            <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent-cyan, #06b6d4)' }}>
+              Cultural Economic Effects
+            </div>
+            {inhabitants.effectivePopulation !== undefined && inhabitants.effectivePopulation !== inhabitants.population && (
+              <DataRow
+                label="Effective Population"
+                value={`${inhabitants.effectivePopulation.toLocaleString()} (from ${inhabitants.population.toLocaleString()})`}
+              />
+            )}
+            {inhabitants.tradeMultiplier !== undefined && inhabitants.tradeMultiplier !== 1.0 && (
+              <DataRow
+                label="Trade Multiplier"
+                value={`×${inhabitants.tradeMultiplier.toFixed(2)}`}
+              />
+            )}
+            <div className="space-y-1">
+              {inhabitants.culturalEffectsBreakdown.map((line, i) => (
+                <div key={i} className="text-xs" style={{ color: 'var(--text-secondary)' }}>• {line}</div>
+              ))}
+            </div>
+          </div>
+        )}
         <div>
           <div className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
             Culture Traits
