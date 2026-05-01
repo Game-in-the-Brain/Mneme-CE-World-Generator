@@ -201,6 +201,8 @@ export interface PlaceNames {
   driftLevel: number;
   systemName: string;
   bodyNames: Record<string, string>;
+  /** QA-079: generated names for companion stars, keyed by star.id */
+  companionNames?: Record<string, string>;
 }
 
 export interface GeneratorOptions {

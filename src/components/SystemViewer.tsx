@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import type { StarSystem, BodyAnnotations, ShipsInAreaResult } from '../types';
+import type { StarSystem, BodyAnnotations, ShipsInAreaResult, PlaceNames } from '../types';
 import { generatePlaceNames, getLcOptions } from '../lib/placeNameGen';
 import { loadGeneratorOptions } from '../lib/optionsStorage';
 import { exportToDocx } from '../lib/exportDocx';
@@ -81,20 +81,54 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
 
   useEffect(() => {
     const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
-    if (stored) {
-      try { setAnnotations(JSON.parse(stored) as BodyAnnotations); } catch { setAnnotations({}); }
-    } else if (system.placeNames?.bodyNames) {
-      // Auto-populate from generated place names if no user edits exist
-      const prefilled: BodyAnnotations = {};
+    let merged: BodyAnnotations = stored ? JSON.parse(stored) : {};
+    let needsSave = false;
+
+    // Auto-populate from generated place names if no user edits exist
+    if (system.placeNames?.bodyNames) {
       for (const [bodyId, name] of Object.entries(system.placeNames.bodyNames)) {
-        prefilled[bodyId] = { name, notes: '' };
+        if (!merged[bodyId]?.name) {
+          merged[bodyId] = { name, notes: merged[bodyId]?.notes ?? '' };
+          needsSave = true;
+        }
       }
-      localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(prefilled));
-      setAnnotations(prefilled);
-    } else {
-      setAnnotations({});
     }
-  }, [system.id, system.placeNames]);
+
+    // QA-080 legacy migration: main world name
+    const mainworldId = `${system.id}-mainworld`;
+    if (!merged[mainworldId]?.name) {
+      const fallbackName = system.placeNames?.bodyNames?.[mainworldId]
+        ?? system.name
+        ?? 'Main World';
+      merged[mainworldId] = { name: fallbackName, notes: merged[mainworldId]?.notes ?? '' };
+      needsSave = true;
+    }
+
+    // QA-080 legacy migration: disk names
+    for (const [i, disk] of system.circumstellarDisks.entries()) {
+      if (!merged[disk.id]?.name) {
+        const fallbackName = system.placeNames?.bodyNames?.[disk.id]
+          ?? `Disk ${i + 1}`;
+        merged[disk.id] = { name: fallbackName, notes: merged[disk.id]?.notes ?? '' };
+        needsSave = true;
+      }
+    }
+
+    // QA-079 legacy migration: companion star names (stored in annotations for simplicity)
+    for (const [i, star] of system.companionStars.entries()) {
+      if (!merged[star.id]?.name) {
+        const fallbackName = system.placeNames?.companionNames?.[star.id]
+          ?? `Companion ${i + 1}`;
+        merged[star.id] = { name: fallbackName, notes: '' };
+        needsSave = true;
+      }
+    }
+
+    if (needsSave) {
+      localStorage.setItem(`mneme_annotations_${system.id}`, JSON.stringify(merged));
+    }
+    setAnnotations(merged);
+  }, [system.id, system.placeNames, system.companionStars, system.circumstellarDisks, system.name]);
 
   // In edit mode, stage annotation changes in pendingAnnotations instead of saving immediately
   const displayAnnotations = isEditing ? pendingAnnotations : annotations;
@@ -123,6 +157,36 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   const handleExportDocx = useCallback(async () => {
     await exportToDocx(system, annotations, shipsResult);
   }, [system, annotations, shipsResult]);
+
+  // QA-079: edit companion star name
+  const handleEditCompanionName = useCallback((starId: string, name: string) => {
+    const defaultPlaceNames: PlaceNames = {
+      baseLc: '', driftLc: '', driftLevel: 0, systemName: '', bodyNames: {},
+    };
+    if (isEditing) {
+      setPendingSystem(prev => ({
+        ...prev,
+        placeNames: {
+          ...(prev.placeNames ?? defaultPlaceNames),
+          companionNames: {
+            ...(prev.placeNames?.companionNames ?? {}),
+            [starId]: name,
+          },
+        },
+      }));
+    } else if (onUpdateSystem) {
+      onUpdateSystem({
+        ...system,
+        placeNames: {
+          ...(system.placeNames ?? defaultPlaceNames),
+          companionNames: {
+            ...(system.placeNames?.companionNames ?? {}),
+            [starId]: name,
+          },
+        },
+      });
+    }
+  }, [isEditing, onUpdateSystem, system]);
 
   // Wrap save/discard to include annotation staging
   const saveEdits = useCallback(async () => {
@@ -428,6 +492,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
               console.warn('[StarEdit] Warnings:', warnings);
             }
           }}
+          onEditCompanionName={handleEditCompanionName}
         />
       </section>
 

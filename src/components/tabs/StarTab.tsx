@@ -8,11 +8,14 @@ export function StarTab({
   isEditing,
   originalSystem,
   onEditPrimaryStar,
+  onEditCompanionName,
 }: {
   system: StarSystem;
   isEditing?: boolean;
   originalSystem?: StarSystem | null;
   onEditPrimaryStar?: (stellarClass: StellarClass, grade: StellarGrade) => void;
+  /** QA-079: callback to edit a companion star name */
+  onEditCompanionName?: (starId: string, name: string) => void;
 }) {
   const starChanged = originalSystem && (
     system.primaryStar.class !== originalSystem.primaryStar.class ||
@@ -45,15 +48,33 @@ export function StarTab({
             Companion Stars ({system.companionStars.length})
           </h3>
           <div className="space-y-4">
-            {system.companionStars.map((star, index) => (
-              <div key={star.id} className="p-4 rounded-lg" style={{ backgroundColor: 'var(--row-hover)' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold">Companion {index + 1}</span>
-                  <span style={{ color: 'var(--text-secondary)' }}>{star.orbitDistance} AU from {star.orbits}</span>
+            {system.companionStars.map((star, index) => {
+              const companionName = system.placeNames?.companionNames?.[star.id] ?? `Companion ${index + 1}`;
+              return (
+                <div key={star.id} className="p-4 rounded-lg" style={{ backgroundColor: 'var(--row-hover)' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {isEditing && onEditCompanionName ? (
+                        <input
+                          type="text"
+                          value={companionName}
+                          onChange={(e) => onEditCompanionName(star.id, e.target.value)}
+                          className="text-sm bg-transparent border-b border-transparent hover:border-[var(--border-color)] focus:border-[var(--accent-red)] outline-none px-1 py-0.5 transition-colors"
+                          style={{ color: 'var(--text-primary)', minWidth: '8rem' }}
+                        />
+                      ) : (
+                        <span className="font-semibold">{companionName}</span>
+                      )}
+                      <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        ({star.class}{star.grade})
+                      </span>
+                    </div>
+                    <span style={{ color: 'var(--text-secondary)' }}>{star.orbitDistance} AU from {star.orbits}</span>
+                  </div>
+                  <StarDetails star={star} />
                 </div>
-                <StarDetails star={star} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

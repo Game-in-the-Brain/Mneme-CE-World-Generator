@@ -71,5 +71,22 @@ export function generatePlaceNames(
     bodyNames[body.id] = result.displayName ?? result.name;
   }
 
-  return { baseLc: resolvedBase, driftLc: resolvedDrift, driftLevel, systemName, bodyNames };
+  // QA-080: main world and circumstellar disks also get names
+  const mainworldId = `${system.id}-mainworld`;
+  const mainworldResult = gen.generateWorldName({ baseLc: resolvedBase, driftLc: resolvedDrift, driftLevel });
+  bodyNames[mainworldId] = mainworldResult.displayName ?? mainworldResult.name;
+
+  for (const disk of system.circumstellarDisks) {
+    const result = gen.generateWorldName({ baseLc: resolvedBase, driftLc: resolvedDrift, driftLevel });
+    bodyNames[disk.id] = result.displayName ?? result.name;
+  }
+
+  // QA-079: companion stars get names
+  const companionNames: Record<string, string> = {};
+  for (const star of system.companionStars) {
+    const result = gen.generateWorldName({ baseLc: resolvedBase, driftLc: resolvedDrift, driftLevel });
+    companionNames[star.id] = result.displayName ?? result.name;
+  }
+
+  return { baseLc: resolvedBase, driftLc: resolvedDrift, driftLevel, systemName, bodyNames, companionNames };
 }
