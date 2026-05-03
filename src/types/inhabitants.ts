@@ -28,6 +28,59 @@ export interface Inhabitants {
   tradeMultiplier?: number;
   /** Human-readable list of cultural trait → mechanical effect */
   culturalEffectsBreakdown?: string[];
+
+  // FRD-070: Economic Classification
+  /** Derived economic classification (primary driver, modifiers, tech tier, etc.) */
+  economicClassification?: EconomicClassification;
+}
+
+// FRD-070: Economic Classification & World Trade Codes
+export type EconomicDriver =
+  | 'Extraction'
+  | 'Agricultural Surplus'
+  | 'Manufacturing'
+  | 'Refining'
+  | 'Services / Trade Hub'
+  | 'High-Technology'
+  | 'Subsistence / Closed'
+  | 'Research Outpost';
+
+export type EconomicModifier =
+  | 'Garden'
+  | 'Fluid Ocean'
+  | 'Water World'
+  | 'Marginal'
+  | 'Contested';
+
+export type TechTier =
+  | 'Primitive'
+  | 'Emergent'
+  | 'Industrial'
+  | 'Advanced'
+  | 'Post-Scarcity';
+
+export type PopulationScale =
+  | 'Outpost'
+  | 'Settlement'
+  | 'Colony'
+  | 'Province'
+  | 'Homeworld';
+
+export interface EconomicClassification {
+  /** Primary driver: what this world produces most of */
+  primaryDriver: EconomicDriver;
+  /** Secondary modifiers layered on top */
+  modifiers: EconomicModifier[];
+  /** Technology tier (replaces CE Hi/Lt) */
+  techTier: TechTier;
+  /** Population scale label (replaces CE Hi/Lo as trade code) */
+  populationScale: PopulationScale;
+  /** Human-readable summary sentence */
+  summary: string;
+  /** Raison d'être: why is anyone here? */
+  reasonForExistence: string;
+  /** CE trade codes for RAW UDP backward compatibility */
+  ceTradeCodes: string[];
 }
 
 export type { Starport, ShipsInAreaResult };

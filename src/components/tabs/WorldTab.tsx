@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { formatNumber } from '../../lib/format';
 import { displayTL, displayTLDescriptor } from '../../lib/economicPresets';
 import { CULTURE_TRAIT_DESCRIPTIONS, CULTURE_TRAIT_DESCRIPTIONS_LOW_POP, TL_TABLE } from '../../lib/worldData';
+import { EARTH_REFERENCE } from '../../lib/referenceData';
 import type { MainWorld } from '../../types';
 import { DataRow, HabitabilityBox, getAtmosphereHabitability, getTemperatureHabitability, getHazardHabitability } from './tabHelpers';
 
@@ -14,12 +15,12 @@ export function WorldTab({ world, originalWorld }: { world: MainWorld; originalW
         <h3 className="text-lg font-semibold">Physical Characteristics</h3>
         <div className="space-y-2">
           <DataRow label="Type"            value={world.type} isChanged={!!originalWorld && world.type !== originalWorld.type} />
-          <DataRow label="Size"            value={`${formatNumber(world.size)} km`} isChanged={!!originalWorld && world.size !== originalWorld.size} />
-          <DataRow label="Mass"            value={`${formatNumber(world.massEM)} ${world.type === 'Dwarf' ? 'LM' : 'EM'}`} isChanged={!!originalWorld && world.massEM !== originalWorld.massEM} />
-          <DataRow label="Density"         value={`${world.densityGcm3} g/cm³`} isChanged={!!originalWorld && world.densityGcm3 !== originalWorld.densityGcm3} />
-          <DataRow label="Gravity"         value={`${world.gravity} G`} isChanged={!!originalWorld && world.gravity !== originalWorld.gravity} />
-          <DataRow label="Radius"          value={`${formatNumber(world.radius)} km`} isChanged={!!originalWorld && world.radius !== originalWorld.radius} />
-          <DataRow label="Escape Velocity" value={`${formatNumber(world.escapeVelocity)} km/s`} isChanged={!!originalWorld && world.escapeVelocity !== originalWorld.escapeVelocity} />
+          <DataRow label="Size"            value={`${formatNumber(world.size)} km  ·  Earth: ${formatNumber(EARTH_REFERENCE.sizeKm)} km`} isChanged={!!originalWorld && world.size !== originalWorld.size} />
+          <DataRow label="Mass"            value={`${formatNumber(world.massEM)} ${world.type === 'Dwarf' ? 'LM' : 'EM'}  ·  Earth: ${EARTH_REFERENCE.massEM}`} isChanged={!!originalWorld && world.massEM !== originalWorld.massEM} />
+          <DataRow label="Density"         value={`${world.densityGcm3} g/cm³  ·  Earth: ${EARTH_REFERENCE.densityGcm3}`} isChanged={!!originalWorld && world.densityGcm3 !== originalWorld.densityGcm3} />
+          <DataRow label="Gravity"         value={`${world.gravity} G  ·  Earth: ${EARTH_REFERENCE.gravity}`} isChanged={!!originalWorld && world.gravity !== originalWorld.gravity} />
+          <DataRow label="Radius"          value={`${formatNumber(world.radius)} km  ·  Earth: ${EARTH_REFERENCE.radiusKm} km`} isChanged={!!originalWorld && world.radius !== originalWorld.radius} />
+          <DataRow label="Escape Velocity" value={`${formatNumber(world.escapeVelocity)} km/s  ·  Earth: ${EARTH_REFERENCE.escapeVelocity} km/s`} isChanged={!!originalWorld && world.escapeVelocity !== originalWorld.escapeVelocity} />
         </div>
       </div>
 

@@ -21,6 +21,23 @@
 
 ---
 
+## 📥 Download
+
+Native apps are built automatically for every release. No browser required — works fully offline.
+
+| Platform | Download | Install Notes |
+|----------|----------|---------------|
+| **Linux** | [`.AppImage`](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator/releases/latest) | Download, `chmod +x`, double-click to run. Portable — no install needed. |
+| **Linux** | [`.deb`](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator/releases/latest) | `sudo dpkg -i mneme-*.deb` then find it in your system menu. |
+| **Windows** | [`.msi`](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator/releases/latest) | Double-click the installer. Adds to Start Menu. |
+| **Android** | [`.apk`](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator/releases/latest) | Enable *Settings → Security → Unknown Sources*, open the APK to install. |
+
+> **Latest Release:** See the [Releases page](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator/releases) for all versions, release notes, and SHA-256 checksums.
+>
+> **Prefer the web?** The [GitHub Pages version](https://game-in-the-brain.github.io/Mneme-CE-World-Generator/) is always the latest build and works on any device with a browser.
+
+---
+
 ## What Is This?
 
 The **Mneme CE World Generator** replaces the original Google Sheets world generator with a fully offline-capable web app that works on your phone, tablet, and desktop — no Google account required, no macros to approve, no spreadsheet to copy.
@@ -270,7 +287,7 @@ Each body is displayed with its full physical stats: mass, radius, diameter, sur
 | Feature | Details |
 |---------|---------|
 | **Offline** | Full offline support via service worker — generate systems with no internet connection |
-| **Installable** | Add to home screen on Android, iOS, Windows, macOS, and Linux |
+| **Installable** | PWA: add to home screen on any OS. **Native apps:** Linux (AppImage/deb), Windows (MSI), Android (APK). |
 | **Phone layout** | Vertical single-column layout optimised for portrait screens, fixed bottom tab bar |
 | **Desktop layout** | Multi-panel view with zone visualisation diagram |
 | **Day theme** | Light colour scheme for bright environments |
@@ -369,12 +386,29 @@ npm install
 npm run dev
 # → http://localhost:5173
 
-# Build for production
+# Build for production (GitHub Pages)
 npm run build
 
 # Preview production build
 npm run preview
 ```
+
+### Building Native Apps Locally
+
+```bash
+# Sync version from git tag into Tauri + Android configs
+npm run version:sync
+
+# Desktop (Windows .msi, Linux .AppImage/.deb, macOS .dmg)
+npm run wrapper:build:desktop
+# Artifacts: src-tauri/target/release/bundle/
+
+# Android (.apk)
+npm run wrapper:build:android
+# Artifact: android/app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+Prerequisites for local builds: Node.js 18+, Rust + Cargo, Android SDK (for Android).
 
 ---
 

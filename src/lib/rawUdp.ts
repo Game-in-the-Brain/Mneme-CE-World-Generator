@@ -276,7 +276,10 @@ export function buildRawUdpProfile(system: StarSystem): RawUdpProfile {
   if (inhabitants.starport.hasScoutBase) bases.push('S');
   if (inhabitants.starport.hasPirateBase) bases.push('P');
 
-  const tradeCodes = deriveTradeCodes(size, atmosphere, hydrographics, population, government, lawLevel, techLevelCe);
+  // FRD-070: merge economic classification CE codes with UWP-derived physical codes
+  const ecCodes = inhabitants.economicClassification?.ceTradeCodes ?? [];
+  const uwpCodes = deriveTradeCodes(size, atmosphere, hydrographics, population, government, lawLevel, techLevelCe);
+  const tradeCodes = [...new Set([...ecCodes, ...uwpCodes])];
 
   const uwp = `${inhabitants.starport.class}-${toHex(size)}${toHex(atmosphere)}${toHex(hydrographics)}${toHex(population)}${toHex(government)}${toHex(lawLevel)}-${toHex(techLevelCe)}`;
 

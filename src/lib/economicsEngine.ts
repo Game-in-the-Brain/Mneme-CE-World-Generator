@@ -1,6 +1,7 @@
 import type { Inhabitants, TLProductivityPreset } from '../types';
 import { getGdpPerDayForWorld } from './economicPresets';
 import { calculateStarport } from './worldData';
+import { getFloorFromClassification } from './economicClassification';
 
 /**
  * Recalculate starport and trade values from current economics dials.
@@ -19,6 +20,10 @@ export function recalculateStarportFromDials(
     economicPreset,
   );
   const weeklyRoll = inhabitants.starport.weeklyRoll ?? 10;
+  const floorClass = getFloorFromClassification(
+    inhabitants.economicClassification,
+    inhabitants.effectivePopulation ?? inhabitants.population,
+  );
   const recalc = calculateStarport(
     inhabitants.effectivePopulation ?? inhabitants.population,
     inhabitants.techLevel,
@@ -26,6 +31,7 @@ export function recalculateStarportFromDials(
     inhabitants.development,
     weeklyRoll,
     gdp,
+    floorClass,
   );
 
   return {

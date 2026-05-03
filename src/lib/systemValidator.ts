@@ -12,12 +12,7 @@ import type {
   ZoneBoundaries,
   MainWorld,
 } from '../types';
-import {
-  ZONE_TEMPERATURE_DM,
-  getGravityHabMod,
-  lookupBiochem,
-  getBiochemHabMod,
-} from './worldData';
+
 
 // =====================
 // Validation Result Types

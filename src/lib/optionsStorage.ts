@@ -5,8 +5,10 @@ const VALID_CLASSES = new Set<string>(['random', 'O', 'B', 'A', 'F', 'G', 'K', '
 const VALID_GRADES = new Set<string>(['random', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
 const VALID_TYPES = new Set<string>(['random', 'Terrestrial', 'Dwarf', 'Habitat']);
 const VALID_LIFE_PRESET_IDS = new Set<string>(['mneme-default', 'rare-earth', 'panspermia']);
+const VALID_PRESETS = new Set<string>(['random', 'sol']);
 
 export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
+  systemPreset: 'random',
   starClass: 'random',
   starGrade: 'random',
   mainWorldType: 'random',
@@ -62,6 +64,9 @@ export function loadGeneratorOptions(): GeneratorOptions {
   } catch {
     // Ignore parse errors and fall back to defaults
   }
+
+  const systemPreset: 'random' | 'sol' =
+    VALID_PRESETS.has(stored.systemPreset ?? '') ? (stored.systemPreset as 'random' | 'sol') : DEFAULT_GENERATOR_OPTIONS.systemPreset;
 
   const starClass: StellarClass | 'random' =
     VALID_CLASSES.has(stored.starClass ?? '') ? (stored.starClass as StellarClass | 'random') : DEFAULT_GENERATOR_OPTIONS.starClass;
@@ -148,6 +153,7 @@ export function loadGeneratorOptions(): GeneratorOptions {
       : DEFAULT_GENERATOR_OPTIONS.nameDescriptorMode;
 
   return {
+    systemPreset,
     starClass,
     starGrade,
     mainWorldType,

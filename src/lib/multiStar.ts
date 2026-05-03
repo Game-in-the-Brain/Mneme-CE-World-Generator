@@ -11,7 +11,7 @@
 // hard floor that guarantees the S-type cone clears the heliopause. INRAS
 // generation is therefore unaffected.
 
-import type { Star, OrbitNode, StarLeaf, BinaryNode } from '../types';
+import type { Star, OrbitNode, StarLeaf, BinaryNode, BarycenterView, BarycenterStar } from '../types';
 import { roll3D3, rollD6, round } from './dice';
 import { getWideCompanionOrbitDistance } from './stellarData';
 
@@ -101,6 +101,7 @@ function buildBinary(
     secondary: outerLeaf,
     semiMajorAxisAU,
     eccentricity,
+    inclinationDeg: (rollD6() - 1) * 30, // 0°, 30°, 60°, 90°, 120°, 150°
     totalMass,
     rPrimaryAU,
     rSecondaryAU,
@@ -127,4 +128,88 @@ export function buildOrbitTree(
     root = buildBinary(root, leaf, parentHeliopauseAU);
   }
   return root;
+}
+
+/**
+ * Flatten the orbit tree into a 2D barycenter view.
+ * Each star gets a single orbit around the system barycenter.
+ * Positions are computed at epoch by walking the tree and summing orbital
+ * offsets.  Inclination is preserved as metadata even though the 2D
+ * projection ignores it for positioning.
+ *
+ * Orbital angles are seeded from star IDs so the same system always produces
+ * the same barycenter layout.
+ */
+export function buildBarycenterView(
+  root: OrbitNode,
+  stars: Star[],
+): BarycenterView {
+  const starMap = new Map(stars.map(s => [s.id, s]));
+  const results: BarycenterStar[] = [];
+
+  // Simple string hash → 32-bit integer
+  function hashString(str: string): number {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+  }
+
+  // LCG seeded random: returns 0..1
+  function makeRng(seed: number): () => number {
+    let s = seed;
+    return () => {
+      s = (s * 9301 + 49297) % 233280;
+      return s / 233280;
+    };
+  }
+
+  const baseSeed = hashString(stars.map(s => s.id).join('|'));
+  let binaryCounter = 0;
+
+  // Walk the tree, accumulating 2D position from the system barycenter.
+  function walk(
+    node: OrbitNode,
+    parentX: number,
+    parentY: number,
+    outermostBinary: BinaryNode | null,
+  ): void {
+    if (node.kind === 'star') {
+      const star = starMap.get(node.starId);
+      if (!star) return;
+      const dx = parentX;
+      const dy = parentY;
+      const distanceAU = round(Math.sqrt(dx * dx + dy * dy), 2);
+      const angleRad = Math.atan2(dy, dx);
+      results.push({
+        starId: node.starId,
+        isPrimary: node.starId === stars[0]?.id,
+        class: star.class,
+        grade: star.grade,
+        mass: star.mass,
+        distanceAU,
+        periodYears: outermostBinary ? outermostBinary.periodYears : 0,
+        eccentricity: outermostBinary ? outermostBinary.eccentricity : 0,
+        inclinationDeg: outermostBinary ? outermostBinary.inclinationDeg : 0,
+        angleRad: round(angleRad, 4),
+      });
+      return;
+    }
+    // Seeded angle: unique per binary node via counter
+    const rng = makeRng(baseSeed + binaryCounter++);
+    const angle = rng() * Math.PI * 2;
+    const px = parentX - node.rPrimaryAU * Math.cos(angle);
+    const py = parentY - node.rPrimaryAU * Math.sin(angle);
+    const sx = parentX + node.rSecondaryAU * Math.cos(angle);
+    const sy = parentY + node.rSecondaryAU * Math.sin(angle);
+    // The outermost binary for children is the current node if we haven't
+    // recorded one yet, otherwise keep the parent's outermost binary.
+    const binaryForChildren = outermostBinary ?? node;
+    walk(node.primary, px, py, binaryForChildren);
+    walk(node.secondary, sx, sy, binaryForChildren);
+  }
+
+  walk(root, 0, 0, null);
+  return { stars: results };
 }

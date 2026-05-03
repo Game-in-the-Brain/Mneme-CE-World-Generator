@@ -107,6 +107,7 @@ function App() {
       const parsed = parseSpectralType(spec);
       if (parsed) {
         const options: GeneratorOptions = {
+          systemPreset: 'random',
           starClass: parsed.stellarClass,
           starGrade: parsed.grade,
           mainWorldType: 'random',

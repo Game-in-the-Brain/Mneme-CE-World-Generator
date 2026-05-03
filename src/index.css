@@ -3,6 +3,7 @@
 /* === Default (dark) theme === */
 :root,
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg-primary: #0a0a0f;
   --bg-card: #141419;
   --accent-red: #e53935;
@@ -31,6 +32,7 @@
 
 /* === Day theme (QA-005) === */
 [data-theme="day"] {
+  color-scheme: light;
   --bg-primary: #f5f5f5;
   --bg-card: #ffffff;
   --accent-red: #c62828;
@@ -58,6 +60,7 @@
 
 /* === Phone theme (QA-005) — single-column vertical layout === */
 [data-theme="phone"] {
+  color-scheme: dark;
   --bg-primary: #0a0a0f;
   --bg-card: #141419;
   --accent-red: #e53935;
@@ -210,6 +213,12 @@ input, select {
   color: var(--text-primary);
   padding: 0.5rem;
   border-radius: 4px;
+}
+
+/* QA-??? — force select dropdown options to follow theme colors */
+select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 input:focus, select:focus {

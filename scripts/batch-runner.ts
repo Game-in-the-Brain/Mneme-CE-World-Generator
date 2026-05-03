@@ -287,6 +287,11 @@ interface G4TerrestrialStats {
   tiebreakerApplied: number;
   baselineScores: number[];
   conservativeShare: number;
+  // QA-067: population tracking
+  populations: number[];
+  populationByZone: Record<string, number[]>;
+  smallPopulations: number; // < 100k
+  smallPopulationByZone: Record<string, number>;
 }
 
 function collectG4Terrestrial(sys: StarSystem, out: G4TerrestrialStats): void {
@@ -311,10 +316,19 @@ function collectG4Terrestrial(sys: StarSystem, out: G4TerrestrialStats): void {
   if (mwBody?.baselineHabitability !== undefined) {
     out.baselineScores.push(mwBody.baselineHabitability);
   }
+
+  // QA-067: population tracking
+  const pop = sys.inhabitants?.population ?? 0;
+  out.populations.push(pop);
+  (out.populationByZone[zone] ??= []).push(pop);
+  if (pop < 100_000) {
+    out.smallPopulations++;
+    out.smallPopulationByZone[zone] = (out.smallPopulationByZone[zone] ?? 0) + 1;
+  }
 }
 
 function reportG4Terrestrial(stats: G4TerrestrialStats): void {
-  console.log('\n=== QA-068: G4 Terrestrial Batch Analysis ===');
+  console.log('\n=== QA-067 + QA-068: G-Class Terrestrial Batch Analysis ===');
   console.log(`Systems generated: ${stats.systems}`);
 
   const total = stats.systems;
@@ -337,6 +351,40 @@ function reportG4Terrestrial(stats: G4TerrestrialStats): void {
     console.log(`\nMainworld baseline habitability (n=${stats.baselineScores.length}):`);
     console.log(`  mean=${fmt(mean(stats.baselineScores))}  median=${fmt(median(stats.baselineScores))}  stdev=${fmt(stdev(stats.baselineScores))}`);
     console.log(`  min=${fmt(Math.min(...stats.baselineScores))}  max=${fmt(Math.max(...stats.baselineScores))}`);
+  }
+
+  // QA-067: Population analysis
+  if (stats.populations.length > 0) {
+    console.log(`\n--- QA-067: Population Analysis ---`);
+    console.log(`Total populations tracked: ${stats.populations.length}`);
+    console.log(`\nOverall population distribution:`);
+    console.log(`  Mean:    ${fmt(mean(stats.populations), 0)}`);
+    console.log(`  Median:  ${fmt(median(stats.populations), 0)}`);
+    console.log(`  Min:     ${fmt(Math.min(...stats.populations), 0)}`);
+    console.log(`  Max:     ${fmt(Math.max(...stats.populations), 0)}`);
+
+    // Bucket by magnitude
+    const buckets = [
+      { label: '< 100k',       min: 0,      max: 100_000 },
+      { label: '100k – 1M',    min: 100_000, max: 1_000_000 },
+      { label: '1M – 10M',     min: 1_000_000, max: 10_000_000 },
+      { label: '10M – 100M',   min: 10_000_000, max: 100_000_000 },
+      { label: '100M – 1B',    min: 100_000_000, max: 1_000_000_000 },
+      { label: '≥ 1B',         min: 1_000_000_000, max: Infinity },
+    ];
+    for (const b of buckets) {
+      const count = stats.populations.filter(p => p >= b.min && p < b.max).length;
+      console.log(`  ${b.label.padEnd(12)} ${String(count).padStart(4)} (${pct(count, total)})`);
+    }
+
+    console.log(`\nSmall-population (< 100k) rate: ${pct(stats.smallPopulations, total)}`);
+
+    console.log('\nPopulation by zone (mean / median / small-pop count):');
+    for (const z of Object.keys(stats.populationByZone).sort()) {
+      const pops = stats.populationByZone[z];
+      const small = stats.smallPopulationByZone[z] ?? 0;
+      console.log(`  ${z.padEnd(14)} mean=${fmt(mean(pops), 0).padStart(12)}  median=${fmt(median(pops), 0).padStart(12)}  n=${String(pops.length).padStart(3)}  small=${String(small).padStart(3)} (${pct(small, pops.length)})`);
+    }
   }
 }
 
@@ -373,7 +421,7 @@ async function main(): Promise<void> {
 
   const ms = { systemsWithCompanions: 0, totalCompanions: 0, separationsByPrimaryClass: {}, eccentricities: [], sTypeCapsAU: [], heliopauseAUValues: [], cycleViolations_sTypeIntoHeliopause: 0, cycleViolations_aOuterTooSmall: 0 } as MultiStarStats;
   const hb = { systems: 0, mainworldZoneCounts: {}, hazardCounts: {}, infernalToxicPlus: 0, infernalCount: 0, hzWithBiosphereB2Plus: 0, hzCount: 0, baselineScores: [], zoneHazardDMByZone: {}, hzBiosphereBonusFires: 0, hzBiosphereBonusEligible: 0 } as HabitabilityStats;
-  const g4 = { systems: 0, mainworldZoneCounts: {}, fallbackTriggered: 0, fallbackNoCandidates: 0, fallbackLowScore: 0, tiebreakerApplied: 0, baselineScores: [], conservativeShare: 0 } as G4TerrestrialStats;
+  const g4 = { systems: 0, mainworldZoneCounts: {}, fallbackTriggered: 0, fallbackNoCandidates: 0, fallbackLowScore: 0, tiebreakerApplied: 0, baselineScores: [], conservativeShare: 0, populations: [], populationByZone: {}, smallPopulations: 0, smallPopulationByZone: {} } as G4TerrestrialStats;
   const systems: StarSystem[] = [];
 
   let detailHandle: { write(line: string): void; close(): void } | null = null;

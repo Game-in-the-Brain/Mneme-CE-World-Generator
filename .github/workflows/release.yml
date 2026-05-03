@@ -1,0 +1,271 @@
+name: Release — Build Downloadable Apps
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 1.3.193). Leave empty to use git tag.'
+        required: false
+        default: ''
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+
+jobs:
+  # ───────────────────────────────────────────────
+  # Tauri Linux (.AppImage + .deb)
+  # ───────────────────────────────────────────────
+  build-tauri-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone name-place-faction-generator
+        run: git clone https://github.com/Game-in-the-Brain/name-place-faction-generator.git ../name-place-faction-generator
+
+      - name: Build NPF packages
+        run: |
+          cd ../name-place-faction-generator
+          npm install
+          npm run build -w shared
+          npm run build -w packages/namegen
+          npm run build -w packages/placegen
+          npm run build -w packages/factiongen
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm install --legacy-peer-deps
+          git checkout -- package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli
+
+      - name: Install Tauri Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Sync version
+        run: node scripts/sync-version.mjs ${{ github.ref_name || inputs.version }}
+
+      - name: Build wrapper + Tauri
+        run: npm run wrapper:build:desktop
+
+      - name: Rename Linux artifacts
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ]; then VERSION="${{ inputs.version }}"; fi
+          mkdir -p dist-artifacts
+          for f in src-tauri/target/release/bundle/appimage/*.AppImage; do
+            [ -f "$f" ] && cp "$f" "dist-artifacts/Mneme-CE-World-Generator-v${VERSION}-linux.AppImage"
+          done
+          for f in src-tauri/target/release/bundle/deb/*.deb; do
+            [ -f "$f" ] && cp "$f" "dist-artifacts/Mneme-CE-World-Generator-v${VERSION}-linux.deb"
+          done
+          ls -la dist-artifacts/
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-linux
+          path: dist-artifacts/*
+
+  # ───────────────────────────────────────────────
+  # Tauri Windows (.msi)
+  # ───────────────────────────────────────────────
+  build-tauri-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone name-place-faction-generator
+        run: git clone https://github.com/Game-in-the-Brain/name-place-faction-generator.git ../name-place-faction-generator
+
+      - name: Build NPF packages
+        run: |
+          cd ../name-place-faction-generator
+          npm install
+          npm run build -w shared
+          npm run build -w packages/namegen
+          npm run build -w packages/placegen
+          npm run build -w packages/factiongen
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm install --legacy-peer-deps
+          git checkout -- package-lock.json
+        shell: bash
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli
+
+      - name: Sync version
+        run: node scripts/sync-version.mjs ${{ github.ref_name || inputs.version }}
+        shell: bash
+
+      - name: Build wrapper + Tauri
+        run: npm run wrapper:build:desktop
+        shell: bash
+
+      - name: Rename Windows artifacts
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ]; then VERSION="${{ inputs.version }}"; fi
+          mkdir -p dist-artifacts
+          for f in src-tauri/target/release/bundle/msi/*.msi; do
+            [ -f "$f" ] && cp "$f" "dist-artifacts/Mneme-CE-World-Generator-v${VERSION}-windows.msi"
+          done
+          ls -la dist-artifacts/
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-windows
+          path: dist-artifacts/*
+
+  # ───────────────────────────────────────────────
+  # Android (.apk)
+  # ───────────────────────────────────────────────
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone name-place-faction-generator
+        run: git clone https://github.com/Game-in-the-Brain/name-place-faction-generator.git ../name-place-faction-generator
+
+      - name: Build NPF packages
+        run: |
+          cd ../name-place-faction-generator
+          npm install
+          npm run build -w shared
+          npm run build -w packages/namegen
+          npm run build -w packages/placegen
+          npm run build -w packages/factiongen
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: |
+          npm install --legacy-peer-deps
+          git checkout -- package-lock.json
+
+      - name: Sync version
+        run: node scripts/sync-version.mjs ${{ github.ref_name || inputs.version }}
+
+      - name: Build wrapper + Android
+        run: npm run wrapper:build:android
+
+      - name: Rename Android artifact
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ]; then VERSION="${{ inputs.version }}"; fi
+          mkdir -p dist-artifacts
+          APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n1)
+          if [ -f "$APK" ]; then
+            cp "$APK" "dist-artifacts/Mneme-CE-World-Generator-v${VERSION}-android.apk"
+          fi
+          ls -la dist-artifacts/
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: dist-artifacts/*
+
+  # ───────────────────────────────────────────────
+  # Create GitHub Release with all artifacts
+  # ───────────────────────────────────────────────
+  release:
+    needs: [build-tauri-linux, build-tauri-windows, build-android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: '*'
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          body: |
+            ## Mneme CE World Generator — ${{ github.ref_name }}
+
+            ### Installable Apps
+
+            | Platform | File | How to Install |
+            |----------|------|----------------|
+            | **Linux** | `.AppImage` | Download, `chmod +x`, double-click to run. No installation required. |
+            | **Linux** | `.deb` | `sudo dpkg -i *.deb` — installs to system menu. |
+            | **Windows** | `.msi` | Double-click installer. Adds to Start Menu. |
+            | **Android** | `.apk` | Enable "Install from unknown sources", open APK. |
+
+            ### Web Version (always latest)
+            🔗 [Open in Browser](https://game-in-the-brain.github.io/Mneme-CE-World-Generator/)
+
+            ### Verifying Downloads
+            ```bash
+            sha256sum -c SHA256SUMS.txt
+            ```

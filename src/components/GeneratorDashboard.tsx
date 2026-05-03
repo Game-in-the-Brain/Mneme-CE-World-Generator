@@ -42,6 +42,11 @@ const WORLD_TYPE_OPTIONS: { value: WorldType | 'random'; label: string }[] = [
   { value: 'Habitat',     label: 'Habitat (Large)' },
 ];
 
+const SYSTEM_PRESET_OPTIONS: { value: 'random' | 'sol'; label: string }[] = [
+  { value: 'random', label: 'Random System' },
+  { value: 'sol',    label: 'Sol (G2V)' },
+];
+
 const CURVE_LABELS: Record<string, string> = {
   mneme: 'Mneme — compounding',
   flat: 'Flat — stagnant',
@@ -57,6 +62,7 @@ export function GeneratorDashboard({
 }: GeneratorDashboardProps) {
   const defaults = loadGeneratorOptions();
 
+  const [systemPreset, setSystemPreset] = useState<'random' | 'sol'>(defaults.systemPreset);
   const [starClass, setStarClass] = useState<StellarClass | 'random'>(defaults.starClass);
   const [starGrade, setStarGrade] = useState<StellarGrade | 'random'>(defaults.starGrade);
   const [mainWorldType, setMainWorldType] = useState<WorldType | 'random'>(defaults.mainWorldType);
@@ -94,6 +100,7 @@ export function GeneratorDashboard({
     const current = loadGeneratorOptions();
     saveGeneratorOptions({
       ...current,
+      systemPreset,
       starClass,
       starGrade,
       mainWorldType,
@@ -107,7 +114,7 @@ export function GeneratorDashboard({
       includeNames,
       nameDescriptorMode,
     });
-  }, [starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode]);
+  }, [systemPreset, starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode]);
 
   function handlePresetChange(id: string) {
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
@@ -119,10 +126,19 @@ export function GeneratorDashboard({
     if (custom) setActivePreset(custom);
   }
 
+  function handleSystemPresetChange(value: 'random' | 'sol') {
+    setSystemPreset(value);
+    if (value === 'sol') {
+      setStarClass('G');
+      setStarGrade(2);
+    }
+  }
+
   function handleGenerate() {
     const current = loadGeneratorOptions();
     onGenerate({
       ...current,
+      systemPreset,
       starClass,
       starGrade,
       mainWorldType,
@@ -157,6 +173,27 @@ export function GeneratorDashboard({
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {/* System Preset */}
+            <div>
+              <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>
+                System Preset
+              </label>
+              <select
+                value={systemPreset}
+                onChange={e => handleSystemPresetChange(e.target.value as 'random' | 'sol')}
+                className="w-full rounded px-2 py-2 text-sm border"
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  borderColor: 'var(--border-color)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {SYSTEM_PRESET_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Star Class */}
             <div>
               <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text-secondary)' }}>

@@ -1,7 +1,7 @@
 {
   "name": "mneme-ce-world-generator-temp",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.3.200",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,6 +19,7 @@
     "capacitor:build:android": "npx cap build android",
     "wrapper:build:desktop": "npm run build:wrapper && cargo tauri build",
     "wrapper:build:android": "npm run build:wrapper && npx cap sync && npx cap build android",
+    "version:sync": "node scripts/sync-version.mjs",
     "postinstall": "node scripts/relink-gi7b.mjs"
   },
   "dependencies": {

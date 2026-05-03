@@ -7,11 +7,14 @@ import { generateInhabitants } from './generatorInhabitants';
 import { generateCompanionStars, generatePrimaryStar } from './generatorStar';
 import { generatePlanetarySystem } from './generatorSystem';
 import { buildMainWorldFromV2Winner } from './generatorV2';
+import { deriveEconomicClassification, getFloorFromClassification } from './economicClassification';
+import { calculateStarport } from './worldData';
+import { getGdpPerDayForWorld } from './economicPresets';
 import { generateMainWorld } from './generatorWorld';
 import { runHabitabilityWaterfall, selectMainworld } from './habitabilityPipeline';
 import { BUILT_IN_LIFE_PRESETS, getLifePresetById } from './lifePresets';
 import { generateLevel2Children } from './moons';
-import { buildOrbitTree } from './multiStar';
+import { buildOrbitTree, buildBarycenterView } from './multiStar';
 import { buildRawUdpProfile } from './rawUdp';
 import { calculateV2Zones, calculateZoneBoundaries } from './stellarData';
 
@@ -22,6 +25,7 @@ import { calculateV2Zones, calculateZoneBoundaries } from './stellarData';
 
 export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSystem {
   const opts: GeneratorOptions = {
+    systemPreset:            options?.systemPreset            ?? 'random',
     starClass:               options?.starClass               ?? 'random',
     starGrade:               options?.starGrade               ?? 'random',
     mainWorldType:           options?.mainWorldType           ?? 'random',
@@ -41,6 +45,12 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     goalHabitable:           options?.goalHabitable,
   };
 
+  // FRD-Sol: When Sol preset is selected, force G2V star
+  if (opts.systemPreset === 'sol') {
+    opts.starClass = 'G';
+    opts.starGrade = 2;
+  }
+
   const id = uuidv4();
   const createdAt = Date.now();
 
@@ -58,6 +68,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
   // INRAS untouched — planet generation continues to receive primaryStar only.
   let rootOrbitNode: StarSystem['rootOrbitNode'];
   let multiStarVersion: StarSystem['multiStarVersion'] = 'v1-flat';
+  let barycenterView: StarSystem['barycenterView'];
   if (opts.v2MultiStar) {
     const heliopauseAU = Math.sqrt(primaryStar.luminosity) * 120;
     rootOrbitNode = buildOrbitTree(primaryStar, companionStars, heliopauseAU);
@@ -65,6 +76,10 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     // UI/exports show the new wide-only distances rather than stale REF-003 values.
     overlayTreeSeparationsOntoCompanions(companionStars, rootOrbitNode);
     multiStarVersion = 'v2-tree';
+    // FRD-067: build the flat 2D barycenter view for TTRPG visualisation.
+    if (rootOrbitNode && companionStars.length > 0) {
+      barycenterView = buildBarycenterView(rootOrbitNode, [primaryStar, ...companionStars]);
+    }
   }
 
   // Generate planetary system FIRST to determine largest body mass (for Habitat sizing)
@@ -141,7 +156,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     inhabitants = generateInhabitants(mainWorld, opts);
   }
 
-  return {
+  const system: StarSystem = {
     id,
     createdAt,
     primaryStar,
@@ -162,6 +177,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     rings: allRings,
     rootOrbitNode,
     multiStarVersion,
+    barycenterView,
     rawUdpProfile: buildRawUdpProfile({
       id, createdAt, primaryStar, companionStars, zones,
       mainWorld, inhabitants,
@@ -173,6 +189,53 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     } as StarSystem),
     ...v2SystemFields,
   };
+
+  // FRD-070: derive economic classification from existing generator outputs
+  system.inhabitants.economicClassification = deriveEconomicClassification(system);
+
+  // Rebuild RAW UDP profile so trade codes reflect the new classification
+  system.rawUdpProfile = buildRawUdpProfile(system);
+
+  // FRD-070: apply semantic starport floor from economic classification
+  const floorFromClass = getFloorFromClassification(
+    system.inhabitants.economicClassification,
+    system.inhabitants.effectivePopulation ?? system.inhabitants.population,
+  );
+  if (floorFromClass) {
+    const classOrder: Record<string, number> = { X: 0, E: 1, D: 2, C: 3, B: 4, A: 5 };
+    const currentOrder = classOrder[system.inhabitants.starport.class] ?? 0;
+    const floorOrder = classOrder[floorFromClass] ?? 0;
+    if (floorOrder > currentOrder) {
+      const gdp = getGdpPerDayForWorld(
+        system.inhabitants.techLevel,
+        system.inhabitants.development,
+        system.inhabitants.wealth,
+        system.economicPreset!,
+      );
+      const weeklyRoll = system.inhabitants.starport.weeklyRoll ?? 10;
+      const recalc = calculateStarport(
+        system.inhabitants.effectivePopulation ?? system.inhabitants.population,
+        system.inhabitants.techLevel,
+        system.inhabitants.wealth,
+        system.inhabitants.development,
+        weeklyRoll,
+        gdp,
+        floorFromClass,
+      );
+      system.inhabitants.starport = {
+        ...system.inhabitants.starport,
+        class: recalc.class,
+        pss: recalc.pss,
+        rawClass: recalc.rawClass,
+        tlCap: recalc.tlCap,
+        annualTrade: recalc.annualTrade,
+        weeklyBase: recalc.weeklyBase,
+        weeklyActivity: recalc.weeklyActivity,
+      };
+    }
+  }
+
+  return system;
 }
 
 // 260427-02: when v2MultiStar is on, copy the tree's BinaryNode separations back

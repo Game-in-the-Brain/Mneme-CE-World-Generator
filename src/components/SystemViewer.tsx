@@ -11,6 +11,7 @@ import { StarTab } from './tabs/StarTab';
 import { updatePrimaryStar } from '../lib/systemEditor';
 import { useSystemEditMode } from '../hooks/useSystemEditMode';
 import { generateSeed, getEconomicModelLabel } from '../lib/systemViewerUtils';
+import { get2DMapBaseUrl, get2DMapUrl } from '../lib/environment';
 import { WorldTab } from './tabs/WorldTab';
 import { InhabitantsTab } from './tabs/InhabitantsTab';
 import { PlanetarySystemTab } from './tabs/PlanetarySystemTab';
@@ -375,7 +376,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
             {copied ? 'Copied!' : 'Copy for 2D Map'}
           </button>
           <a
-            href="https://game-in-the-brain.github.io/2d-star-system-map/"
+            href={get2DMapBaseUrl()}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary flex items-center gap-2"
@@ -562,7 +563,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--border-color)', height: 'min(70vh, 600px)' }}>
           <iframe
             ref={iframeRef}
-            src={`https://game-in-the-brain.github.io/2d-star-system-map/?embed=1&starId=${encodeURIComponent(system.id)}`}
+            src={get2DMapUrl({ embed: true, starId: system.id })}
             title="2D Star System Map"
             className="w-full h-full border-0"
             sandbox="allow-scripts allow-same-origin"
@@ -581,7 +582,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
         </div>
         <div className="flex gap-2 mt-3">
           <a
-            href={`https://game-in-the-brain.github.io/2d-star-system-map/?starId=${encodeURIComponent(system.id)}`}
+            href={get2DMapUrl({ starId: system.id })}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-white/10 hover:border-[var(--accent-red)]/50 transition-colors text-sm"

@@ -5,6 +5,7 @@ import {
   getSystemsInBatch, setActiveBatch, getActiveBatch,
 } from '../lib/db';
 import { Database, Plus, Trash2, Edit3, Upload, Download, FolderOpen, Map, Orbit } from 'lucide-react';
+import { get2DMapUrl } from '../lib/environment';
 
 interface SystemsViewProps {
   systems: StarSystem[];
@@ -388,7 +389,7 @@ export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport, i
                       </button>
                     </div>
                     <a
-                      href={`https://game-in-the-brain.github.io/2d-star-system-map/?starId=${encodeURIComponent(sys.id)}`}
+                      href={get2DMapUrl({ starId: sys.id })}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 rounded-lg hover:bg-white/10 text-[#9e9e9e]"
@@ -411,7 +412,7 @@ export function SystemsView({ systems, onViewSystem, onDeleteSystem, onImport, i
                           version: '1.0',
                         };
                         localStorage.setItem(`mneme-2dmap-${sys.id}`, JSON.stringify(savedPage));
-                        window.open(`https://game-in-the-brain.github.io/2d-star-system-map/?starId=${encodeURIComponent(sys.id)}`, '_blank');
+                        window.open(get2DMapUrl({ starId: sys.id }), '_blank');
                       }}
                     >
                       <Orbit size={14} />

@@ -439,8 +439,8 @@ Write each chapter page using the sources listed. Summarise rules as tables and 
    | QA-064 | ✅ Fixed | Zone radiation hazard + HZ biosphere bonus (retuned 2026-04-27) |
    | QA-065 | ✅ Fixed | Multi-star hierarchy + wide-companion rebuild (retuned 2026-04-27) |
    | QA-066 | 📋 Queued | Cultural values → economic/demographic effects |
-   | QA-067 | 📋 Queued | Low population for G-class terrestrial (Neil's R1) |
-   | QA-068 | 📋 Queued | G4 mainworld beyond Saturn orbit (Neil's R2) |
+   | QA-067 | ✅ Fixed | Low population for G-class terrestrial — batch validated, hypothesis NOT supported (8.8% <100k overall, 7.1% in Conservative zone) |
+   | QA-068 | ✅ Fixed | G4 mainworld beyond Saturn orbit — batch validated, Conservative share 48.3%, fallback 0.6% |
    | QA-069 | 📋 Queued | Wealth/Development contradiction in text |
    | QA-070 | 📋 Queued | Mining habitat starport guard |
    | QA-071 | 📋 Queued | Mainworld raison d'être narrative generator |

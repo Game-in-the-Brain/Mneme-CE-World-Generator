@@ -25,6 +25,7 @@ import { CultureTraitList, DescriptionCard, FootnoteBlock } from './WorldTab';
 import { InhabitantsShipsPanel } from './InhabitantsShipsPanel';
 import { InhabitantsStarportPanel } from './InhabitantsStarportPanel';
 import { InhabitantsDemographicsPanel } from './InhabitantsDemographicsPanel';
+import { EconomicClassificationPanel } from './EconomicClassificationPanel';
 import { useInhabitantsActions } from '../../hooks/useInhabitantsActions';
 
 export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult, onOpenShipsPriceList, onGlossary, rawUdpMode, rawProfile, isEditing, onEditInhabitants, originalInhabitants }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void; onOpenShipsPriceList?: () => void; onGlossary?: () => void; rawUdpMode: boolean; rawProfile: RawUdpProfile; isEditing: boolean; onEditInhabitants?: (inhabitants: Inhabitants) => void; originalInhabitants?: Inhabitants }) {
@@ -142,6 +143,13 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
           )}
         </div>
       )}
+
+      <EconomicClassificationPanel
+        inhabitants={inhabitants}
+        system={system}
+        isEditing={isEditing}
+        onEditInhabitants={onEditInhabitants}
+      />
 
       <InhabitantsDemographicsPanel inhabitants={inhabitants} system={system} onGlossary={onGlossary} />
 

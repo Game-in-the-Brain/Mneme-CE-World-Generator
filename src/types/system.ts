@@ -68,6 +68,10 @@ export interface StarSystem {
   rootOrbitNode?: OrbitNode;
   multiStarVersion?: 'v1-flat' | 'v2-tree';
 
+  /** FRD-067: flat 2D barycenter view derived from rootOrbitNode.
+   *  Only present when v2MultiStar is enabled and companions exist. */
+  barycenterView?: BarycenterView;
+
   /** FRD-068: cached RAW UDP profile (computed on demand) */
   rawUdpProfile?: RawUdpProfile;
 
@@ -107,12 +111,42 @@ export interface BinaryNode {
   secondary: OrbitNode;
   semiMajorAxisAU: number;
   eccentricity: number;
+  /** Orbital inclination in degrees (0 = face-on, 90 = edge-on). Randomised per binary pair so nested binaries can orbit on different planes. */
+  inclinationDeg: number;
   totalMass: number;
   rPrimaryAU: number;
   rSecondaryAU: number;
   periodYears: number;
   sTypeCapAU: number;
   pTypeFloorAU: number;
+}
+
+// =====================
+// Barycenter View (FRD-067 preview)
+// =====================
+
+/** Simplified 2D barycenter representation for TTRPG visualisation.
+ *  Each star gets a flattened orbit around the system barycenter.
+ *  Inclination is preserved as metadata even though the 2D renderer projects it away.
+ */
+export interface BarycenterView {
+  stars: BarycenterStar[];
+}
+
+export interface BarycenterStar {
+  starId: string;
+  isPrimary: boolean;
+  class: string;
+  grade: number;
+  mass: number;
+  /** Distance from the system barycenter (AU). For nested binaries this is the
+   *  vector-sum magnitude at epoch, i.e. a flat 2D projection. */
+  distanceAU: number;
+  periodYears: number;
+  eccentricity: number;
+  inclinationDeg: number;
+  /** Current orbital angle around the barycenter at epoch (radians). */
+  angleRad: number;
 }
 
 // =====================
@@ -206,6 +240,7 @@ export interface PlaceNames {
 }
 
 export interface GeneratorOptions {
+  systemPreset: 'random' | 'sol';
   starClass: StellarClass | 'random';
   starGrade: StellarGrade | 'random';
   mainWorldType: import('./enums').WorldType | 'random';

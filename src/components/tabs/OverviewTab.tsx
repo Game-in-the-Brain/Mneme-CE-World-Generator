@@ -55,6 +55,24 @@ export function OverviewTab({ system, originalSystem, rawUdpMode, rawProfile }: 
           <Globe style={{ color: 'var(--accent-red)' }} size={20} />
           Main World
         </h3>
+        {/* Display generated mainworld name if available */}
+        {system.placeNames?.bodyNames && (
+          (() => {
+            const mainworldBodyId = [
+              ...system.terrestrialWorlds,
+              ...system.dwarfPlanets,
+              ...(system.moons ?? []),
+            ].find(b => b.wasSelectedAsMainworld)?.id;
+            const mainworldName = mainworldBodyId
+              ? system.placeNames.bodyNames[mainworldBodyId] ?? system.placeNames.bodyNames[`${system.id}-mainworld`]
+              : system.placeNames.bodyNames[`${system.id}-mainworld`];
+            return mainworldName ? (
+              <div className="text-sm font-medium px-2 py-1 rounded" style={{ backgroundColor: 'var(--row-hover)' }}>
+                {mainworldName}
+              </div>
+            ) : null;
+          })()
+        )}
         <div className="space-y-2">
           <DataRow label="Type"         value={system.mainWorld.type} isChanged={!!originalSystem && system.mainWorld.type !== originalSystem.mainWorld.type} />
           <DataRow label="Size"         value={`${formatNumber(system.mainWorld.size)} km`} isChanged={!!originalSystem && system.mainWorld.size !== originalSystem.mainWorld.size} />

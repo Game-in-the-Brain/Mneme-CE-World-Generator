@@ -1,7 +1,7 @@
 # FRD-070 — Economic Classification & World Trade Codes
 
 **Status:** 📋 Research / On Hold — model design required before implementation  
-**Depends on:** QA-076 (starport floor), QA-077 (raison d'être), QA-067 (pop calibration)  
+**Depends on:** QA-076 (starport floor), QA-077 (raison d'être), ~~QA-067 (pop calibration)~~ ✅ Resolved 2026-05-01  
 **Source:** Neil Lucock v1.3.151 feedback; Justin Aquino 2026-04-27  
 **Related:** QA-071 (absorbed), FRD-069 (Editable Star Systems — economics dials)
 
@@ -147,7 +147,7 @@ Note: CE codes Non-Industrial (Ni) and Ice-Capped (Ic) have no clean new equival
 
 This FRD is on hold pending:
 
-1. **Population calibration** (QA-067) — the economic classification thresholds (especially Outpost < 10k vs Settlement 10k–100k) must be tested against the actual population distribution the generator produces. If most inhabited worlds land in Outpost, the system is broken before it starts.
+1. ~~**Population calibration** (QA-067)~~ — ✅ Resolved 2026-05-01. 1,000-system G-class terrestrial batch: 8.8% <100k overall, 7.1% in Conservative zone. Outpost tier is not over-represented; thresholds are sound.
 
 2. **Composition pipeline** (FR-041) — Fluid Ocean and Water World modifiers depend on the composition output. Cannot implement without that foundation.
 

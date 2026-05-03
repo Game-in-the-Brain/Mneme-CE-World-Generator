@@ -13,8 +13,8 @@ The MWG is under active development. This chapter tracks what's been done, what'
 | QA-064 | ✅ Fixed (retuned 2026-04-27) | Zone radiation hazard + HZ biosphere bonus. Magnitude −1 → −2 after empirical batch. | 5 |
 | QA-065 | ✅ Fixed (retuned 2026-04-27) | Multi-star wide-only rebuild; hierarchical re-roll cap 5 → 10. | 7 |
 | QA-066 | 📋 Queued | Cultural values → economic/demographic effects | 6 |
-| QA-067 | 📋 Queued | Low population for G-class terrestrial worlds | 6 |
-| QA-068 | 📋 Queued | G4 terrestrial with outer-frostline mainworld | 3 |
+| QA-067 | ✅ Fixed | Low population for G-class terrestrial worlds — batch validated; 8.8% <100k overall, 7.1% in Conservative zone; hypothesis rejected | 6 |
+| QA-068 | ✅ Fixed | G4 terrestrial with outer-frostline mainworld — batch validated; Conservative share 48.3%, fallback 0.6%; retune working for G-class | 3 |
 | QA-069 | 📋 Queued | Wealth/Development contradiction in narrative text | 6 |
 | QA-070 | 📋 Queued | Mining habitat starport floor | 6 |
 | QA-071 | 📋 Queued | Mainworld "raison d'être" narrative generator | 6 |

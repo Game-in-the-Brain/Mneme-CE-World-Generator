@@ -1,5 +1,6 @@
 import { formatNumber, formatLuminosity } from '../../lib/format';
 import { STAR_COLOR_NAMES } from '../../lib/stellarData';
+import { SOL_REFERENCE } from '../../lib/referenceData';
 import type { StarSystem, Star, StellarClass, StellarGrade } from '../../types';
 import { DataRow } from './tabHelpers';
 
@@ -119,6 +120,11 @@ function StarDetails({
         <DataRow label="Mass"       value={`${formatNumber(star.mass)} M☉`} />
         <DataRow label="Luminosity" value={`${formatLuminosity(star.luminosity)} L☉`} />
         <DataRow label="Temperature" value={`${formatNumber(Math.round(star.class === 'O' ? 50000 : star.class === 'B' ? 25000 : star.class === 'A' ? 10000 : star.class === 'F' ? 7000 : star.class === 'G' ? 5800 : star.class === 'K' ? 4500 : 3000))} K`} />
+        {star.class === 'G' && (
+          <div className="mt-2 p-2 rounded text-xs" style={{ backgroundColor: 'var(--row-hover)', borderLeft: '3px solid var(--accent-amber)' }}>
+            <span className="font-semibold">Sol reference (G2V):</span> Mass {SOL_REFERENCE.mass} M☉ · Luminosity {SOL_REFERENCE.luminosity} L☉
+          </div>
+        )}
       </div>
       <div className="space-y-2">
         {isEditing && onEdit ? (
