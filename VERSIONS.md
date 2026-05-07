@@ -4,6 +4,31 @@
 
 ---
 
+## v1.3.206 — FR-045/046 + QA Housekeeping (2026-05-07)
+
+### New Features
+- **FR-045:** FDR (Forced Displacement to Habitable Zone) — opt-in toggle `forceHZRelocation`. When enabled, the highest-habitability mainworld candidate is relocated to the Conservative zone. Conflicting L1 occupants are ejected via Hill-sphere conflict resolution. Moons that win selection are promoted to independent L1 planets. Habitability waterfall is re-run after relocation.
+- **FR-046:** Attractive Inner Worlds — opt-in toggle `attractiveInnerWorlds`. Biases Dwarf/Terrestrial zone placement toward inner zones based on composition quality (rank ≥ 5 → −2 bias, rank ≥ 3 → −1 bias). Bias propagates through `rollUnifiedZone` into `rollOuterZone`.
+
+### UX / QA Fixes
+- **QA-072:** Added "Building a Subsector?" callout card above System Targets for discoverability.
+- **QA-074:** Added explanatory tooltip below Main World Type selector clarifying that Terrestrial ≠ habitability guarantee.
+- **QA-075:** Added "Habitable" and "Terrestrial" glossary entries under Generator Terms.
+- **QA-070:** Verified already implemented via `getFloorFromClassification()` (Extraction → D, Agricultural → E, Trade Hub → C).
+
+### Documentation
+- Cleaned up stale QA statuses in `QA.md` (QA-049, 052, 055, 066, 070, 079, 080 marked ✅ Fixed).
+- Updated `ch09-open-issues.md` R1–R6 statuses.
+
+### Files
+- `src/types/system.ts`, `src/types/bodies.ts`
+- `src/lib/generator.ts`, `src/lib/positioning.ts`, `src/lib/generatorSystem.ts`
+- `src/lib/optionsStorage.ts`
+- `src/components/GeneratorDashboard.tsx`, `src/components/Glossary.tsx`
+- `version-logs/260507-210418.md`, `260507-221937.md`, `260507-224347.md`
+
+---
+
 ## v1.3.113 — QA-061 Population Redesign (2026-04-17)
 
 ### Fixes

@@ -8,7 +8,7 @@
 
 **Project:** Mneme CE World Generator PWA  
 **Repo:** [Game-in-the-Brain / Mneme-CE-World-Generator](https://github.com/Game-in-the-Brain)  
-**Last Updated:** 2026-04-30
+**Last Updated:** 2026-05-07
 
 ---
 
