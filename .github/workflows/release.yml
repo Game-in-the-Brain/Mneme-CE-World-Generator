@@ -51,7 +51,7 @@ jobs:
           git checkout -- package-lock.json
 
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli
@@ -122,7 +122,7 @@ jobs:
         shell: bash
 
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli
