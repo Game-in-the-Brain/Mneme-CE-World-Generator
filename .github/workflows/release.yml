@@ -208,8 +208,16 @@ jobs:
       - name: Bundle NPF linguistic data
         run: node scripts/bundle-npf-data.mjs
 
-      - name: Build wrapper + Android
-        run: npm run wrapper:build:android
+      - name: Decode Android keystore
+        run: |
+          mkdir -p android/app
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+
+      - name: Build wrapper + Android (signed)
+        run: |
+          npm run build:wrapper
+          npx cap sync android
+          npx cap build android --keystorepath "android/app/release.keystore" --keystorepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" --keystorealias "${{ secrets.ANDROID_KEYSTORE_ALIAS }}" --keystorealiaspass "${{ secrets.ANDROID_KEYSTORE_ALIAS_PASSWORD }}"
 
       - name: Rename Android artifact
         run: |
