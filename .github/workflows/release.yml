@@ -233,6 +233,7 @@ jobs:
   # ───────────────────────────────────────────────
   release:
     needs: [build-tauri-linux, build-tauri-windows, build-android]
+    if: always() && needs.build-tauri-linux.result == 'success' && needs.build-tauri-windows.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
