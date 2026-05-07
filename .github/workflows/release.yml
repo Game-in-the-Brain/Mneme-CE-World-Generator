@@ -211,13 +211,13 @@ jobs:
       - name: Decode Android keystore
         run: |
           mkdir -p android/app
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "$PWD/android/app/release.keystore"
 
       - name: Build wrapper + Android (signed)
         run: |
           npm run build:wrapper
           npx cap sync android
-          npx cap build android --keystorepath "android/app/release.keystore" --keystorepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" --keystorealias "${{ secrets.ANDROID_KEYSTORE_ALIAS }}" --keystorealiaspass "${{ secrets.ANDROID_KEYSTORE_ALIAS_PASSWORD }}"
+          npx cap build android --keystorepath "$PWD/android/app/release.keystore" --keystorepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" --keystorealias "${{ secrets.ANDROID_KEYSTORE_ALIAS }}" --keystorealiaspass "${{ secrets.ANDROID_KEYSTORE_ALIAS_PASSWORD }}"
 
       - name: Rename Android artifact
         run: |
