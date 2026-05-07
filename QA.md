@@ -112,21 +112,21 @@ Three design specs define a complete pipeline rewrite that reverses the generati
 | **FR-041** | 📋 Planned | Composition–Atmosphere–Biosphere Pipeline Redesign — see below |
 | **QA-064** | ✅ Fixed (retuned 2026-04-27) | Habitability zone-radiation + HZ biosphere bonus. HZ bonus magnitude raised −1 → −2 after empirical batch. Validation targets revised against JWST + Kepler exoplanet observations (see findings below). **Retuned 1000-system batch: Conservative mainworld 47.2% (target 30–50% ✓); Hot+Infernal 15.3% (target ≤20% ✓); Infernal Toxic+ 69.6% (target 70–90% ✓); HZ biosphere ≥B2 rate 39.9% (was 31.8%, +8pp).** Spec: `260427-01`. |
 | **QA-065** | ✅ Fixed (retuned 2026-04-27) | Multi-star wide-only rebuild + hierarchical re-roll cap 5 → 10. **Retuned 1000-system batch: S-type cap clears heliopause 100% strict; G-class mean 700 AU; eccentricity mean 0.234; hierarchical violations 4/243 (1.6%, down from 1.9%).** Spec: `260427-02`. |
-| **QA-066** | 📋 Queued | Cultural Values — economic / demographic effects. Source: `/home/justin/opencode260220/name-place-faction-generator/260421 Cultural Values Table.docx`. Mechanical effects to wire: Wealth attitudes, Foreign Policy, Gender Roles, Disability, Government Structure, Success Measures. Detail below. |
+| **QA-066** | ✅ Fixed | Cultural Values — economic / demographic effects. `CULTURAL_MECHANICAL_EFFECTS` map with wealthDelta, developmentDelta, tradeMultiplier, workforceMultiplier, travelZoneDelta. Source: version log 260501-163000. |
 | **QA-067** | ✅ Fixed | Low population for G-class terrestrial worlds — 1,000-system batch (starClass=G, mainWorldType=Terrestrial). Result: small-population (<100k) rate = 8.8% overall, 7.1% in Conservative zone. Median pop in Conservative zone = 287M. Hypothesis NOT supported — sub-100k populations are not over-represented. The +1 exponent from QA-061 produces appropriate magnitudes. Source: Neil Lucock v1.3.151 feedback. |
 | **QA-068** | ✅ Fixed | G4 terrestrial chose outer-frostline mainworld — 1,000-system batch (starClass=G, mainWorldType=Terrestrial, v2Positioning+v2MultiStar). Result: Conservative mainworld share = 48.3% ✅ (target ≥40%); MVT/GVT fallback rate = 0.6% ✅ (target <10%). Retune is working correctly for G-class. Source: Neil Lucock v1.3.151 feedback. |
 | **QA-069** | 📋 Queued | "Average Wealth + UnderDeveloped Development contradict each other" — need specific world data block from Neil to trace exact text. Check whether post-QA-028 narrative-coherence text fires when it should. Ask Neil to export the world and send the JSON. |
-| **QA-070** | 📋 Queued | Mining habitat with no starport — trace `calculateStarport` for worldType ∈ {Mining, Habitat-mining}. Current guard (X-port limits ship counts, QA-030) runs the wrong direction — no guard forces port class *up* for export-dependent economies. R4 (starport floor by world function) closes this: Mining/Inhospitable + pop <500k → Class ≥ D; Agricultural + pop <500k → Class ≥ E. |
+| **QA-070** | ✅ Fixed | Starport floor by economic function — `getFloorFromClassification()` in `economicClassification.ts` applies: Extraction + pop <500k → Class ≥ D; Agricultural Surplus + pop <500k → Class ≥ E; Services/Trade Hub → Class ≥ C; Research Outpost → Class ≥ E. Wired into `calculateStarport()` via `floorClass` parameter. |
 | **QA-071** | 📋 Queued | Mainworld "raison d'être" coherence — design task. When generator emits a small-population, inhospitable, isolated mainworld, narrative scaffolding should provide an existence reason: penal colony / research outpost / refugee remnant / mining concession / strategic chokepoint / cult retreat. Currently culture rolls exist but no "why is this world inhabited at all?" generator. Spec required before implementation. |
-| **QA-072** | 📋 Queued | Sector Dynamics (World Building Requirements) discoverability — Neil ran into this as most users will. Audit: where does the user first encounter the goal-loop option? Currently buried as a secondary collapsible below the population toggle. Fix shipped (2026-04-27): renamed to "World Building Requirements", promoted to prominent header, expanded by default. UX follow-up: add a "Building a Subsector?" callout on the Generator page for new users. |
+| **QA-072** | ✅ Fixed | Sector Dynamics discoverability — "Building a Subsector?" callout added above System Targets in GeneratorDashboard. Renamed to "System Targets", expanded by default. |
 | **QA-073** | 📋 Queued | Culture trait and power structure descriptions need low-pop variants. At 5,300 people "Factions constantly vie for status and resources" is absurd — that's a town council. QA-025 covered Wealth/Development text but never touched POWER_STRUCTURE_DESCRIPTIONS or CULTURE_TRAIT_DESCRIPTIONS. R3 implementation must add `POWER_STRUCTURE_DESCRIPTIONS_LOW_POP` and `CULTURE_TRAIT_DESCRIPTIONS_LOW_POP` switched in for pop < 1M. Implement together with R3 (government label substitution). |
-| **QA-074** | 📋 Queued | UX: "Terrestrial" selector misleads users into expecting a habitable world. Add tooltip: "Terrestrial = rocky body > 0.5 Earth mass — not a habitability guarantee. For an Earth-like world, also tick 'Habitable world' in World Building Requirements." Consider auto-ticking the Habitable checkbox when Terrestrial type is selected. |
-| **QA-075** | 📋 Queued | Definition of "Habitable" — tooltip + Glossary entry. Define: "A world capable of supporting an unmodified terrestrial human on its surface without artificial life support." Clarify that the Mneme setting's default assumption is that the universe is not built for us (cite Carl Sagan: "The universe is not obliged to make sense to you"; Neil deGrasse Tyson: "The universe is under no obligation to make sense to your scale of perception"). Earth-like worlds are statistically rare — this is why the generator defaults to many inhospitable results. Add "More Earth-like worlds" toggle to World Building Requirements (biases HZ selection and habitability threshold). Note in glossary that FRD-069 (Edit this World) lets referees override any world's habitability assumptions. |
+| **QA-074** | ✅ Fixed | UX: Added explanatory text below Main World Type selector: "Terrestrial = rocky body > 0.5 Earth mass — not a habitability guarantee. For an Earth-like world, also tick Habitable world below." |
+| **QA-075** | ✅ Fixed | Definition of "Habitable" — added Glossary entry under "Generator Terms" with definition and note on rarity. Added "Terrestrial" glossary entry for cross-reference. |
 | **QA-076** | ⏸ On Hold | Starport floor guard (Mining/Inhospitable + pop <500k → Class ≥ D; Agricultural + pop <500k → Class ≥ E) — originally QA-070 R4. Held pending FRD-070 economic classification redesign, which will define the full set of world function types on which floor rules operate. Do not implement in isolation — the floor logic must align with whatever economic modes FRD-070 introduces. |
 | **QA-077** | ⏸ On Hold | Mainworld raison d'être — "who thought this place was worth settling?" generator (penal colony, research outpost, refugee remnant, mining concession, strategic chokepoint, cult retreat). Originally QA-071. Held pending FRD-070, which will establish economic modes and industries as the primary driver of existence justification. An isolated miner world's reason to exist is its economic function, not a separate flavour roll. |
 | **QA-078** | ✅ Fixed | GitHub Actions `Deploy to GitHub Pages` workflow fails with `isEditing used before its declaration` in `SystemViewer.tsx`. Fixed by reordering hooks. |
-| **QA-079** | 📋 Queued | Companion stars should have generated names + editable name fields. Currently only the primary star and planetary bodies get names from the place name generator. Companion stars are unnamed. |
-| **QA-080** | 📋 Queued | Main worlds and circumstellar disks don't get randomly generated names from the place name generator. The `generatePlaceNames()` function skips the main world body and all disk bodies, leaving them with blank or placeholder names. |
+| **QA-079** | ✅ Fixed | Companion stars have generated names + editable name fields via `placeNameGen.ts`. Source: version log 260501-160000. |
+| **QA-080** | ✅ Fixed | Main worlds and circumstellar disks now receive generated names via `placeNameGen.ts`. Source: version log 260501-160000. |
 
 ### QA-078 — GitHub Actions Build Failure: `isEditing` Used Before Declaration
 
@@ -162,7 +162,7 @@ TypeScript's `tsc -b` (used by `npm run build`) enforces stricter block-scoping 
 
 ### QA-079 — Companion Star Names
 
-**Status:** 📋 Queued
+**Status:** ✅ Fixed (2026-05-01, version log `260501-160000`)
 
 **Problem:** The place name generator (`generatePlaceNames`) and the edit-mode name editing UI only cover:
 - System name (header)
@@ -186,7 +186,7 @@ Companion stars (`system.companionStars[]`) have no names at all. They display a
 
 ### QA-080 — Main Worlds and Circumstellar Disks Missing Generated Names
 
-**Status:** 📋 Queued
+**Status:** ✅ Fixed (2026-05-01, version log `260501-160000`)
 
 **Problem:** `generatePlaceNames()` in `src/lib/placeNameGen.ts` iterates over:
 - `terrestrialWorlds`
@@ -340,9 +340,9 @@ All class scaling matches the 3D3 × heliopause × (1+e) formula. M-class minimu
 
 ---
 
-### QA-066 — Cultural Values: Economic & Demographic Effects (Queued)
+### QA-066 — Cultural Values: Economic & Demographic Effects
 
-**Status:** 📋 Queued — to be specced after multi-star (QA-065) lands
+**Status:** ✅ Fixed (2026-05-01, version log `260501-163000`)
 **Source:** `/home/justin/opencode260220/name-place-faction-generator/260421 Cultural Values Table.docx`
 **Goal:** Wire culture rolls through to Wealth, Trade, Inequality, Development, and Workforce participation so a culture like "Isolationist" mechanically reduces trade and a culture like "Cultural Exchange" boosts it.
 

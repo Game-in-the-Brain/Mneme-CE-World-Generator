@@ -261,7 +261,21 @@ export function GeneratorDashboard({
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
+              <p className="text-[10px] mt-1" style={{ color: 'var(--text-secondary)' }}>
+                Terrestrial = rocky body &gt; 0.5 Earth mass — not a habitability guarantee.
+                For an Earth-like world, also tick <strong>Habitable world</strong> below.
+              </p>
             </div>
+          </div>
+
+          {/* QA-072: Building a Subsector? callout */}
+          <div className="mt-4 p-3 rounded text-xs" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+            <strong style={{ color: 'var(--text-primary)' }}>Building a Subsector?</strong>{' '}
+            <span style={{ color: 'var(--text-secondary)' }}>
+              Use <strong>System Targets</strong> below to lock in the kind of world you need
+              (inhabited, habitable, minimum starport, etc.). The generator will loop up to 2,000
+              times to find the closest match.
+            </span>
           </div>
 
           {/* System Targets (FR-033) — populated toggle + goal loop options */}
@@ -278,7 +292,7 @@ export function GeneratorDashboard({
             {goalModeOpen && (
               <div className="text-left space-y-3">
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Set targets for the kind of world you need. The generator will loop up to 2,000 times to find the closest match — useful when building a subsector and you need a specific kind of world.
+                  Set targets for the kind of world you need. The generator will loop up to 2,000 times to find the closest match.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="flex items-center gap-2">

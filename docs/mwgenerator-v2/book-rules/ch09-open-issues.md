@@ -12,7 +12,7 @@ The MWG is under active development. This chapter tracks what's been done, what'
 |----|--------|-------------|---------|
 | QA-064 | ✅ Fixed (retuned 2026-04-27) | Zone radiation hazard + HZ biosphere bonus. Magnitude −1 → −2 after empirical batch. | 5 |
 | QA-065 | ✅ Fixed (retuned 2026-04-27) | Multi-star wide-only rebuild; hierarchical re-roll cap 5 → 10. | 7 |
-| QA-066 | 📋 Queued | Cultural values → economic/demographic effects | 6 |
+| QA-066 | ✅ Fixed | Cultural values → economic/demographic effects | 6 |
 | QA-067 | ✅ Fixed | Low population for G-class terrestrial worlds — batch validated; 8.8% <100k overall, 7.1% in Conservative zone; hypothesis rejected | 6 |
 | QA-068 | ✅ Fixed | G4 terrestrial with outer-frostline mainworld — batch validated; Conservative share 48.3%, fallback 0.6%; retune working for G-class | 3 |
 | QA-069 | 📋 Queued | Wealth/Development contradiction in narrative text | 6 |
@@ -42,12 +42,12 @@ Source: `260421 Cultural Values Table.docx`. This is current design work.
 
 | ID | Recommendation | Status |
 |----|---------------|--------|
-| R1 | UWP/Cepheus UWP formatter when CE preset selected | 📋 Queued |
+| R1 | UWP/Cepheus UWP formatter when CE preset selected | ✅ Fixed — `rawUdpMode` toggle in GeneratorDashboard |
 | R2 | Currency scale toggle (Mneme vs Traveller ×100 multiplier) | 📋 Queued |
-| R3 | Population-scaled government terminology (<1M → tribal/org terms) | 📋 Queued |
-| R4 | Starport class floor (mining ≥ D, agricultural ≥ E) | 📋 Queued |
-| R5 | Edit-and-recompute panel on system viewer | 📋 Queued |
-| R6 | Isolationist/Xenophobic → travel zone modifier + story hook | 📋 Queued |
+| R3 | Population-scaled government terminology (<1M → tribal/org terms) | 🟡 Partially Fixed — QA-025 covers Wealth/Development; full POWER_STRUCTURE + CULTURE_TRAIT low-pop variants pending QA-073 |
+| R4 | Starport class floor (mining ≥ D, agricultural ≥ E) | 📋 Queued — held pending FRD-070 economic classification redesign |
+| R5 | Edit-and-recompute panel on system viewer | ✅ Fixed — Edit Mode in SystemViewer (FRD-069) |
+| R6 | Isolationist/Xenophobic → travel zone modifier + story hook | ✅ Fixed — QA-066 `travelZoneDelta` in `CULTURAL_MECHANICAL_EFFECTS` |
 
 ---
 

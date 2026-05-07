@@ -14,6 +14,17 @@ export function Glossary() {
         </p>
       </div>
 
+      <GlossarySection title="Generator Terms">
+        <GlossaryEntry term="Habitable"
+          unit="System Target"
+          def="A world capable of supporting an unmodified terrestrial human on its surface without artificial life support. Earth-like worlds are statistically rare — the generator defaults to many inhospitable results because the universe is under no obligation to make sense to human scales of perception. Use the Habitable World target to bias generation toward survivable conditions. Use Edit Mode to override any world's habitability assumptions."
+        />
+        <GlossaryEntry term="Terrestrial"
+          unit="World Type"
+          def="A rocky planetary body with mass &gt; 0.5 Earth masses. This is a physical classification, not a habitability guarantee. A Terrestrial world can be airless, toxic, or scorched. For an Earth-like world, combine this selection with the Habitable World target."
+        />
+      </GlossarySection>
+
       <GlossarySection title="Stellar &amp; Orbital Units">
         <GlossaryEntry term="M☉"  unit="Solar Mass"
           def="The mass of Earth's Sun — 1.989 × 10³⁰ kg. Used to express the mass of all
