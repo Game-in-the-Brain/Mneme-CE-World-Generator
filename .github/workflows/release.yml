@@ -223,10 +223,14 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           if [ -z "$VERSION" ]; then VERSION="${{ inputs.version }}"; fi
-          mkdir -p dist-artifacts
-          APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n1)
+          rm -rf dist-artifacts && mkdir -p dist-artifacts
+          # Search broadly for APK or AAB output
+          APK=$(find android/app/build/outputs -name "*.apk" -o -name "*.aab" | head -n1)
           if [ -f "$APK" ]; then
             cp "$APK" "dist-artifacts/Mneme-CE-World-Generator-v${VERSION}-android.apk"
+          else
+            echo "No APK/AAB found. Listing android build outputs:"
+            find android/app/build/outputs -type f 2>/dev/null || true
           fi
           ls -la dist-artifacts/
 
