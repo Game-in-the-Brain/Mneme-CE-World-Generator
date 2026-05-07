@@ -97,7 +97,7 @@ export function generateInhabitants(
   const floorClass = getStarportFloorClass(effectivePopulation, envHab, habitatType, mainWorld.biochemicalResources);
 
   // QA-034: depression penalty is always applied after starport calculation
-  let foundingStarportResult = calculateStarport(effectivePopulation, techLevel, wealth, devResult.level, weeklyRoll, gdpPerDay, floorClass);
+  const foundingStarportResult = calculateStarport(effectivePopulation, techLevel, wealth, devResult.level, weeklyRoll, gdpPerDay, floorClass);
   let starportResult = foundingStarportResult;
 
   if (effectiveTL !== techLevel) {

@@ -11,22 +11,18 @@ import { calculateTotalHabitability, calculateWorldPosition, dwarfGravityToHab, 
 
 
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function generateMainWorld(
   primaryStar: Star,
   _zones: ZoneBoundaries,
   forcedType: WorldType | 'random' = 'random',
-  _largestBodyMass: number = 1.0,
   allowMegaStructures?: boolean,
 ): MainWorld {
   let worldType: WorldType;
-  // eslint-disable-next-line prefer-const
-  let size: number;
+   
   let lesserEarthType: LesserEarthType | undefined;
   let massEM: number;
   let densityGcm3: number;
-  // eslint-disable-next-line prefer-const
-  let gravity: number;
   let gravityHabitability: number;
 
   // Constants for physics calculations
@@ -79,8 +75,8 @@ export function generateMainWorld(
   const escapeVelocityMs = Math.sqrt(2 * G * massKg / radiusM);
   const escapeVelocityKmS = escapeVelocityMs / 1000;
   
-  size = Math.round(diameterKm);
-  gravity = Math.round(surfaceGravityG * 1000) / 1000;
+  const size = Math.round(diameterKm);
+  const gravity = Math.round(surfaceGravityG * 1000) / 1000;
   // Store radius and escape velocity for return object
   const radius = radiusKm;
   const escapeVelocity = Math.round(escapeVelocityKmS * 100) / 100; // km/s, 2 decimal places

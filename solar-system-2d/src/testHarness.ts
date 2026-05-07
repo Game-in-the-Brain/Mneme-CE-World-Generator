@@ -25,7 +25,7 @@ interface Filters {
 }
 
 let allSystems: BatchSystem[] = [];
-let filters: Filters = { starClass: '', worldType: '', starport: '', hotJupiter: '', search: '' };
+const filters: Filters = { starClass: '', worldType: '', starport: '', hotJupiter: '', search: '' };
 let currentPage = 0;
 const PAGE_SIZE = 100;
 

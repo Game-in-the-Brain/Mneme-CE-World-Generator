@@ -436,7 +436,7 @@ function App() {
         for (let i = 0; i < total; i++) {
           const rawSystem = parsed.systems[i] as StarSystem & { id?: string };
           // Strip old id so Dexie assigns a new one
-          const { id: _oldId, ...systemData } = rawSystem;
+          const { id: _oldId, ...systemData } = rawSystem; // eslint-disable-line @typescript-eslint/no-unused-vars
           const system: StarSystem = {
             ...systemData,
             id: crypto.randomUUID(),

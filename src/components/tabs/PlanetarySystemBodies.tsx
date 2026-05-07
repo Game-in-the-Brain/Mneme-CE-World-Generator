@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Trash2, Lock, Unlock, Dices, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatNumber, formatValue } from '../../lib/format';

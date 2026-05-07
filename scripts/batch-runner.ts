@@ -21,7 +21,7 @@
 //   --details <file>     write per-world detail JSONL to file
 //   --seed <N>            seed Math.random — note: project uses Math.random directly so this is a no-op for now (logged for future)
 
-import type { StarSystem, BinaryNode, OrbitNode, PlanetaryBody, ZoneId } from '../src/types';
+import type { StarSystem, BinaryNode, OrbitNode, PlanetaryBody } from '../src/types';
 import { generateStarSystem } from '../src/lib/generator';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -438,8 +438,8 @@ async function main(): Promise<void> {
     v2MultiStar: args.v2MultiStar,
     v2Positioning: args.v2Positioning,
   };
-  if (args.starClass) genOpts.starClass = args.starClass as any;
-  if (args.mainWorldType) genOpts.mainWorldType = args.mainWorldType as any;
+  if (args.starClass) genOpts.starClass = args.starClass as typeof genOpts.starClass;
+  if (args.mainWorldType) genOpts.mainWorldType = args.mainWorldType as typeof genOpts.mainWorldType;
 
   const start = Date.now();
   for (let i = 0; i < args.count; i++) {

@@ -47,12 +47,14 @@ export function EconomicAssumptionsSection() {
   useEffect(() => {
     const current = loadGeneratorOptions();
     saveGeneratorOptions({ ...current, tlProductivityPreset: activePreset });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGeneratorOptions({ ...current, tlProductivityPreset: activePreset });
   }, [activePreset]);
 
   useEffect(() => {
     const current = loadGeneratorOptions();
     saveGeneratorOptions({ ...current, growthModel });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGeneratorOptions({ ...current, growthModel });
   }, [growthModel]);
 

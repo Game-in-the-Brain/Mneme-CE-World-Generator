@@ -26,7 +26,7 @@ import { InhabitantsShipsPanel } from './InhabitantsShipsPanel';
 import { InhabitantsStarportPanel } from './InhabitantsStarportPanel';
 import { InhabitantsDemographicsPanel } from './InhabitantsDemographicsPanel';
 import { EconomicClassificationPanel } from './EconomicClassificationPanel';
-import { useInhabitantsActions } from '../../hooks/useInhabitantsActions';
+import { createInhabitantsActions } from '../../hooks/createInhabitantsActions';
 
 export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResult, setShipsResult, onOpenShipsPriceList, onGlossary, rawUdpMode, rawProfile, isEditing, onEditInhabitants, originalInhabitants }: { inhabitants: Inhabitants; system: StarSystem; onUpdateSystem?: (system: StarSystem) => void; shipsResult: ShipsInAreaResult | null; setShipsResult: (r: ShipsInAreaResult | null) => void; onOpenShipsPriceList?: () => void; onGlossary?: () => void; rawUdpMode: boolean; rawProfile: RawUdpProfile; isEditing: boolean; onEditInhabitants?: (inhabitants: Inhabitants) => void; originalInhabitants?: Inhabitants }) {
   const isPopulated = inhabitants.populated !== false;
@@ -76,7 +76,7 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
 
 
 
-  const { handleRollWeekly, handleGenerateShips } = useInhabitantsActions(system, onUpdateSystem, setShipsResult);
+  const { handleRollWeekly, handleGenerateShips } = createInhabitantsActions(system, onUpdateSystem, setShipsResult);
   const weeklyRoll = inhabitants.starport.weeklyRoll;
 
   return (

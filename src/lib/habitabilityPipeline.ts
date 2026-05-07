@@ -390,7 +390,7 @@ export function selectMainworld(bodies: PlanetaryBody[]): MainworldSelectionResu
     rank: i + 1,
   }));
 
-  let winner = candidates[0];
+  const winner = candidates[0];
   let fallbackTriggered = false;
   let fallbackReason: string | undefined;
 

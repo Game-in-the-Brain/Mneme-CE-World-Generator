@@ -266,7 +266,7 @@ export function placeBodiesV2(
       let iceWorldPlaced = false;
 
       for (const zone of tryOrder) {
-        let au = rollPositionInZone(zone, v2, zones);
+        const au = rollPositionInZone(zone, v2, zones);
         body.distanceAU = Math.round(au * 100) / 100;
         body.zone = zone as unknown as typeof body.zone;
 

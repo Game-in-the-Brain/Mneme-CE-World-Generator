@@ -89,7 +89,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
   const planetaryResult = generatePlanetarySystem(
     primaryStar, zones, opts.v2Positioning ?? true, opts.attractiveInnerWorlds
   );
-  const { disks, dwarfs, terrestrials, ices, gases, largestBodyMass } = planetaryResult;
+  const { disks, dwarfs, terrestrials, ices, gases } = planetaryResult;
 
   // Load active life preset (used in both v1 and v2 paths)
   const lifePreset = getLifePresetById(opts.activeLifeAssumptionsId ?? 'mneme-default')
@@ -145,7 +145,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
       mainWorld = buildMainWorldFromV2Winner(winner);
     } else {
       // Absolute fallback: generate a v1-style mainworld
-      mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass, opts.allowMegaStructures);
+      mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, opts.allowMegaStructures);
     }
 
     // Generate inhabitants (TL applied post-selection)
@@ -171,7 +171,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     };
   } else {
     // Legacy v1 pipeline: mainworld-first generation
-    mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, largestBodyMass, opts.allowMegaStructures);
+    mainWorld = generateMainWorld(primaryStar, zones, opts.mainWorldType, opts.allowMegaStructures);
     inhabitants = generateInhabitants(mainWorld, opts);
   }
 

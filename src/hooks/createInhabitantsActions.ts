@@ -1,7 +1,7 @@
 import type { StarSystem, ShipsInAreaResult } from '../types';
 import { generateShipsInTheArea } from '../lib/shipsInArea';
 
-export function useInhabitantsActions(
+export function createInhabitantsActions(
   system: StarSystem,
   onUpdateSystem?: (system: StarSystem) => void,
   setShipsResult?: (result: ShipsInAreaResult | null) => void,

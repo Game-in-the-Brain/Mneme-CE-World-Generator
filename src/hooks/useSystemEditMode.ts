@@ -23,6 +23,7 @@ export function useSystemEditMode(
 
   useEffect(() => {
     if (!isEditing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPendingSystem(system);
     }
   }, [system, isEditing]);

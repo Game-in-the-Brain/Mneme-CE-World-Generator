@@ -27,7 +27,7 @@ export function DataManagementSection({ onImport, onExportAll, onClearAll, syste
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (_error) {
+    } catch {
       setImportStatus('Import failed. Please check the file format.');
     }
 

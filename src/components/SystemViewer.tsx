@@ -82,7 +82,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
 
   useEffect(() => {
     const stored = localStorage.getItem(`mneme_annotations_${system.id}`);
-    let merged: BodyAnnotations = stored ? JSON.parse(stored) : {};
+    const merged: BodyAnnotations = stored ? JSON.parse(stored) : {};
     let needsSave = false;
 
     // Auto-populate from generated place names if no user edits exist
@@ -466,7 +466,7 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
       </div>
 
       {/* All sections rendered inline — scrollable single page (QA-010) */}
-      {/* eslint-disable-next-line react-hooks/refs */}
+      { }
       <section ref={sectionRefs.overview} id="overview" className="scroll-mt-20">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Sparkles style={{ color: 'var(--accent-red)' }} size={20} />
@@ -546,10 +546,10 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
           onAnnotation={handleAnnotation}
           isEditing={isEditing}
           onEditBodies={(updatedSystem) => {
-            setPendingSystem(_prev => ({
+            setPendingSystem({
               ...updatedSystem,
               rawUdpProfile: undefined,
-            }));
+            });
           }}
         />
       </section>
