@@ -167,7 +167,7 @@ export function InhabitantsTab({ inhabitants, system, onUpdateSystem, shipsResul
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-[10px] uppercase tracking-wide text-[var(--text-secondary)]" style={isChanged('wealth') ? amberText : undefined}>
-                  Wealth {isChanged('wealth') && '•'}
+                  Resources {isChanged('wealth') && '•'}
                 </label>
                 {isChanged('wealth') && (
                   <button

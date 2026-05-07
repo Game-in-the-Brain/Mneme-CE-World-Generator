@@ -124,7 +124,7 @@ export function OverviewTab({ system, originalSystem, rawUdpMode, rawProfile }: 
             isChanged={!!originalSystem && system.inhabitants.techLevel !== originalSystem.inhabitants.techLevel}
           />
           <DataRow label="Population"  value={formatPopulation(system.inhabitants.population)} isChanged={!!originalSystem && system.inhabitants.population !== originalSystem.inhabitants.population} />
-          <DataRow label="Material Wealth" value={system.inhabitants.wealth} isChanged={!!originalSystem && system.inhabitants.wealth !== originalSystem.inhabitants.wealth} />
+          <DataRow label="Resources" value={system.inhabitants.wealth} isChanged={!!originalSystem && system.inhabitants.wealth !== originalSystem.inhabitants.wealth} />
           <DataRow label="Government"  value={(() => {
             const useLowPop = system.inhabitants.populated !== false && system.inhabitants.population < 1_000_000;
             const govLabel = useLowPop ? POWER_STRUCTURE_LABELS_LOW_POP[system.inhabitants.powerStructure] : system.inhabitants.powerStructure;

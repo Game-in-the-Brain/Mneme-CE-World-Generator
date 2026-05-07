@@ -39,7 +39,7 @@ export function InhabitantsDemographicsPanel({ inhabitants, system, onGlossary }
             onClick={onGlossary}
             className="text-xs flex items-center gap-1 px-2 py-1 rounded border"
             style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)' }}
-            title="Open Glossary — Wealth &amp; Development explained"
+            title="Open Glossary — Resources &amp; Development explained"
             type="button"
           >
             <ExternalLink size={12} /> Glossary
@@ -68,7 +68,7 @@ export function InhabitantsDemographicsPanel({ inhabitants, system, onGlossary }
         )}
       </div>
 
-      {/* Material Wealth & Equity/Development — with hide toggle */}
+      {/* Resources & Equity/Development — with hide toggle */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
           Economic Indicators
@@ -120,7 +120,7 @@ export function InhabitantsDemographicsPanel({ inhabitants, system, onGlossary }
       )}
       {hideEconomicFraming && (
         <div className="text-xs p-2 rounded" style={{ color: 'var(--text-secondary)', backgroundColor: 'var(--row-hover)' }}>
-          Economic indicators hidden. Wealth: <strong style={{ color: 'var(--text-primary)' }}>{inhabitants.wealth}</strong> · Development: <strong style={{ color: 'var(--text-primary)' }}>{inhabitants.development}</strong>
+          Economic indicators hidden. Resources: <strong style={{ color: 'var(--text-primary)' }}>{inhabitants.wealth}</strong> · Development: <strong style={{ color: 'var(--text-primary)' }}>{inhabitants.development}</strong>
         </div>
       )}
     </div>
