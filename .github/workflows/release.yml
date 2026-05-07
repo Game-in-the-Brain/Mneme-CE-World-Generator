@@ -64,6 +64,9 @@ jobs:
       - name: Sync version
         run: node scripts/sync-version.mjs ${{ github.ref_name || inputs.version }}
 
+      - name: Bundle NPF linguistic data
+        run: node scripts/bundle-npf-data.mjs
+
       - name: Build wrapper + Tauri
         run: npm run wrapper:build:desktop
 
@@ -129,6 +132,10 @@ jobs:
 
       - name: Sync version
         run: node scripts/sync-version.mjs ${{ github.ref_name || inputs.version }}
+        shell: bash
+
+      - name: Bundle NPF linguistic data
+        run: node scripts/bundle-npf-data.mjs
         shell: bash
 
       - name: Build wrapper + Tauri
@@ -197,6 +204,9 @@ jobs:
 
       - name: Sync version
         run: node scripts/sync-version.mjs ${{ github.ref_name || inputs.version }}
+
+      - name: Bundle NPF linguistic data
+        run: node scripts/bundle-npf-data.mjs
 
       - name: Build wrapper + Android
         run: npm run wrapper:build:android
