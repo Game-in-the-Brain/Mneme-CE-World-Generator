@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { StarSystem, GeneratorOptions, StellarClass, StellarGrade, WorldType, TLProductivityPreset } from '../types';
 import { Sparkles } from 'lucide-react';
 import { loadGeneratorOptions, saveGeneratorOptions } from '../lib/optionsStorage';
+import { getLcOptions } from '../lib/placeNameGen';
 import { BUILT_IN_PRESETS, CE_PRESET, getBoatYears, BOAT_PRICE_CR } from '../lib/economicPresets';
 import { ShipsPriceList } from './ShipsPriceList';
 import { getAllBatches } from '../lib/db';
@@ -89,7 +90,11 @@ export function GeneratorDashboard({
   const [nameDescriptorMode, setNameDescriptorMode] = useState<'clean' | 'descriptive' | 'verbose'>(
     defaults.nameDescriptorMode ?? 'descriptive'
   );
+  const [nameBaseLc, setNameBaseLc] = useState<string>(defaults.nameBaseLc ?? 'random');
+  const [nameDriftLc, setNameDriftLc] = useState<string>(defaults.nameDriftLc ?? 'random');
   const [goalModeOpen, setGoalModeOpen] = useState(true);
+
+  const LC_OPTIONS = getLcOptions();
 
   const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
   const isKnownPreset = allPresets.some((p) => p.id === activePreset.id);
@@ -117,8 +122,10 @@ export function GeneratorDashboard({
       rawUdpMode,
       includeNames,
       nameDescriptorMode,
+      nameBaseLc,
+      nameDriftLc,
     });
-  }, [systemPreset, starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, forceHZRelocation, attractiveInnerWorlds, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode]);
+  }, [systemPreset, starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, forceHZRelocation, attractiveInnerWorlds, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode, nameBaseLc, nameDriftLc]);
 
   function handlePresetChange(id: string) {
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
@@ -157,6 +164,8 @@ export function GeneratorDashboard({
       rawUdpMode,
       includeNames,
       nameDescriptorMode,
+      nameBaseLc,
+      nameDriftLc,
     });
   }
 
@@ -398,25 +407,69 @@ export function GeneratorDashboard({
                     </label>
                   </div>
                   {includeNames && (
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-                        Style:
-                      </label>
-                      <select
-                        value={nameDescriptorMode}
-                        onChange={(e) => setNameDescriptorMode(e.target.value as 'clean' | 'descriptive' | 'verbose')}
-                        className="rounded px-2 py-1 text-xs border"
-                        style={{
-                          backgroundColor: 'var(--bg-primary)',
-                          borderColor: 'var(--border-color)',
-                          color: 'var(--text-primary)',
-                        }}
-                      >
-                        <option value="clean">Clean — no descriptors</option>
-                        <option value="descriptive">Descriptive — max 1 descriptor</option>
-                        <option value="verbose">Verbose — 0–2 descriptors</option>
-                      </select>
-                    </div>
+                    <>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                          Style:
+                        </label>
+                        <select
+                          value={nameDescriptorMode}
+                          onChange={(e) => setNameDescriptorMode(e.target.value as 'clean' | 'descriptive' | 'verbose')}
+                          className="rounded px-2 py-1 text-xs border"
+                          style={{
+                            backgroundColor: 'var(--bg-primary)',
+                            borderColor: 'var(--border-color)',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          <option value="clean">Clean — no descriptors</option>
+                          <option value="descriptive">Descriptive — max 1 descriptor</option>
+                          <option value="verbose">Verbose — 0–2 descriptors</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                          Culture:
+                        </label>
+                        <select
+                          value={nameBaseLc}
+                          onChange={(e) => setNameBaseLc(e.target.value)}
+                          className="rounded px-2 py-1 text-xs border"
+                          style={{
+                            backgroundColor: 'var(--bg-primary)',
+                            borderColor: 'var(--border-color)',
+                            color: 'var(--text-primary)',
+                          }}
+                          title="Base language/culture"
+                        >
+                          <option value="random">Random (base)</option>
+                          {LC_OPTIONS.map(lc => (
+                            <option key={lc.id} value={lc.id}>{lc.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                          Drift:
+                        </label>
+                        <select
+                          value={nameDriftLc}
+                          onChange={(e) => setNameDriftLc(e.target.value)}
+                          className="rounded px-2 py-1 text-xs border"
+                          style={{
+                            backgroundColor: 'var(--bg-primary)',
+                            borderColor: 'var(--border-color)',
+                            color: 'var(--text-primary)',
+                          }}
+                          title="Drift language/culture"
+                        >
+                          <option value="random">Random (drift)</option>
+                          {LC_OPTIONS.map(lc => (
+                            <option key={lc.id} value={lc.id}>{lc.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
                   )}
                 </div>
                 {populated && (

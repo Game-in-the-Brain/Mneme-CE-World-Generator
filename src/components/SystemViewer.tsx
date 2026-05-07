@@ -238,8 +238,14 @@ export function SystemViewer({ system, onUpdateSystem, onExportJSON, onExportCSV
   }, [system]);
 
   const LC_OPTIONS = getLcOptions();
-  const [baseLc, setBaseLc] = useState<string>('random');
-  const [driftLc, setDriftLc] = useState<string>('random');
+  const initialLc = system.placeNames
+    ? { base: system.placeNames.baseLc, drift: system.placeNames.driftLc }
+    : (() => {
+        const opts = loadGeneratorOptions();
+        return { base: opts.nameBaseLc ?? 'random', drift: opts.nameDriftLc ?? 'random' };
+      })();
+  const [baseLc, setBaseLc] = useState<string>(initialLc.base);
+  const [driftLc, setDriftLc] = useState<string>(initialLc.drift);
 
   const handleGenerateNames = useCallback(() => {
     const descriptorMode = loadGeneratorOptions().nameDescriptorMode;

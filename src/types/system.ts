@@ -279,6 +279,10 @@ export interface GeneratorOptions {
   includeNames?: boolean;
   /** FRD-063a: name descriptor style — clean (none), descriptive (max 1), verbose (0–2) */
   nameDescriptorMode?: 'clean' | 'descriptive' | 'verbose';
+  /** FRD-063b: base linguistic culture for name generation ('random' = seed-derived) */
+  nameBaseLc?: string;
+  /** FRD-063b: drift linguistic culture for name generation ('random' = seed-derived) */
+  nameDriftLc?: string;
 }
 
 export interface ExtraterrestrialLifeAssumptions {

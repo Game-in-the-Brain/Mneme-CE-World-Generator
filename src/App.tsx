@@ -193,7 +193,12 @@ function App() {
       if (options.includeNames) {
         system = {
           ...system,
-          placeNames: generatePlaceNames(system, 'random', 'random', options.nameDescriptorMode),
+          placeNames: generatePlaceNames(
+            system,
+            options.nameBaseLc ?? 'random',
+            options.nameDriftLc ?? 'random',
+            options.nameDescriptorMode,
+          ),
         };
         if (!system.name) system.name = system.placeNames!.systemName;
         // Pre-fill body name annotations so bodies don't appear blank

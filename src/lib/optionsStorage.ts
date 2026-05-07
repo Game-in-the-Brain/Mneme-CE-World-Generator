@@ -24,6 +24,8 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   rawUdpMode: false,
   includeNames: false,
   nameDescriptorMode: 'descriptive',
+  nameBaseLc: 'random',
+  nameDriftLc: 'random',
   forceHZRelocation: false,
   attractiveInnerWorlds: false,
 };
@@ -158,6 +160,12 @@ export function loadGeneratorOptions(): GeneratorOptions {
       ? stored.nameDescriptorMode
       : DEFAULT_GENERATOR_OPTIONS.nameDescriptorMode;
 
+  // We'll validate against actual LC index lazily; for now allow any string or 'random'
+  const nameBaseLc =
+    typeof stored.nameBaseLc === 'string' ? stored.nameBaseLc : DEFAULT_GENERATOR_OPTIONS.nameBaseLc;
+  const nameDriftLc =
+    typeof stored.nameDriftLc === 'string' ? stored.nameDriftLc : DEFAULT_GENERATOR_OPTIONS.nameDriftLc;
+
   return {
     systemPreset,
     starClass,
@@ -181,6 +189,8 @@ export function loadGeneratorOptions(): GeneratorOptions {
     rawUdpMode,
     includeNames,
     nameDescriptorMode,
+    nameBaseLc,
+    nameDriftLc,
   };
 }
 
