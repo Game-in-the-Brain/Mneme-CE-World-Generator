@@ -24,6 +24,7 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   rawUdpMode: false,
   includeNames: false,
   nameDescriptorMode: 'descriptive',
+  forceHZRelocation: false,
 };
 
 function isValidPreset(value: unknown): value is TLProductivityPreset {
@@ -121,6 +122,8 @@ export function loadGeneratorOptions(): GeneratorOptions {
       : undefined;
   const goalHabitable =
     typeof stored.goalHabitable === 'boolean' ? stored.goalHabitable : undefined;
+  const forceHZRelocation =
+    typeof stored.forceHZRelocation === 'boolean' ? stored.forceHZRelocation : DEFAULT_GENERATOR_OPTIONS.forceHZRelocation;
   const allowShipsAtXPort =
     typeof stored.allowShipsAtXPort === 'boolean' ? stored.allowShipsAtXPort : undefined;
 
@@ -165,6 +168,7 @@ export function loadGeneratorOptions(): GeneratorOptions {
     goalStarportMin,
     goalMinPopulation,
     goalHabitable,
+    forceHZRelocation,
     allowShipsAtXPort,
     v2Positioning,
     activeLifeAssumptionsId,

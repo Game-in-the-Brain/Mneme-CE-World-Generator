@@ -44,6 +44,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     goalStarportMin:         options?.goalStarportMin,
     goalMinPopulation:       options?.goalMinPopulation,
     goalHabitable:           options?.goalHabitable,
+    forceHZRelocation:       options?.forceHZRelocation,
   };
 
   // FRD-Sol: When Sol preset is selected, force G2V star
@@ -127,16 +128,18 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     // Build MainWorld from winner
     const winner = allBodies.find(b => b.id === selection.mainworldId);
     if (winner) {
-      // FR-045: FDR — Forced Displacement to Habitable Zone
-      const starMassEM = primaryStar.mass * EM_PER_SOLAR_MASS;
-      fdrResult = applyForcedDisplacementRule(
-        winner,
-        zones,
-        starMassEM,
-        planetaryResult,
-        allMoons,
-        lifePreset
-      );
+      // FR-045: FDR — Forced Displacement to Habitable Zone (gated by toggle)
+      if (opts.forceHZRelocation) {
+        const starMassEM = primaryStar.mass * EM_PER_SOLAR_MASS;
+        fdrResult = applyForcedDisplacementRule(
+          winner,
+          zones,
+          starMassEM,
+          planetaryResult,
+          allMoons,
+          lifePreset
+        );
+      }
 
       mainWorld = buildMainWorldFromV2Winner(winner);
     } else {

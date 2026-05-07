@@ -257,6 +257,8 @@ export interface GeneratorOptions {
   goalStarportMin?: StarportClass;
   goalMinPopulation?: number;
   goalHabitable?: boolean;
+  /** FR-045: Force highest-habitability mainworld into Conservative zone */
+  forceHZRelocation?: boolean;
   /** QA-058: allow ships to be generated at X-class ports */
   allowShipsAtXPort?: boolean;
   /** QA-049: preferred economic growth model — surfaces curve type as first-class user choice */

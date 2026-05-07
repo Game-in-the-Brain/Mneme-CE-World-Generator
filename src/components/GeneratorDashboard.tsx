@@ -81,6 +81,7 @@ export function GeneratorDashboard({
   const [goalStarportMin, setGoalStarportMin] = useState<import('../types').StarportClass | ''>(defaults.goalStarportMin || '');
   const [goalMinPopulation, setGoalMinPopulation] = useState<string>(defaults.goalMinPopulation?.toString() || '');
   const [goalHabitable, setGoalHabitable] = useState<boolean>(defaults.goalHabitable || false);
+  const [forceHZRelocation, setForceHZRelocation] = useState<boolean>(defaults.forceHZRelocation ?? false);
   const [allowShipsAtXPort, setAllowShipsAtXPort] = useState<boolean>(defaults.allowShipsAtXPort ?? true);
   const [rawUdpMode, setRawUdpMode] = useState<boolean>(defaults.rawUdpMode ?? false);
   const [includeNames, setIncludeNames] = useState<boolean>(defaults.includeNames ?? false);
@@ -109,12 +110,13 @@ export function GeneratorDashboard({
       goalStarportMin: goalStarportMin || undefined,
       goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
       goalHabitable: goalHabitable || undefined,
+      forceHZRelocation: forceHZRelocation || undefined,
       allowShipsAtXPort: allowShipsAtXPort || undefined,
       rawUdpMode,
       includeNames,
       nameDescriptorMode,
     });
-  }, [systemPreset, starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode]);
+  }, [systemPreset, starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, forceHZRelocation, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode]);
 
   function handlePresetChange(id: string) {
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
@@ -147,6 +149,7 @@ export function GeneratorDashboard({
       goalStarportMin: goalStarportMin || undefined,
       goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
       goalHabitable: goalHabitable || undefined,
+      forceHZRelocation: forceHZRelocation || undefined,
       allowShipsAtXPort: allowShipsAtXPort || undefined,
       rawUdpMode,
       includeNames,
@@ -327,6 +330,18 @@ export function GeneratorDashboard({
                     />
                     <label htmlFor="habitable-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                       Habitable world (Hab &gt; 0)
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="fdr-toggle"
+                      type="checkbox"
+                      checked={forceHZRelocation}
+                      onChange={(e) => setForceHZRelocation(e.target.checked)}
+                      className="rounded"
+                    />
+                    <label htmlFor="fdr-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                      Force mainworld to Habitable Zone
                     </label>
                   </div>
                   <div className="flex items-center gap-2">
