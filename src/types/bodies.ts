@@ -83,6 +83,9 @@ export interface PlanetaryBody {
   parentDistanceAU?: number; // parent's star-distance, used when moon wins mainworld
   moonOrbitAU?: number;      // orbital distance from parent (for moons)
 
+  // FR-045: FDR — Forced Displacement to Habitable Zone
+  wasPromotedFromMoon?: boolean;
+
   // FR-044: Ring classification
   ringClass?: 'faint' | 'visible' | 'showpiece' | 'great';
 }

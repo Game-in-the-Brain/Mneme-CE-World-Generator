@@ -53,6 +53,9 @@ export interface StarSystem {
     tiebreakerApplied: boolean;
     fallbackTriggered: boolean;
     fallbackReason?: string;
+    /** FR-045: FDR — Forced Displacement to Habitable Zone */
+    fdrApplied?: boolean;
+    fdrEjectedIds?: string[];
   };
 
   // FR-044: Level 2 children (moons and rings)

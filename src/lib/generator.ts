@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import type {
-  GeneratorOptions, Inhabitants, MainWorld, PlanetaryBody, Star, StarSystem
+  GeneratorOptions, Inhabitants, MainWorld, PlanetaryBody, Star, StarSystem, ZoneBoundaries, ExtraterrestrialLifeAssumptions
 } from '../types';
 import { CE_PRESET, DEFAULT_DEVELOPMENT_WEIGHTS, DEFAULT_GOV_WEIGHTS, DEFAULT_POWER_WEIGHTS, MNEME_WEALTH_WEIGHTS } from './economicPresets';
 import { generateInhabitants } from './generatorInhabitants';
@@ -17,6 +17,7 @@ import { generateLevel2Children } from './moons';
 import { buildOrbitTree, buildBarycenterView } from './multiStar';
 import { buildRawUdpProfile } from './rawUdp';
 import { calculateV2Zones, calculateZoneBoundaries } from './stellarData';
+import { computeHillSphere, EM_PER_SOLAR_MASS } from './positioning';
 
 
 // =====================
@@ -114,6 +115,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
   let mainWorld: MainWorld;
   let inhabitants: Inhabitants;
   let v2SystemFields: Partial<StarSystem> = {};
+  let fdrResult: { wasRelocated: boolean; ejectedIds: string[] } = { wasRelocated: false, ejectedIds: [] };
 
   if (opts.v2Positioning) {
     // FR-043: v2 pipeline — system-first generation + competitive mainworld selection
@@ -125,6 +127,17 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     // Build MainWorld from winner
     const winner = allBodies.find(b => b.id === selection.mainworldId);
     if (winner) {
+      // FR-045: FDR — Forced Displacement to Habitable Zone
+      const starMassEM = primaryStar.mass * EM_PER_SOLAR_MASS;
+      fdrResult = applyForcedDisplacementRule(
+        winner,
+        zones,
+        starMassEM,
+        planetaryResult,
+        allMoons,
+        lifePreset
+      );
+
       mainWorld = buildMainWorldFromV2Winner(winner);
     } else {
       // Absolute fallback: generate a v1-style mainworld
@@ -148,6 +161,8 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
         tiebreakerApplied: selection.tiebreakerApplied,
         fallbackTriggered: selection.fallbackTriggered,
         fallbackReason: selection.fallbackReason,
+        fdrApplied: fdrResult.wasRelocated,
+        fdrEjectedIds: fdrResult.ejectedIds,
       },
     };
   } else {
@@ -258,4 +273,109 @@ function overlayTreeSeparationsOntoCompanions(
   for (let i = 0; i < companions.length && i < separations.length; i++) {
     companions[i].orbitDistance = separations[i];
   }
+}
+
+// =====================
+// FR-045: FDR — Forced Displacement to Habitable Zone
+// =====================
+
+/**
+ * If the highest-habitability body is not in the Conservative zone,
+ * relocate it there and eject any L1 occupant whose Hill sphere blocks it.
+ */
+function applyForcedDisplacementRule(
+  winner: PlanetaryBody,
+  zones: ZoneBoundaries,
+  starMassEM: number,
+  planetaryResult: {
+    disks: PlanetaryBody[];
+    dwarfs: PlanetaryBody[];
+    terrestrials: PlanetaryBody[];
+    ices: PlanetaryBody[];
+    gases: PlanetaryBody[];
+    ejectedBodies: PlanetaryBody[];
+  },
+  moons: PlanetaryBody[],
+  lifePreset: ExtraterrestrialLifeAssumptions
+): { wasRelocated: boolean; ejectedIds: string[] } {
+  if (winner.zone === 'Conservative') {
+    return { wasRelocated: false, ejectedIds: [] };
+  }
+
+  // Pick a random AU inside the Conservative zone
+  const minAU = zones.conservative.min;
+  const maxAU = zones.conservative.max;
+  const newAU = Math.round((minAU + Math.random() * (maxAU - minAU)) * 100) / 100;
+
+  winner.zone = 'Conservative' as typeof winner.zone;
+  winner.distanceAU = newAU;
+
+  // Gather all L1 bodies (excluding the winner itself)
+  const l1Bodies = [
+    ...planetaryResult.disks,
+    ...planetaryResult.dwarfs,
+    ...planetaryResult.terrestrials,
+    ...planetaryResult.ices,
+    ...planetaryResult.gases,
+  ];
+
+  // Find any L1 body whose Hill sphere overlaps the winner's new position
+  const winnerHill = computeHillSphere(winner.mass, winner.distanceAU, starMassEM);
+  const conflicting: PlanetaryBody[] = [];
+
+  for (const other of l1Bodies) {
+    if (other.id === winner.id) continue;
+    const otherHill = computeHillSphere(other.mass, other.distanceAU, starMassEM);
+    const minSep = 4.0 * Math.max(winnerHill, otherHill);
+    const sep = Math.abs(winner.distanceAU - other.distanceAU);
+    if (sep < minSep) {
+      conflicting.push(other);
+    }
+  }
+
+  // Eject every conflicting occupant
+  const ejectedIds: string[] = [];
+  for (const body of conflicting) {
+    body.wasEjected = true;
+    body.ejectionReason = 'saturation';
+    planetaryResult.ejectedBodies.push(body);
+    ejectedIds.push(body.id);
+
+    // Remove from its home array
+    const targetArray =
+      body.type === 'disk' ? planetaryResult.disks :
+      body.type === 'dwarf' ? planetaryResult.dwarfs :
+      body.type === 'terrestrial' ? planetaryResult.terrestrials :
+      body.type === 'ice' ? planetaryResult.ices :
+      body.type === 'gas' ? planetaryResult.gases : null;
+
+    if (targetArray) {
+      const idx = targetArray.findIndex(b => b.id === body.id);
+      if (idx >= 0) targetArray.splice(idx, 1);
+    }
+  }
+
+  // If the winner is a moon, promote it to an independent L1 body
+  if (winner.level === 2 || winner.parentId) {
+    const moonIdx = moons.findIndex(m => m.id === winner.id);
+    if (moonIdx >= 0) moons.splice(moonIdx, 1);
+
+    if (winner.type === 'dwarf') {
+      planetaryResult.dwarfs.push(winner);
+    } else if (winner.type === 'terrestrial') {
+      planetaryResult.terrestrials.push(winner);
+    }
+
+    winner.parentId = undefined;
+    winner.moonOrbitAU = undefined;
+    winner.level = 1;
+    winner.orbitLevel = 1;
+    winner.wasPromotedFromMoon = true;
+    winner.parentDistanceAU = undefined;
+  }
+
+  // Re-run habitability waterfall so the score reflects the new zone
+  runHabitabilityWaterfall(winner, lifePreset);
+
+  return { wasRelocated: true, ejectedIds };
 }
