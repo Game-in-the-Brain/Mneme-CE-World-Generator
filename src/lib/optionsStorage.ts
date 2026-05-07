@@ -25,6 +25,7 @@ export const DEFAULT_GENERATOR_OPTIONS: GeneratorOptions = {
   includeNames: false,
   nameDescriptorMode: 'descriptive',
   forceHZRelocation: false,
+  attractiveInnerWorlds: false,
 };
 
 function isValidPreset(value: unknown): value is TLProductivityPreset {
@@ -124,6 +125,8 @@ export function loadGeneratorOptions(): GeneratorOptions {
     typeof stored.goalHabitable === 'boolean' ? stored.goalHabitable : undefined;
   const forceHZRelocation =
     typeof stored.forceHZRelocation === 'boolean' ? stored.forceHZRelocation : DEFAULT_GENERATOR_OPTIONS.forceHZRelocation;
+  const attractiveInnerWorlds =
+    typeof stored.attractiveInnerWorlds === 'boolean' ? stored.attractiveInnerWorlds : DEFAULT_GENERATOR_OPTIONS.attractiveInnerWorlds;
   const allowShipsAtXPort =
     typeof stored.allowShipsAtXPort === 'boolean' ? stored.allowShipsAtXPort : undefined;
 
@@ -169,6 +172,7 @@ export function loadGeneratorOptions(): GeneratorOptions {
     goalMinPopulation,
     goalHabitable,
     forceHZRelocation,
+    attractiveInnerWorlds,
     allowShipsAtXPort,
     v2Positioning,
     activeLifeAssumptionsId,

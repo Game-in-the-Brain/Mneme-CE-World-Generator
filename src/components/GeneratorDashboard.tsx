@@ -82,6 +82,7 @@ export function GeneratorDashboard({
   const [goalMinPopulation, setGoalMinPopulation] = useState<string>(defaults.goalMinPopulation?.toString() || '');
   const [goalHabitable, setGoalHabitable] = useState<boolean>(defaults.goalHabitable || false);
   const [forceHZRelocation, setForceHZRelocation] = useState<boolean>(defaults.forceHZRelocation ?? false);
+  const [attractiveInnerWorlds, setAttractiveInnerWorlds] = useState<boolean>(defaults.attractiveInnerWorlds ?? false);
   const [allowShipsAtXPort, setAllowShipsAtXPort] = useState<boolean>(defaults.allowShipsAtXPort ?? true);
   const [rawUdpMode, setRawUdpMode] = useState<boolean>(defaults.rawUdpMode ?? false);
   const [includeNames, setIncludeNames] = useState<boolean>(defaults.includeNames ?? false);
@@ -111,12 +112,13 @@ export function GeneratorDashboard({
       goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
       goalHabitable: goalHabitable || undefined,
       forceHZRelocation: forceHZRelocation || undefined,
+      attractiveInnerWorlds: attractiveInnerWorlds || undefined,
       allowShipsAtXPort: allowShipsAtXPort || undefined,
       rawUdpMode,
       includeNames,
       nameDescriptorMode,
     });
-  }, [systemPreset, starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, forceHZRelocation, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode]);
+  }, [systemPreset, starClass, starGrade, mainWorldType, populated, activePreset, goalStarportMin, goalMinPopulation, goalHabitable, forceHZRelocation, attractiveInnerWorlds, allowShipsAtXPort, rawUdpMode, includeNames, nameDescriptorMode]);
 
   function handlePresetChange(id: string) {
     const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id);
@@ -150,6 +152,7 @@ export function GeneratorDashboard({
       goalMinPopulation: goalMinPopulation ? Number(goalMinPopulation) : undefined,
       goalHabitable: goalHabitable || undefined,
       forceHZRelocation: forceHZRelocation || undefined,
+      attractiveInnerWorlds: attractiveInnerWorlds || undefined,
       allowShipsAtXPort: allowShipsAtXPort || undefined,
       rawUdpMode,
       includeNames,
@@ -342,6 +345,18 @@ export function GeneratorDashboard({
                     />
                     <label htmlFor="fdr-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                       Force mainworld to Habitable Zone
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="attractive-inner-toggle"
+                      type="checkbox"
+                      checked={attractiveInnerWorlds}
+                      onChange={(e) => setAttractiveInnerWorlds(e.target.checked)}
+                      className="rounded"
+                    />
+                    <label htmlFor="attractive-inner-toggle" className="text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+                      Attractive Inner worlds
                     </label>
                   </div>
                   <div className="flex items-center gap-2">

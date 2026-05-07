@@ -45,6 +45,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
     goalMinPopulation:       options?.goalMinPopulation,
     goalHabitable:           options?.goalHabitable,
     forceHZRelocation:       options?.forceHZRelocation,
+    attractiveInnerWorlds:   options?.attractiveInnerWorlds,
   };
 
   // FRD-Sol: When Sol preset is selected, force G2V star
@@ -86,7 +87,7 @@ export function generateStarSystem(options?: Partial<GeneratorOptions>): StarSys
 
   // Generate planetary system FIRST to determine largest body mass (for Habitat sizing)
   const planetaryResult = generatePlanetarySystem(
-    primaryStar, zones, opts.v2Positioning ?? true
+    primaryStar, zones, opts.v2Positioning ?? true, opts.attractiveInnerWorlds
   );
   const { disks, dwarfs, terrestrials, ices, gases, largestBodyMass } = planetaryResult;
 

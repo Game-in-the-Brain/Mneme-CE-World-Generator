@@ -181,7 +181,7 @@ function verifySpacing(
   return { violations: violationCount, log: violations };
 }
 
-export function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries, useV2: boolean = false) {
+export function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries, useV2: boolean = false, attractiveInnerWorlds?: boolean) {
   const stellarClass = primaryStar.class;
   const starMass = primaryStar.mass;
 
@@ -247,7 +247,7 @@ export function generatePlanetarySystem(primaryStar: Star, zones: ZoneBoundaries
 
   if (useV2) {
     // FR-042: v2 positioning system
-    const v2Result = placeBodiesV2(disks, dwarfs, terrestrials, ices, gases, primaryStar, zones);
+    const v2Result = placeBodiesV2(disks, dwarfs, terrestrials, ices, gases, primaryStar, zones, attractiveInnerWorlds);
     allBodies = v2Result.placedBodies;
     v2Ejected = v2Result.ejectedBodies;
     v2Consumed = v2Result.consumedBodies;

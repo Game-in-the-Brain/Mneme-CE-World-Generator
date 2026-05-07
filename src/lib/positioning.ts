@@ -5,6 +5,7 @@
 import type { PlanetaryBody, Star, ZoneBoundaries, ZoneId } from '../types';
 import { roll3D6 } from './dice';
 import { calculateV2Zones, type V2ZoneData } from './stellarData';
+import { getCompositionQualityRank } from './habitabilityPipeline';
 
 export const EM_PER_SOLAR_MASS = 332946; // 1 M☉ = 332,946 Earth Masses (IAU 2012)
 
@@ -12,20 +13,24 @@ export const EM_PER_SOLAR_MASS = 332946; // 1 M☉ = 332,946 Earth Masses (IAU 2
 // Zone Roll Functions
 // ---------------------
 
-/** Unified 3D6 → ZoneId (Step 1: inner/frost/outer). */
-export function rollUnifiedZone(): ZoneId {
-  const roll = roll3D6().value;
+/** Unified 3D6 → ZoneId (Step 1: inner/frost/outer).
+ *  Optional bias subtracted from the roll to favour inner zones.
+ */
+export function rollUnifiedZone(bias: number = 0): ZoneId {
+  const roll = Math.max(3, roll3D6().value - bias);
   if (roll === 3) return 'Infernal';
   if (roll <= 7) return 'Hot';
   if (roll <= 11) return 'Conservative';
   if (roll <= 13) return 'Cool';
   if (roll === 14) return 'FrostLine';
-  return rollOuterZone();
+  return rollOuterZone(bias);
 }
 
-/** Step 2: outer zone 3D6 → O1–O5. */
-export function rollOuterZone(): ZoneId {
-  const roll = roll3D6().value;
+/** Step 2: outer zone 3D6 → O1–O5.
+ *  Optional bias subtracted from the roll to favour nearer outer zones.
+ */
+export function rollOuterZone(bias: number = 0): ZoneId {
+  const roll = Math.max(3, roll3D6().value - bias);
   if (roll <= 9) return 'O1';
   if (roll <= 11) return 'O2';
   if (roll <= 13) return 'O3';
@@ -179,7 +184,8 @@ export function placeBodiesV2(
   ices: PlanetaryBody[],
   gases: PlanetaryBody[],
   primaryStar: Star,
-  zones: ZoneBoundaries
+  zones: ZoneBoundaries,
+  attractiveInnerWorlds?: boolean
 ): V2PlacementResult {
   const v2 = calculateV2Zones(primaryStar.luminosity);
   const starMassEM = primaryStar.mass * EM_PER_SOLAR_MASS;
@@ -418,7 +424,14 @@ export function placeBodiesV2(
     let placedSuccessfully = false;
 
     for (let attempt = 0; attempt < 5; attempt++) {
-      const zone = rollUnifiedZone();
+      let zone: ZoneId;
+      if (attractiveInnerWorlds && (body.type === 'terrestrial' || body.type === 'dwarf')) {
+        const rank = getCompositionQualityRank(body.composition);
+        const bias = rank >= 5 ? 2 : rank >= 3 ? 1 : 0;
+        zone = rollUnifiedZone(bias);
+      } else {
+        zone = rollUnifiedZone();
+      }
 
       if (blockedZones.has(zone)) continue;
 

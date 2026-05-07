@@ -113,7 +113,7 @@ function getHazardSeverityRank(hazard?: string): number {
 // Composition Quality Rank (for tiebreakers)
 // ---------------------
 
-function getCompositionQualityRank(composition?: string): number {
+export function getCompositionQualityRank(composition?: string): number {
   if (!composition) return 0;
   // Terrestrial ranking (higher = better)
   if (composition.includes('Iron-Silicate')) return 6;

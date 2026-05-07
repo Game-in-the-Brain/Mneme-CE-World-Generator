@@ -259,6 +259,8 @@ export interface GeneratorOptions {
   goalHabitable?: boolean;
   /** FR-045: Force highest-habitability mainworld into Conservative zone */
   forceHZRelocation?: boolean;
+  /** FR-046: Bias high-composition worlds toward inner zones */
+  attractiveInnerWorlds?: boolean;
   /** QA-058: allow ships to be generated at X-class ports */
   allowShipsAtXPort?: boolean;
   /** QA-049: preferred economic growth model — surfaces curve type as first-class user choice */
