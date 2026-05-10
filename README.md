@@ -1,3 +1,5 @@
+
+**Products:** [https://blog.gi7b.org](https://blog.gi7b.org)
 <div align="right">
   <a href="https://github.com/Game-in-the-Brain">
     <img src="./gitb_gi7b_logo_512.png" alt="Game in the Brain" width="72"/>
@@ -34,7 +36,7 @@ Native apps are built automatically for every release. No browser required — w
 
 > **Latest Release:** See the [Releases page](https://github.com/Game-in-the-Brain/Mneme-CE-World-Generator/releases) for all versions, release notes, and SHA-256 checksums.
 >
-> **Prefer the web?** The [GitHub Pages version](https://game-in-the-brain.github.io/Mneme-CE-World-Generator/) is always the latest build and works on any device with a browser.
+> **Prefer the web?** The [GitHub Pages version](https://pages.gi7b.org/gi7b/Mneme-CE-World-Generator/) is always the latest build and works on any device with a browser.
 
 ---
 
